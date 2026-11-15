@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TAE Test Map</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #9ad1ff; font-family: system-ui, sans-serif; }
+  canvas { display: block; }
+  #hud { position: fixed; top: 10px; left: 12px; color: #fff; font-size: 13px; line-height: 1.5;
+         text-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; }
+  #hud b { color: #ffd34d; }
+  #status { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 15px;
+            text-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; text-align: center; }
+  #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+             background: rgba(0,0,0,.45); color: #fff; font-size: 22px; cursor: pointer; z-index: 5; text-align: center; padding: 20px; }
+  #overlay small { display: block; font-size: 14px; opacity: .85; margin-top: 8px; font-weight: normal; }
+  #debug { position: fixed; top: 10px; right: 12px; color: #0f0; font: 12px/1.4 monospace; white-space: pre;
+           background: rgba(0,0,0,.6); padding: 6px 8px; display: none; pointer-events: none; }
+  #powerbar { position: fixed; left: 0; top: 0; width: 30px; height: 190px; display: none; pointer-events: none;
+              border: 3px solid #fff; border-radius: 6px; background: rgba(0,0,0,.5); transform: translate(-50%, -50%); }
+  #pb-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; border-radius: 2px; }
+  .pb-label { position: absolute; left: 38px; color: #fff; font: bold 13px system-ui; text-shadow: 0 1px 3px #000; }
+  #pb-top { top: -4px; } #pb-bot { bottom: -4px; }
+  #pb-value { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 6px; color: #fff;
+              font: bold 16px system-ui; text-shadow: 0 1px 3px #000; white-space: nowrap; }
+  #powerbar.locked { border-color: #ffd34d; box-shadow: 0 0 14px #ffd34d; }
+  #powerbar.locked #pb-value { color: #ffd34d; }
+</style>
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="hud">
+  <b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>Space</b> jump<br>
+  Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br>
+  <span id="last">Last throw: none</span>
+</div>
+<div id="status"></div>
+<div id="debug"></div>
+<div id="powerbar">
+  <div id="pb-fill"></div>
+  <div id="pb-top" class="pb-label">20</div>
+  <div id="pb-bot" class="pb-label">5</div>
+  <div id="pb-value"></div>
+</div>
+<div id="overlay"><div id="overlay-text">Loading...</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* ------------------------------------------------------------------ */
+/* Config. URL params: ?debug=1  ?verbose=1  ?spawn=<index>            */
+/* ------------------------------------------------------------------ */
+const params = new URLSearchParams(location.search);
+const CONFIG = {
+  debug: params.get('debug') === '1',
+  verbose: params.get('verbose') === '1',
+  forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
+  models: { map: 'TAE_Test.glb', player: 'TAE_Player.glb', egg: 'Egg_Thrown.glb' },
+  // GLTFLoader turns spaces in node names into underscores, so both are matched.
+  match: {
+    spawn: /^Player[ _]Spawn/i,
+    zone: /^Throw[ _]Zone/i,
+    nonSolid: [/^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg$/i, /^Chicken/i],
+    hidden: [/^Player[ _]Spawn/i, /Egg$/i, /^Chicken/i],
+  },
+  player: { walk: 5, run: 8, radius: 0.35, stepHeight: 0.35, jump: 7.5, gravity: 22, probeHeights: [0.4, 0.9, 1.4], turnSpeed: 12 },
+  camera: { distance: 4.5, sens: 0.0025, minPitch: -0.2, maxPitch: 1.3, height: 1.5 },
+  power: { min: 5, max: 20, period: 1.1 },        // period = seconds for one full up-and-down sweep
+  throwing: { elevationDeg: 35, gravity: 9.8, cooldown: 1.2, maxLanded: 40, maxFlightTime: 12 },
+  egg: { size: 0.45 },
+};
+
+const log = {
+  info: (...a) => console.log('[TAE]', ...a),
+  warn: (...a) => console.warn('[TAE]', ...a),
+  error: (...a) => console.error('[TAE]', ...a),
+  debug: (...a) => { if (CONFIG.verbose) console.debug('[TAE:debug]', ...a); },
+};
+
+/* ------------------------------------------------------------------ */
+/* DOM                                                                 */
+/* ------------------------------------------------------------------ */
+const $ = (id) => document.getElementById(id);
+const dom = {
+  overlay: $('overlay'), overlayText: $('overlay-text'), status: $('status'), last: $('last'),
+  bar: $('powerbar'), fill: $('pb-fill'), value: $('pb-value'), debug: $('debug'),
+};
+if (CONFIG.debug) dom.debug.style.display = 'block';
+
+function showOverlay(html) { dom.overlayText.innerHTML = html; dom.overlay.style.display = 'flex'; }
+function fatal(err) {
+  log.error(err);
+  showOverlay('Load failed<small>' + String(err && err.message || err) +
+    '<br><br>Serve this folder over HTTP (browsers block GLB loading from file://):<br>' +
+    '<code>python3 -m http.server 8000</code> then open http://localhost:8000</small>');
+  dom.overlay.style.cursor = 'default';
+}
+
+/* ------------------------------------------------------------------ */
+/* Renderer / scene                                                    */
+/* ------------------------------------------------------------------ */
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9ad1ff);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x667788, 1.1));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 200 });
+sun.shadow.bias = -0.0005;
+scene.add(sun, sun.target);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ------------------------------------------------------------------ */
+/* Helpers                                                             */
+/* ------------------------------------------------------------------ */
+const raycaster = new THREE.Raycaster();
+const DOWN = new THREE.Vector3(0, -1, 0);
+let solids = [];
+
+function castRay(origin, dir, far) {
+  raycaster.set(origin, dir);
+  raycaster.near = 0;
+  raycaster.far = far;
+  const hits = raycaster.intersectObjects(solids, false);
+  return hits.length ? hits[0] : null;
+}
+function matches(list, name) { return list.some((re) => re.test(name)); }
+function chainMatches(obj, root, list) {
+  for (let o = obj; o && o !== root; o = o.parent) if (matches(list, o.name || '')) return true;
+  return false;
+}
+function angleLerp(a, b, t) {
+  let d = ((b - a + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+  return a + d * Math.min(1, t);
+}
+
+/* ------------------------------------------------------------------ */
+/* Egg: bake all voxel cubes into a few merged meshes                  */
+/* ------------------------------------------------------------------ */
+function bakeEgg(root) {
+  root.updateMatrixWorld(true);
+  const colored = [];
+  const texturedByMat = new Map();
+
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    let g = o.geometry.clone();
+    g.applyMatrix4(o.matrixWorld);
+    if (g.index) g = g.toNonIndexed();
+    if (!g.attributes.normal) g.computeVertexNormals();
+    const mat = Array.isArray(o.material) ? o.material[0] : o.material;
+    const keep = mat.map && g.attributes.uv ? ['position', 'normal', 'uv'] : ['position', 'normal'];
+    for (const k of Object.keys(g.attributes)) if (!keep.includes(k)) g.deleteAttribute(k);
+    if (keep.length === 3) {
+      if (!texturedByMat.has(mat)) texturedByMat.set(mat, []);
+      texturedByMat.get(mat).push(g);
+    } else {
+      const n = g.attributes.position.count;
+      const col = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) { col[i * 3] = mat.color.r; col[i * 3 + 1] = mat.color.g; col[i * 3 + 2] = mat.color.b; }
+      g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      colored.push(g);
+    }
+  });
+
+  const all = [...colored, ...[...texturedByMat.values()].flat()];
+  if (!all.length) throw new Error('Egg model has no meshes');
+  const box = new THREE.Box3();
+  all.forEach((g) => { g.computeBoundingBox(); box.union(g.boundingBox); });
+  const c = box.getCenter(new THREE.Vector3());
+  const s = box.getSize(new THREE.Vector3());
+  const k = CONFIG.egg.size / Math.max(s.x, s.y, s.z);
+  const norm = new THREE.Matrix4().makeScale(k, k, k).multiply(new THREE.Matrix4().makeTranslation(-c.x, -c.y, -c.z));
+  all.forEach((g) => g.applyMatrix4(norm));
+
+  const parts = [];
+  if (colored.length) {
+    const merged = BufferGeometryUtils.mergeGeometries(colored, false);
+    if (!merged) throw new Error('Egg merge failed');
+    parts.push({ geometry: merged, material: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75 }) });
+  }
+  for (const [mat, geos] of texturedByMat) {
+    const merged = BufferGeometryUtils.mergeGeometries(geos, false);
+    if (merged) parts.push({ geometry: merged, material: mat });
+  }
+  log.info('Egg baked:', all.length, 'source meshes ->', parts.length, 'draw parts');
+  return () => {
+    const grp = new THREE.Group();
+    parts.forEach((p) => { const m = new THREE.Mesh(p.geometry, p.material); m.castShadow = true; grp.add(m); });
+    return grp;
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Game state                                                          */
+/* ------------------------------------------------------------------ */
+const keys = {};
+let yaw = 0, pitch = 0.3;
+const pos = new THREE.Vector3();
+let vy = 0, grounded = false;
+let facing = 0;
+let playerRoot = null, mixer = null;
+const actions = {};
+let currentAnim = '';
+let spawnPoints = [];
+let zoneBox = null, zoneMesh = null;
+let mapBox = new THREE.Box3();
+let makeEgg = null;
+const eggs = [];
+const state = { mode: 'idle', power: CONFIG.power.min, t: 0, cooldown: 0 };
+let lastSpawnIdx = -1;
+let ready = false;
+
+/* ------------------------------------------------------------------ */
+/* Loading                                                             */
+/* ------------------------------------------------------------------ */
+async function init() {
+  const loader = new GLTFLoader();
+  const load = (url) => loader.loadAsync(url, (e) => {
+    if (e.total) dom.overlayText.textContent = 'Loading ' + url + ' ' + Math.round(e.loaded / e.total * 100) + '%';
+  });
+
+  const [mapGltf, playerGltf, eggGltf] = await Promise.all([
+    load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg),
+  ]);
+
+  setupMap(mapGltf.scene);
+  setupPlayer(playerGltf);
+  makeEgg = bakeEgg(eggGltf.scene);
+
+  respawn();
+  ready = true;
+  dom.overlayText.innerHTML = 'Click to play<small>Pointer lock is used for mouse look. Esc releases it.</small>';
+  dom.overlay.style.display = 'flex';
+  requestAnimationFrame(tick);
+}
+
+function setupMap(root) {
+  scene.add(root);
+  root.updateMatrixWorld(true);
+  const spawnObjs = [];
+  const zoneObjs = [];
+
+  root.traverse((o) => {
+    if (CONFIG.match.spawn.test(o.name) && !(o.parent && CONFIG.match.spawn.test(o.parent.name))) spawnObjs.push(o);
+    if (CONFIG.match.zone.test(o.name) && !(o.parent && CONFIG.match.zone.test(o.parent.name))) zoneObjs.push(o);
+  });
+
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    o.castShadow = true;
+    o.receiveShadow = true;
+    if (chainMatches(o, root, CONFIG.match.hidden)) { o.visible = false; return; }
+    if (!chainMatches(o, root, CONFIG.match.nonSolid)) solids.push(o);
+  });
+
+  mapBox.setFromObject(root);
+
+  spawnPoints = spawnObjs.map((o) => {
+    const b = new THREE.Box3().setFromObject(o);
+    return { name: o.name, box: b, center: b.getCenter(new THREE.Vector3()) };
+  });
+  if (!spawnPoints.length) {
+    log.warn('No Player_Spawn nodes found; using map center.');
+    spawnPoints.push({ name: 'fallback', box: mapBox.clone(), center: mapBox.getCenter(new THREE.Vector3()) });
+  }
+
+  if (zoneObjs.length) {
+    zoneMesh = zoneObjs[0];
+    zoneBox = new THREE.Box3().setFromObject(zoneMesh);
+    zoneMesh.traverse((o) => {
+      if (!o.isMesh) return;
+      o.castShadow = false;
+      o.receiveShadow = false;
+      (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m.transparent = true; m.depthWrite = false; });
+    });
+  } else {
+    log.warn('No Throw Zone node found; throwing is disabled.');
+  }
+
+  log.info('Map ready. solids:', solids.length, 'spawns:', spawnPoints.length, 'zone:', !!zoneBox);
+  spawnPoints.forEach((s, i) => log.debug('spawn', i, s.name, s.center.toArray().map((v) => +v.toFixed(2))));
+}
+
+function setupPlayer(gltf) {
+  const model = gltf.scene;
+  model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
+  const box = new THREE.Box3().setFromObject(model);
+  model.position.y -= box.min.y;           // put feet on origin
+  playerRoot = new THREE.Group();
+  playerRoot.add(model);
+  scene.add(playerRoot);
+
+  mixer = new THREE.AnimationMixer(model);
+  for (const clip of gltf.animations) actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
+  if (actions.jump) { actions.jump.setLoop(THREE.LoopOnce, 1); actions.jump.clampWhenFinished = true; }
+  log.info('Player anims:', Object.keys(actions).join(', '));
+  playAnim('idle');
+}
+
+function playAnim(name) {
+  if (name === currentAnim || !actions[name]) return;
+  const next = actions[name];
+  const prev = actions[currentAnim];
+  next.reset().play();
+  if (prev) prev.crossFadeTo(next, 0.15, false);
+  currentAnim = name;
+}
+
+/* ------------------------------------------------------------------ */
+/* Spawn                                                               */
+/* ------------------------------------------------------------------ */
+function respawn() {
+  let idx;
+  if (CONFIG.forceSpawn !== null && spawnPoints[CONFIG.forceSpawn]) idx = CONFIG.forceSpawn;
+  else idx = Math.floor(Math.random() * spawnPoints.length);
+  lastSpawnIdx = idx;
+  const sp = spawnPoints[idx];
+
+  const origin = new THREE.Vector3(sp.center.x, sp.box.max.y + 0.5, sp.center.z);
+  const hit = castRay(origin, DOWN, 500);
+  pos.set(sp.center.x, hit ? hit.point.y : sp.box.min.y, sp.center.z);
+  vy = 0; grounded = true;
+
+  // face the Throw Zone if there is one
+  if (zoneBox) {
+    const zc = zoneBox.getCenter(new THREE.Vector3());
+    const dx = zc.x - pos.x, dz = zc.z - pos.z;
+    yaw = Math.atan2(-dx, -dz);
+    facing = Math.atan2(dx, dz);
+  }
+  pitch = 0.3;
+  state.mode = 'idle';
+  log.info('Spawned at', sp.name, '(index ' + idx + ')');
+}
+
+/* ------------------------------------------------------------------ */
+/* Input                                                               */
+/* ------------------------------------------------------------------ */
+dom.overlay.addEventListener('click', () => {
+  if (!ready) return;
+  renderer.domElement.requestPointerLock();
+});
+document.addEventListener('pointerlockchange', () => {
+  const locked = document.pointerLockElement === renderer.domElement;
+  dom.overlay.style.display = locked ? 'none' : 'flex';
+});
+document.addEventListener('mousemove', (e) => {
+  if (document.pointerLockElement !== renderer.domElement) return;
+  yaw -= e.movementX * CONFIG.camera.sens;
+  pitch += e.movementY * CONFIG.camera.sens;
+  pitch = Math.max(CONFIG.camera.minPitch, Math.min(CONFIG.camera.maxPitch, pitch));
+});
+document.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  if (document.pointerLockElement !== renderer.domElement) return; // this click only grabs the pointer
+  tryThrow();
+});
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') e.preventDefault();
+  if (e.repeat) return;
+  keys[e.code] = true;
+  if (e.code === 'Space') {
+    if (state.mode === 'charging') tryThrow();
+    else if (grounded && ready) { vy = CONFIG.player.jump; grounded = false; }
+  }
+  if (e.code === 'KeyR') respawn();
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+/* ------------------------------------------------------------------ */
+/* Player movement                                                     */
+/* ------------------------------------------------------------------ */
+const _f = new THREE.Vector3(), _r = new THREE.Vector3(), _mv = new THREE.Vector3(), _o = new THREE.Vector3(), _d = new THREE.Vector3();
+
+function blocked(dx, dz) {
+  _d.set(dx, 0, dz).normalize();
+  for (const h of CONFIG.player.probeHeights) {
+    _o.set(pos.x, pos.y + h, pos.z);
+    if (castRay(_o, _d, CONFIG.player.radius + 0.02)) return true;
+  }
+  return false;
+}
+
+function updatePlayer(dt) {
+  const P = CONFIG.player;
+  _f.set(-Math.sin(yaw), 0, -Math.cos(yaw));
+  _r.set(Math.cos(yaw), 0, -Math.sin(yaw));
+  const ix = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+  const iz = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
+  _mv.set(0, 0, 0).addScaledVector(_f, iz).addScaledVector(_r, ix);
+  const moving = _mv.lengthSq() > 0;
+  if (moving) {
+    _mv.normalize();
+    const speed = (keys.ShiftLeft || keys.ShiftRight) ? P.run : P.walk;
+    const mx = _mv.x * speed * dt, mz = _mv.z * speed * dt;
+    if (mx !== 0 && !blocked(Math.sign(mx), 0)) pos.x += mx;
+    if (mz !== 0 && !blocked(0, Math.sign(mz))) pos.z += mz;
+    facing = angleLerp(facing, Math.atan2(_mv.x, _mv.z), P.turnSpeed * dt);
+  } else if (state.mode === 'charging' || state.mode === 'cooldown') {
+    facing = angleLerp(facing, Math.atan2(_f.x, _f.z), P.turnSpeed * dt);
+  }
+
+  // vertical
+  const wasGrounded = grounded;
+  _o.set(pos.x, pos.y + P.stepHeight + 0.1, pos.z);
+  const g = castRay(_o, DOWN, 500);
+  vy -= P.gravity * dt;
+  let ny = pos.y + vy * dt;
+  grounded = false;
+  if (g) {
+    const gy = g.point.y;
+    if (vy <= 0 && ny <= gy) { ny = gy; vy = 0; grounded = true; }
+    else if (wasGrounded && vy <= 0 && pos.y - gy <= P.stepHeight * 1.01) { ny = gy; vy = 0; grounded = true; }
+  }
+  pos.y = ny;
+
+  if (pos.y < mapBox.min.y - 40) { log.warn('Fell out of the map; respawning'); respawn(); }
+
+  // animation
+  if (!grounded && vy > 0) playAnim('jump');
+  else playAnim(moving ? 'walk' : 'idle');
+  if (grounded && currentAnim === 'jump') playAnim(moving ? 'walk' : 'idle');
+
+  playerRoot.position.copy(pos);
+  playerRoot.rotation.y = facing;
+  mixer.update(dt);
+}
+
+/* ------------------------------------------------------------------ */
+/* Camera                                                              */
+/* ------------------------------------------------------------------ */
+const _t = new THREE.Vector3(), _off = new THREE.Vector3();
+function updateCamera() {
+  const C = CONFIG.camera;
+  _t.copy(pos); _t.y += C.height;
+  _off.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+  const hit = castRay(_t, _off, C.distance + 0.3);
+  const d = hit ? Math.max(0.5, hit.distance - 0.3) : C.distance;
+  camera.position.copy(_t).addScaledVector(_off, d);
+  camera.lookAt(_t);
+
+  sun.position.set(pos.x + 25, pos.y + 40, pos.z + 15);
+  sun.target.position.copy(pos);
+}
+
+/* ------------------------------------------------------------------ */
+/* Throw zone, power bar, eggs                                         */
+/* ------------------------------------------------------------------ */
+function inZone() {
+  if (!zoneBox) return false;
+  return pos.x >= zoneBox.min.x && pos.x <= zoneBox.max.x &&
+         pos.z >= zoneBox.min.z && pos.z <= zoneBox.max.z &&
+         pos.y >= zoneBox.min.y - 0.6 && pos.y <= zoneBox.max.y + 1.0;
+}
+
+function powerAt(t) {
+  const ph = (t / CONFIG.power.period) % 1;
+  const tri = ph < 0.5 ? ph * 2 : 2 - ph * 2;
+  return CONFIG.power.min + (CONFIG.power.max - CONFIG.power.min) * tri;
+}
+
+function updateThrowState(dt) {
+  const zone = inZone();
+  if (zoneMesh) zoneMesh.traverse((o) => {
+    if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m.opacity = zone ? 0.75 : 0.5; });
+  });
+
+  if (state.mode === 'idle' && zone) { state.mode = 'charging'; state.t = 0; log.debug('Power bar started'); }
+  if (state.mode === 'charging') {
+    if (!zone) { state.mode = 'idle'; log.debug('Left throw zone'); }
+    else { state.t += dt; state.power = powerAt(state.t); }
+  } else if (state.mode === 'cooldown') {
+    state.cooldown -= dt;
+    if (state.cooldown <= 0) state.mode = 'idle';
+  }
+}
+
+const _w = new THREE.Vector3();
+function updatePowerBar() {
+  const show = state.mode === 'charging' || state.mode === 'cooldown';
+  dom.bar.style.display = show ? 'block' : 'none';
+  dom.status.textContent = zoneBox
+    ? (state.mode === 'charging' ? 'Press SPACE or CLICK to lock the power'
+      : state.mode === 'cooldown' ? 'Thrown!' : 'Walk into the yellow Throw Zone')
+    : 'No Throw Zone found in map';
+  if (!show) return;
+
+  _r.set(Math.cos(yaw), 0, -Math.sin(yaw));
+  _w.copy(pos).addScaledVector(_r, 0.9); _w.y += 0.9;
+  _w.project(camera);
+  if (_w.z > 1) { dom.bar.style.display = 'none'; return; }
+  dom.bar.style.left = ((_w.x * 0.5 + 0.5) * window.innerWidth) + 'px';
+  dom.bar.style.top = ((-_w.y * 0.5 + 0.5) * window.innerHeight) + 'px';
+
+  const frac = (state.power - CONFIG.power.min) / (CONFIG.power.max - CONFIG.power.min);
+  dom.fill.style.height = (frac * 100) + '%';
+  dom.fill.style.background = 'hsl(' + Math.round(120 * (1 - frac)) + ',90%,50%)';
+  dom.value.textContent = state.power.toFixed(1);
+  dom.bar.classList.toggle('locked', state.mode === 'cooldown');
+}
+
+function tryThrow() {
+  if (state.mode !== 'charging') return;
+  const power = state.power;
+  state.mode = 'cooldown';
+  state.cooldown = CONFIG.throwing.cooldown;
+
+  const T = CONFIG.throwing;
+  const el = THREE.MathUtils.degToRad(T.elevationDeg);
+  _f.set(-Math.sin(yaw), 0, -Math.cos(yaw));
+  const dir = new THREE.Vector3().copy(_f).multiplyScalar(Math.cos(el)); dir.y = Math.sin(el);
+
+  const mesh = makeEgg();
+  const start = new THREE.Vector3().copy(pos).addScaledVector(_f, 0.5); start.y += 1.3;
+  mesh.position.copy(start);
+  scene.add(mesh);
+
+  eggs.push({ mesh, vel: dir.multiplyScalar(power), flying: true, t: 0, origin: start.clone(), power });
+  log.info('Throw: power', power.toFixed(2), 'elevation', T.elevationDeg + 'deg');
+  dom.last.textContent = 'Last throw: power ' + power.toFixed(1) + ' (in flight...)';
+
+  const landed = eggs.filter((e) => !e.flying);
+  while (landed.length > T.maxLanded) {
+    const old = landed.shift();
+    scene.remove(old.mesh);
+    eggs.splice(eggs.indexOf(old), 1);
+  }
+}
+
+const _n = new THREE.Vector3(), _seg = new THREE.Vector3(), _next = new THREE.Vector3();
+function updateEggs(dt) {
+  const T = CONFIG.throwing;
+  const radius = CONFIG.egg.size * 0.5;
+  for (const e of eggs) {
+    if (!e.flying) continue;
+    e.t += dt;
+    e.vel.y -= T.gravity * dt;
+    _next.copy(e.mesh.position).addScaledVector(e.vel, dt);
+    _seg.subVectors(_next, e.mesh.position);
+    const len = _seg.length();
+    let hit = null;
+    if (len > 1e-6) hit = castRay(e.mesh.position, _seg.clone().normalize(), len + radius);
+
+    if (hit) {
+      _n.copy(hit.face ? hit.face.normal : DOWN.clone().negate()).transformDirection(hit.object.matrixWorld);
+      e.mesh.position.copy(hit.point).addScaledVector(_n, radius * 0.6);
+      e.flying = false;
+      const dx = e.mesh.position.x - e.origin.x, dz = e.mesh.position.z - e.origin.z;
+      const dist = Math.hypot(dx, dz);
+      dom.last.textContent = 'Last throw: power ' + e.power.toFixed(1) + ', landed ' + dist.toFixed(1) + ' m away';
+      log.info('Egg landed', dist.toFixed(2), 'm');
+    } else {
+      e.mesh.position.copy(_next);
+      e.mesh.rotation.x += 6 * dt;
+      e.mesh.rotation.z += 3 * dt;
+      if (e.t > T.maxFlightTime || e.mesh.position.y < mapBox.min.y - 60) {
+        e.flying = false;
+        dom.last.textContent = 'Last throw: power ' + e.power.toFixed(1) + ' (lost in the void)';
+      }
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Main loop                                                           */
+/* ------------------------------------------------------------------ */
+const clock = new THREE.Clock();
+let fpsAcc = 0, fpsFrames = 0, fps = 0;
+
+function tick() {
+  requestAnimationFrame(tick);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  updatePlayer(dt);
+  updateThrowState(dt);
+  updateEggs(dt);
+  updateCamera();
+  updatePowerBar();
+  renderer.render(scene, camera);
+
+  if (CONFIG.debug) {
+    fpsAcc += dt; fpsFrames++;
+    if (fpsAcc >= 0.5) { fps = Math.round(fpsFrames / fpsAcc); fpsAcc = 0; fpsFrames = 0; }
+    dom.debug.textContent =
+      'fps      ' + fps + '\n' +
+      'pos      ' + pos.toArray().map((v) => v.toFixed(2)).join(', ') + '\n' +
+      'grounded ' + grounded + '\n' +
+      'spawn    ' + lastSpawnIdx + '/' + spawnPoints.length + '\n' +
+      'inZone   ' + inZone() + '\n' +
+      'mode     ' + state.mode + '\n' +
+      'power    ' + state.power.toFixed(2) + '\n' +
+      'eggs     ' + eggs.length + '\n' +
+      'solids   ' + solids.length;
+  }
+}
+
+init().catch(fatal);
+</script>
+</body>
+</html>
