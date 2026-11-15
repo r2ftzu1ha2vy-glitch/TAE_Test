@@ -263,7 +263,7 @@
       <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken catches you!</li>
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
       <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-8</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s, bunny and ladybug $25/s at 1x, more for bigger eggs).</li>
-      <li>In your pen, <b>click the Pull-Up Bar</b> to gain <b>Strength</b> (throws go farther) and <b>click the Treadmill</b> to gain <b>Speed</b>. Each click is one rep.</li>
+      <li>In your pen, <b>click the Pull-Up Bar</b> to gain <b>Strength</b> (throws go farther) and <b>click the Treadmill</b> to gain <b>Speed</b>. You hop on automatically and keep training on your own; <b>click again</b> to stop.</li>
       <li>Open the <b>Index</b> button (or press <b>I</b>) to see every pet.</li>
     </ol>
     <div style="margin-top:8px;opacity:.85"><b>WASD</b> move &middot; <b>Shift</b> run &middot; <b>Space</b> jump &middot; <b>Mouse</b> look &middot; <b>R</b> respawn &middot; <b>I</b> index &middot; <b>Esc</b> pause</div>
@@ -321,9 +321,11 @@ const CONFIG = {
   // powerScale: the bar still reads 5-20, but the launch speed is power * powerScale (0.7 -> roughly half the old distance at 20).
   throwing: { powerScale: 0.7, elevationDeg: 35, gravity: 9.8, cooldown: 1.2, maxLanded: 40, maxFlightTime: 12 },
   egg: { size: 0.45 },
-  // Gym in your pen. Click the Pull-Up Bar (strength) or the Treadmill (speed) to do a rep. reach = how close you must stand (metres from the machine's edge).
+  // Gym in your pen. Click the Pull-Up Bar (strength) or the Treadmill (speed) to start auto-training; click again to stop. reach = how close you must stand (metres from the machine's edge).
+  // Auto-training: you are teleported onto the machine and locked in place. A rep is counted first after barRepFirst / treadRepFirst seconds, then every repEvery seconds (the Training / Walk clips are 2s loops).
+  // gripAlign: where the Training clip's raised arms sit on the bar (0 = lowest point of the pull, 1 = highest, 0.5 = middle).
   // strength: every point adds throwBonusPerStrength to the launch speed (0.01 = +1%). speed: every rep adds speedPerRep to your speed stat.
-  gym: { reach: 2.2, cooldown: 0.8, strengthPerRep: 1, throwBonusPerStrength: 0.01, speedPerRep: 0.25, barHeight: 2.7, treadmillLength: 2.9, wallInset: 3.5, spread: 4.5 },
+  gym: { reach: 2.2, barRepFirst: 1.0, treadRepFirst: 2.0, repEvery: 2.0, gripAlign: 0.5, strengthPerRep: 1, throwBonusPerStrength: 0.01, speedPerRep: 0.25, barHeight: 2.7, treadmillLength: 2.9, wallInset: 3.5, spread: 4.5 },
   // Per-area rules. speed = recommended player speed (shown at the top of the screen), chase = how fast that area's chicken runs
   // when you steal, ptsMult = score multiplier for eggs stolen there. Set chicken:false / eggs:false to switch a part off.
   areas: {
@@ -504,6 +506,7 @@ const pos = new THREE.Vector3();
 let vy = 0, grounded = false;
 let facing = 0;
 let playerRoot = null, mixer = null;
+let armTopLo = 1.76, armTopHi = 1.94;   // height of the arms' top edge across the Training clip (model space); measured from the clip in setupPlayer
 const actions = {};
 let currentAnim = '';
 let spawnPoints = [];
@@ -655,7 +658,21 @@ function setupPlayer(gltf) {
   if (actions.jump) { actions.jump.setLoop(THREE.LoopOnce, 1); actions.jump.clampWhenFinished = true; }   // the new player has no Jump clip; this is skipped then
   for (const need of ['walk', 'idle', 'steal run', 'steal idle']) if (!actions[need]) log.warn('Player is missing animation:', need);
   log.info('Player anims:', Object.keys(actions).join(', '));
+  measureTrainingArms();
   playAnim('idle');
+}
+
+function measureTrainingArms() {                       // where do the arms' tops go during the Training clip? the pull-up bar is lined up with this
+  const clip = actions.training && actions.training.getClip();
+  if (!clip) { log.warn('Player has no Training clip; pull-up bar will use default arm heights'); return; }
+  const posT = clip.tracks.find((t) => /right.?arm\.position$/i.test(t.name));
+  const sclT = clip.tracks.find((t) => /right.?arm\.scale$/i.test(t.name));
+  if (!posT) { log.warn('Training clip has no Right Arm track'); return; }
+  const half = sclT ? sclT.values[1] / 2 : 0.305;
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 1; i < posT.values.length; i += 3) { lo = Math.min(lo, posT.values[i]); hi = Math.max(hi, posT.values[i]); }
+  armTopLo = lo + half; armTopHi = hi + half;
+  log.info('Training arm-top range', armTopLo.toFixed(2), '-', armTopHi.toFixed(2));
 }
 
 function playAnim(name) {
@@ -675,6 +692,7 @@ function endEggForm() {
   playerRoot.visible = true; playerEggMesh.visible = false;
 }
 function respawn() {
+  stopGym();
   endEggForm();
   if (carry && carry.status === 'stolen') dropCarry('You respawned - the stolen egg went back.');
   // The spawn you land on first decides your pen. Every later respawn (R, falling, etc.) returns you to that same pen.
@@ -739,6 +757,7 @@ document.addEventListener('pointerlockchange', () => {
   if (locked) dom.overlay.style.display = 'none'; else if (ready && !dexOpen) showMenu();
 });
 function jump() {
+  if (gym.session) return;                                // locked onto a machine
   if (grounded && ready && form !== 'flying') { vy = (form === 'egg' ? CONFIG.eggForm : CONFIG.player).jump; grounded = false; }
 }
 /* Touch controls: left half = floating stick (push to the rim = run), right half = drag to look, buttons for Jump / Throw / Respawn. */
@@ -809,6 +828,7 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
   if (document.pointerLockElement !== renderer.domElement) return; // this click only grabs the pointer
+  if (gym.session) { stopGym(); return; }                          // any click while training stops it
   if (state.mode === 'charging' && !carry && form === 'human') { tryThrow(); return; }   // in the Throw Zone a click throws
   if (worldClick(0, 0)) return;                                    // otherwise the click goes where the crosshair points: steal that egg / place in the pen
   tryThrow();
@@ -869,6 +889,7 @@ function updatePlayer(dt) {
   const eggForm = form === 'egg';
   const P = eggForm ? { ...CONFIG.player, ...CONFIG.eggForm } : CONFIG.player;
   curP = P;
+  if (gym.session && !eggForm) { updateGymPlayer(dt); return; }   // auto-training: no walking, no gravity, the clip plays in place
   const px = pos.x, pz = pos.z;
   _f.set(-Math.sin(yaw), 0, -Math.cos(yaw));
   _r.set(Math.cos(yaw), 0, -Math.sin(yaw));
@@ -1354,8 +1375,9 @@ function pickPlace(ray) {                                // the floor spot insid
 }
 function worldClick(nx, ny) {
   if (!ready || form === 'flying') return false;
+  if (gym.session) { stopGym(); return true; }
   const ray = rayAt(nx, ny);
-  if (canTrain() && gymItems.length) { const g = pickGym(ray); if (g && gymReachable(g)) { trainRep(g); return true; } }
+  if (canTrain() && gymItems.length) { const g = pickGym(ray); if (g && gymReachable(g)) { startGym(g); return true; } }
   const eggs = reachEggs();
   if (eggs.length) { const it = pickSteal(ray, eggs); if (it) { steal(it); return true; } }
   if (canPlaceNow()) {
@@ -1374,7 +1396,7 @@ function worldClick(nx, ny) {
 }
 function updateAim() {
   aim.kind = null; aim.item = null; aim.point = null;
-  const live = ready && dom.overlay.style.display === 'none' && form !== 'flying' && !(state.mode === 'charging' && !carry && form === 'human');
+  const live = ready && dom.overlay.style.display === 'none' && form !== 'flying' && !gym.session && !(state.mode === 'charging' && !carry && form === 'human');
   const eggs = live ? reachEggs() : [];
   const place = live && canPlaceNow(), petPlace = live && canPlacePetNow();
   let hint = '';
@@ -1388,6 +1410,7 @@ function updateAim() {
     else { const g = pickGym(rayAt(0, 0)); if (g && gymReachable(g)) gAim = g; }
   }
   if (gAim) hint = verb + ' the ' + gAim.name + ' to train ' + gAim.stat;
+  if (gym.session) hint = verb + ' to stop training';
   if (!IS_TOUCH && hint) {
     const ray = rayAt(0, 0);
     const it = eggs.length ? pickSteal(ray, eggs) : null;
@@ -1886,15 +1909,35 @@ function updatePets(dt) {
 /* ------------------------------------------------------------------ */
 /* Gym: Pull-Up Bar (strength) and Treadmill (speed) standing in your pen */
 /* ------------------------------------------------------------------ */
-const gymTpl = {}, gymItems = [], gym = { cd: 0, rep: null };
+const gymTpl = {}, gymItems = [], gym = { session: null };      // session = { g, t, next } while auto-training
 const GYM_INFO = { bar: { name: 'Pull-Up Bar', stat: 'Strength' }, treadmill: { name: 'Treadmill', stat: 'Speed' } };
+// Where the player is put on a machine, in the model's own space (before the centring offset and scale).
+// bar: the middle of the top crossbar (the highest, widest part). treadmill: the middle of the free belt, beyond the console end, on the belt's top surface.
+function gymAnchor(kind, m) {
+  const parts = [];
+  m.traverse((o) => { if (o.isMesh) { const b = new THREE.Box3().setFromObject(o); parts.push({ b, size: b.getSize(new THREE.Vector3()), c: b.getCenter(new THREE.Vector3()) }); } });
+  if (kind === 'bar') {
+    const top = Math.max(...parts.map((p) => p.b.max.y));
+    const bar = parts.filter((p) => p.b.max.y > top - 1e-3 * Math.max(1, top)).sort((a, b) => Math.max(b.size.x, b.size.z) - Math.max(a.size.x, a.size.z))[0];
+    return { x: bar.c.x, y: bar.b.max.y, z: bar.c.z };
+  }
+  parts.sort((a, b) => b.size.x * b.size.z - a.size.x * a.size.z);
+  const base = parts[0], rest = parts.slice(1);
+  let zLo = base.b.min.z, zHi = base.b.max.z;
+  if (rest.length) {
+    const restC = rest.reduce((a, p) => a + p.c.z, 0) / rest.length;
+    if (restC < base.c.z) zLo = Math.max(...rest.map((p) => p.b.max.z)); else zHi = Math.min(...rest.map((p) => p.b.min.z));
+    if (zHi <= zLo) { zLo = base.b.min.z; zHi = base.b.max.z; }
+  }
+  return { x: base.c.x, y: base.b.max.y, z: (zLo + zHi) / 2 };
+}
 function setupGym(gltfs) {
   for (const k of Object.keys(GYM_INFO)) {
     const m = gltfs[k].scene;
     m.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
     const scale = k === 'bar' ? CONFIG.gym.barHeight / size.y : CONFIG.gym.treadmillLength / size.z;
-    gymTpl[k] = { scene: m, scale, ox: -c.x, oy: -box.min.y, oz: -c.z };
+    gymTpl[k] = { scene: m, scale, ox: -c.x, oy: -box.min.y, oz: -c.z, anchor: gymAnchor(k, m) };
     log.info('Gym ready:', k, 'source size', size.toArray().map((v) => v.toFixed(2)).join(' x '), 'scale', scale.toFixed(3));
   }
 }
@@ -1902,12 +1945,13 @@ function makeGym(kind, x, y, z, rotY) {
   const T = gymTpl[kind], model = T.scene.clone(true);
   model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   model.position.set(T.ox, T.oy, T.oz);
+  const anchor = new THREE.Object3D(); anchor.position.set(T.anchor.x, T.anchor.y, T.anchor.z); model.add(anchor);
   const inner = new THREE.Group(); inner.scale.setScalar(T.scale); inner.add(model);
   const root = new THREE.Group(); root.add(inner); root.position.set(x, y, z); root.rotation.y = rotY;
   scene.add(root);
   root.updateMatrixWorld(true);
   const hit = new THREE.Box3().setFromObject(root).expandByScalar(0.25);   // generous click box: the bar frame alone is only a few cm thick
-  return { kind, root, hit, x, y, z, ...GYM_INFO[kind] };
+  return { kind, root, hit, anchor, x, y, z, ...GYM_INFO[kind] };
 }
 function placeGym(sp) {                                  // both machines go against the wall opposite the gate, so they never block the way in
   if (!gymTpl.bar || !playerPen) return;
@@ -1941,26 +1985,48 @@ function nearestGym() {
   for (const g of gymItems) { const d = gymDist(g); if (gymReachable(g) && d < bd) { bd = d; best = g; } }
   return best;
 }
-function trainRep(g) {
-  if (gym.cd > 0) return;
+function startGym(g) {                                  // click a machine: teleport onto it, lock in place, train until the next click
+  if (gym.session) return;
   const G = CONFIG.gym;
-  gym.cd = G.cooldown; gym.rep = { g, t: 0 };
+  g.root.updateMatrixWorld(true);
+  const p = g.anchor.getWorldPosition(new THREE.Vector3());
+  pos.x = p.x; pos.z = p.z;
+  if (g.kind === 'bar') pos.y = p.y - (armTopLo + (armTopHi - armTopLo) * G.gripAlign) - modelBaseY;   // arms reach the top of the bar, body hangs below it
+  else pos.y = p.y;                                                                                      // feet on the middle of the belt
+  vy = 0; grounded = true;
+  facing = g.root.rotation.y + Math.PI;                 // face the bar / the console end of the treadmill (towards the wall)
+  gym.session = { g, t: 0, next: g.kind === 'bar' ? G.barRepFirst : G.treadRepFirst };
+  popupAt('Training - click to stop', new THREE.Vector3(pos.x, pos.y + 2.4, pos.z), '#ffffff');
+  log.info('Gym session started:', g.kind);
+}
+function stopGym() {
+  if (!gym.session) return;
+  log.info('Gym session stopped:', gym.session.g.kind);
+  gym.session = null;
+  vy = 0; grounded = false;                             // physics takes over again (you drop to the floor if you were hanging)
+}
+function gymRep(g) {
+  const G = CONFIG.gym;
   let txt;
   if (g.kind === 'bar') { train.strength += G.strengthPerRep; txt = '+' + G.strengthPerRep + ' Strength'; }
   else { train.speed += G.speedPerRep; speedStat = CONFIG.player.speed + train.speed; txt = '+' + G.speedPerRep + ' Speed'; }
-  facing = Math.atan2(g.x - pos.x, g.z - pos.z);
   popupAt(txt, new THREE.Vector3(pos.x, pos.y + 2.2, pos.z), '#7dff9a');
   saveGame();
 }
-function updateTraining(dt) {                            // rep animation: the machine pulses and you hop (bar) or bounce (treadmill)
-  if (gym.cd > 0) gym.cd -= dt;
-  const r = gym.rep;
-  if (!r) return;
-  r.t += dt;
-  const u = Math.min(1, r.t / CONFIG.gym.cooldown);
-  r.g.root.scale.setScalar(1 + 0.05 * Math.sin(Math.PI * u));
-  if (form === 'human') playerRoot.position.y += r.g.kind === 'bar' ? Math.sin(Math.PI * u) * 0.45 : Math.abs(Math.sin(u * Math.PI * 4)) * 0.12;
-  if (u >= 1) { r.g.root.scale.setScalar(1); gym.rep = null; }
+function updateGymPlayer(dt) {                          // player side of a session: frozen in place, Training (bar) or Walk (treadmill) clip
+  vy = 0; grounded = true;
+  playAnim(gym.session.g.kind === 'bar' ? 'training' : 'walk');
+  playerRoot.position.copy(pos);
+  playerRoot.rotation.y = facing;
+  mixer.update(dt);
+  feetExtra = 0; playerModel.position.y = modelBaseY;
+}
+function updateTraining(dt) {                           // rep counter for the running session
+  const s = gym.session;
+  if (!s) return;
+  if (!canTrain()) { stopGym(); return; }               // menu opened, egg picked up, form changed...
+  s.t += dt;
+  while (s.t >= s.next) { s.next += CONFIG.gym.repEvery; gymRep(s.g); }
 }
 
 /* ------------------------------------------------------------------ */
