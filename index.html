@@ -56,14 +56,17 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 /* ------------------------------------------------------------------ */
-/* Config. URL params: ?debug=1  ?verbose=1  ?spawn=<index>            */
+/* Config. URL params: ?debug=1  ?verbose=1  ?spawn=<index>  ?mapscale=<n>  ?map=<file.glb>            */
 /* ------------------------------------------------------------------ */
 const params = new URLSearchParams(location.search);
 const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: 'TAE_Test.glb', player: 'TAE_Player.glb', egg: 'Egg_Thrown.glb' },
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'TAE_Player.glb', egg: 'Egg_Thrown.glb' },
+  // Uniform scale applied to the whole map. Source map is ~253 x 304 m; 0.4 -> ~101 x 122 m.
+  // Override with ?mapscale=0.3 (smaller) or ?mapscale=0.6 (bigger).
+  mapScale: params.has('mapscale') ? parseFloat(params.get('mapscale')) : 0.4,
   // GLTFLoader turns spaces in node names into underscores, so both are matched.
   match: {
     spawn: /^Player[ _]Spawn/i,
@@ -258,6 +261,7 @@ async function init() {
 }
 
 function setupMap(root) {
+  root.scale.setScalar(CONFIG.mapScale);
   scene.add(root);
   root.updateMatrixWorld(true);
   const spawnObjs = [];
@@ -300,7 +304,7 @@ function setupMap(root) {
     log.warn('No Throw Zone node found; throwing is disabled.');
   }
 
-  log.info('Map ready. solids:', solids.length, 'spawns:', spawnPoints.length, 'zone:', !!zoneBox);
+  log.info('Map ready. scale:', CONFIG.mapScale, 'size:', mapBox.getSize(new THREE.Vector3()).toArray().map((v) => +v.toFixed(1)), 'solids:', solids.length, 'spawns:', spawnPoints.length, 'zone:', !!zoneBox);
   spawnPoints.forEach((s, i) => log.debug('spawn', i, s.name, s.center.toArray().map((v) => +v.toFixed(2))));
 }
 
