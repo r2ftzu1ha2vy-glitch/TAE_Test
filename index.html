@@ -66,6 +66,7 @@ const CONFIG = {
   models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'TAE_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb',
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb' } },
   eggs: { baseHeight: 0.8, maxMult: 10, respawn: 6,   // 1x egg = baseHeight metres tall; size never exceeds maxMult
+    sizeTiers: [ { w: 60, min: 1, max: 2 }, { w: 25, min: 2, max: 4 }, { w: 10, min: 4, max: 6 }, { w: 4, min: 6, max: 8 }, { w: 1, min: 8, max: 10 } ],   // big eggs are rare
     types: { normal: { w: 45, pts: 10 }, brown: { w: 28, pts: 20 }, cracked: { w: 12, pts: 5 }, golden: { w: 10, pts: 100 }, rainbow: { w: 5, pts: 250 } } },
   chicken: { height: 1.0, speed: 1.3, margin: 2, yawOffset: 0 },   // margin = keep-out distance from Cluck Valley edges
   eggForm: { walk: 4, run: 6.5, radius: 0.3, stepHeight: 0.25, jump: 6, probeHeights: [0.2, 0.5], cameraDistance: 4, cameraHeight: 0.8 },
@@ -242,6 +243,9 @@ const eggSpawnBoxes = [], eggItems = [], eggTpl = {};
 let playerEgg = null, playerEggMesh = null, chicken = null, flight = null;
 let form = 'human';                 // 'human' | 'flying' | 'egg'
 let score = 0; const collected = {};
+let eggLie = 0, eggRoll = 0;        // how far the egg lies on its side, and accumulated roll angle
+const Y_AXIS = new THREE.Vector3(0, 1, 0), Z_AXIS = new THREE.Vector3(0, 0, 1);
+const _qA = new THREE.Quaternion(), _qB = new THREE.Quaternion(), _qT = new THREE.Quaternion();
 const eggs = [];
 const state = { mode: 'idle', power: CONFIG.power.min, t: 0, cooldown: 0 };
 let lastSpawnIdx = -1;
@@ -267,8 +271,11 @@ async function init() {
   eggTpl.normal = bakeEgg(typeGltfs[names.indexOf('normal')].scene);
   names.forEach((n, i) => { if (n !== 'normal') eggTpl[n] = bakeEgg(typeGltfs[i].scene, eggTpl.normal.refH); });
   playerEgg = bakeEgg(eggGltf.scene, eggTpl.normal.refH);
-  playerEggMesh = playerEgg.make();
-  playerEggMesh.scale.setScalar(CONFIG.eggs.baseHeight);
+  const body = playerEgg.make();
+  body.scale.setScalar(CONFIG.eggs.baseHeight);
+  body.position.y = -CONFIG.eggs.baseHeight * 0.5;      // pivot = egg centre, so it rotates about its middle
+  playerEggMesh = new THREE.Group();
+  playerEggMesh.add(body);
   playerEggMesh.visible = false;
   scene.add(playerEggMesh);
   setupChicken(chickGltf);
@@ -448,6 +455,7 @@ function updatePlayer(dt) {
   const eggForm = form === 'egg';
   const P = eggForm ? { ...CONFIG.player, ...CONFIG.eggForm } : CONFIG.player;
   curP = P;
+  const px = pos.x, pz = pos.z;
   _f.set(-Math.sin(yaw), 0, -Math.cos(yaw));
   _r.set(Math.cos(yaw), 0, -Math.sin(yaw));
   const ix = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
@@ -482,9 +490,17 @@ function updatePlayer(dt) {
   if (pos.y < mapBox.min.y - 40) { log.warn('Fell out of the map; respawning'); respawn(); }
 
   if (eggForm) {
-    playerEggMesh.position.copy(pos);
-    playerEggMesh.rotation.y = facing;
-    playerEggMesh.rotation.z = moving ? Math.sin(performance.now() * 0.012) * 0.12 : 0;
+    // Real-egg roll: lies on its side while moving, spins about its long axis in step with distance travelled
+    // (no slipping), and its long axis bobs slightly like an uneven egg.
+    const moved = Math.hypot(pos.x - px, pos.z - pz);
+    eggLie += ((moving ? 1 : 0) - eggLie) * Math.min(1, 8 * dt);
+    eggRoll -= moved / P.radius;
+    const lieAng = eggLie * (Math.PI / 2 + 0.15 * Math.sin(eggRoll));
+    _qT.setFromAxisAngle(Y_AXIS, facing)
+      .multiply(_qA.setFromAxisAngle(Z_AXIS, lieAng))
+      .multiply(_qB.setFromAxisAngle(Y_AXIS, eggRoll));
+    playerEggMesh.quaternion.slerp(_qT, Math.min(1, 10 * dt));
+    playerEggMesh.position.set(pos.x, pos.y + THREE.MathUtils.lerp(CONFIG.eggs.baseHeight * 0.5, P.radius, eggLie), pos.z);
     return;
   }
   // animation
@@ -587,7 +603,9 @@ function tryThrow() {
   form = 'flying';
   playerRoot.visible = false;
   playerEggMesh.visible = true;
-  playerEggMesh.rotation.set(0, facing, 0);
+  playerEggMesh.quaternion.setFromAxisAngle(Y_AXIS, facing);
+  flight.axis = new THREE.Vector3(0, 1, 0).cross(_f).normalize();   // end-over-end tumble axis
+  eggLie = 1;
   log.info('Throw: power', power.toFixed(2));
   dom.last.textContent = 'Last throw: power ' + power.toFixed(1) + ' (flying...)';
 }
@@ -604,7 +622,9 @@ function updateFlight(dt) {
   const hit = len > 1e-6 ? castRay(flight.c, _seg.clone().normalize(), len + r) : null;  // swept test: cannot tunnel through floors
   if (hit) { landAsEgg(hit); return; }
   flight.c.copy(_next);
-  playerEggMesh.position.set(flight.c.x, flight.c.y - half, flight.c.z);
+  playerEggMesh.position.copy(flight.c);
+  _qA.setFromAxisAngle(flight.axis, 5 * dt); playerEggMesh.quaternion.premultiply(_qA);   // tumble
+  _qB.setFromAxisAngle(Y_AXIS, 9 * dt); playerEggMesh.quaternion.multiply(_qB);          // spin on its long axis
   if (flight.t > CONFIG.throwing.maxFlightTime || flight.c.y < mapBox.min.y - 60) { log.warn('Thrown into the void'); respawn(); }
 }
 
@@ -635,7 +655,9 @@ function pickType() {
 }
 function spawnEgg(item) {
   const E = CONFIG.eggs, type = pickType();
-  const mult = Math.min(E.maxMult, 1 + (E.maxMult - 1) * Math.pow(Math.random(), 2.2));
+  let tr = Math.random() * E.sizeTiers.reduce((a, t) => a + t.w, 0), tier = E.sizeTiers[0];
+  for (const t of E.sizeTiers) { tr -= t.w; tier = t; if (tr <= 0) break; }
+  const mult = Math.min(E.maxMult, tier.min + Math.random() * (tier.max - tier.min));
   const tpl = eggTpl[type];
   const mesh = tpl.make();
   mesh.scale.setScalar(E.baseHeight * mult);
