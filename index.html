@@ -322,10 +322,10 @@ const CONFIG = {
   throwing: { powerScale: 0.7, elevationDeg: 35, gravity: 9.8, cooldown: 1.2, maxLanded: 40, maxFlightTime: 12 },
   egg: { size: 0.45 },
   // Gym in your pen. Click the Pull-Up Bar (strength) or the Treadmill (speed) to start auto-training; click again to stop. reach = how close you must stand (metres from the machine's edge).
-  // Auto-training: you are teleported onto the machine and locked in place. A rep is counted first after barRepFirst / treadRepFirst seconds, then every repEvery seconds (the Training / Walk clips are 2s loops).
+  // Auto-training: you are teleported onto the machine and locked in place. A rep is counted first after barRepFirst / treadRepFirst seconds, then every barRepEvery / treadRepEvery seconds (bar: one pull-up per 2s Training loop; treadmill: every 0.5s).
   // gripAlign: where the Training clip's raised arms sit on the bar (0 = lowest point of the pull, 1 = highest, 0.5 = middle).
   // strength: every point adds throwBonusPerStrength to the launch speed (0.01 = +1%). speed: every rep adds speedPerRep to your speed stat.
-  gym: { reach: 2.2, barRepFirst: 1.0, treadRepFirst: 2.0, repEvery: 2.0, gripAlign: 0.5, strengthPerRep: 1, throwBonusPerStrength: 0.01, speedPerRep: 0.25, barHeight: 2.7, treadmillLength: 2.9, wallInset: 3.5, spread: 4.5 },
+  gym: { reach: 2.2, barRepFirst: 1.0, barRepEvery: 2.0, treadRepFirst: 0.5, treadRepEvery: 0.5, gripAlign: 0.5, strengthPerRep: 1, throwBonusPerStrength: 0.01, speedPerRep: 0.25, barHeight: 2.7, treadmillLength: 2.9, wallInset: 3.5, spread: 4.5 },
   // Per-area rules. speed = recommended player speed (shown at the top of the screen), chase = how fast that area's chicken runs
   // when you steal, ptsMult = score multiplier for eggs stolen there. Set chicken:false / eggs:false to switch a part off.
   areas: {
@@ -2026,7 +2026,7 @@ function updateTraining(dt) {                           // rep counter for the r
   if (!s) return;
   if (!canTrain()) { stopGym(); return; }               // menu opened, egg picked up, form changed...
   s.t += dt;
-  while (s.t >= s.next) { s.next += CONFIG.gym.repEvery; gymRep(s.g); }
+  while (s.t >= s.next) { s.next += s.g.kind === 'bar' ? CONFIG.gym.barRepEvery : CONFIG.gym.treadRepEvery; gymRep(s.g); }
 }
 
 /* ------------------------------------------------------------------ */
