@@ -26,6 +26,29 @@
               font: bold 16px system-ui; text-shadow: 0 1px 3px #000; white-space: nowrap; }
   #powerbar.locked { border-color: #ffd34d; box-shadow: 0 0 14px #ffd34d; }
   #powerbar.locked #pb-value { color: #ffd34d; }
+  /* recommended speed per area (top centre) */
+  #areas { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none;
+           color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+  #areas .cap { font: 700 11px system-ui; letter-spacing: .14em; text-transform: uppercase; opacity: .9; margin-bottom: 5px; }
+  #areas .row { display: flex; gap: 8px; justify-content: center; }
+  .area { display: flex; align-items: center; gap: 6px; padding: 5px 13px 5px 9px; border-radius: 999px; background: rgba(0,0,0,.5);
+          border: 2px solid transparent; font: 600 14px system-ui; transition: border-color .15s, background .15s; }
+  .area .ico { width: 16px; height: 16px; fill: #ffd34d; }
+  .area b { font-size: 17px; color: #ffd34d; }
+  .area.here { border-color: #fff; background: rgba(0,0,0,.72); }
+  .area.low b { color: #ff6b5e; } .area.low .ico { fill: #ff6b5e; }
+  /* player speed (bottom left) */
+  #speed { position: fixed; left: 14px; bottom: 14px; display: flex; align-items: center; gap: 10px; color: #fff; pointer-events: none;
+           text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+  #speed svg { width: 64px; height: 64px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
+  #speed .val { font: 800 36px/1 system-ui; }
+  #speed small { display: block; font: 700 11px system-ui; letter-spacing: .16em; opacity: .9; margin-top: 3px; }
+  /* floating Steal / Place button */
+  #act { position: fixed; left: 0; top: 0; transform: translate(-50%, -50%); display: none; z-index: 4; }
+  #act button { display: flex; align-items: center; gap: 8px; padding: 8px 18px; font: 800 17px system-ui; color: #3a2a00; background: #ffd34d;
+                border: 3px solid #fff; border-radius: 12px; cursor: pointer; box-shadow: 0 3px 12px rgba(0,0,0,.55); animation: actpulse 1s ease-in-out infinite; }
+  #act kbd { font: 700 11px system-ui; background: rgba(0,0,0,.18); border-radius: 4px; padding: 2px 6px; }
+  @keyframes actpulse { 50% { transform: scale(1.08); } }
 </style>
 <script type="importmap">
 { "imports": {
@@ -35,11 +58,25 @@
 </script>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ico-bolt" viewBox="0 0 24 24"><path d="M13.5 2 4 13.5h6.2L9 22l10-12.2h-6.4z"/></symbol>
+</svg>
 <div id="hud">
-  <b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>Space</b> jump<br>
+  <b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>Space</b> jump &nbsp; <b>E</b> / <b>Click</b> Steal or Place<br>
   Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br>
+  Walk up to an egg and hit <b>Steal</b>. Get out of the area before the chicken catches you, then <b>Place</b> it in your pen.<br>
+  <span id="pen">Your pen: -</span><br><span id="held">Holding: nothing</span><br>
   <span id="last">Last throw: none</span><br><span id="score">Score: 0</span>
 </div>
+<div id="areas"><div class="cap">Recommended speed</div><div class="row" id="areas-row"></div></div>
+<div id="speed">
+  <svg viewBox="0 0 64 64" aria-label="Speed">
+    <circle cx="32" cy="32" r="29" fill="rgba(0,0,0,.55)" stroke="#ffd34d" stroke-width="3.5"/>
+    <svg x="14" y="14" width="36" height="36" viewBox="0 0 24 24"><path d="M13.5 2 4 13.5h6.2L9 22l10-12.2h-6.4z" fill="#ffd34d" stroke="#fff3b0" stroke-width=".6" stroke-linejoin="round"/></svg>
+  </svg>
+  <div><span class="val" id="speed-val">5</span><small>SPEED</small></div>
+</div>
+<div id="act"><button type="button" id="act-btn"><span id="act-label">Steal</span><kbd>E</kbd></button></div>
 <div id="status"></div>
 <div id="debug"></div>
 <div id="powerbar">
@@ -54,21 +91,24 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 /* ------------------------------------------------------------------ */
-/* Config. URL params: ?debug=1  ?verbose=1  ?spawn=<index>  ?mapscale=<n>  ?map=<file.glb>            */
+/* Config. URL params: ?debug=1  ?verbose=1  ?spawn=<index>  ?mapscale=<n>  ?map=<file.glb>  ?speed=<n>   */
 /* ------------------------------------------------------------------ */
 const params = new URLSearchParams(location.search);
 const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'TAE_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb',
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb',
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb' } },
   eggs: { baseHeight: 0.8, maxMult: 10, respawn: 6,   // 1x egg = baseHeight metres tall; size never exceeds maxMult
     sizeTiers: [ { w: 60, min: 1, max: 2 }, { w: 25, min: 2, max: 4 }, { w: 10, min: 4, max: 6 }, { w: 4, min: 6, max: 8 }, { w: 1, min: 8, max: 10 } ],   // big eggs are rare
     types: { normal: { w: 45, pts: 10 }, brown: { w: 28, pts: 20 }, cracked: { w: 12, pts: 5 }, golden: { w: 10, pts: 100 }, rainbow: { w: 5, pts: 250 } } },
-  chicken: { height: 1.0, speed: 1.3, margin: 2, yawOffset: 0 },   // margin = keep-out distance from Cluck Valley edges
+  // height 1.6 = the size the chicken actually appeared at before (the old bounding-box bug scaled it up from the configured 1.0).
+  // margin = keep-out distance from area edges while wandering; chaseMargin = same while chasing; alert = seconds it freezes before it runs.
+  chicken: { height: 1.6, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: 0 },
   eggForm: { walk: 4, run: 6.5, radius: 0.3, stepHeight: 0.25, jump: 6, probeHeights: [0.2, 0.5], cameraDistance: 4, cameraHeight: 0.8 },
   // Uniform scale applied to the whole map. Source map is ~253 x 304 m; 0.4 -> ~101 x 122 m.
   // Override with ?mapscale=0.3 (smaller) or ?mapscale=0.6 (bigger).
@@ -77,15 +117,26 @@ const CONFIG = {
   match: {
     spawn: /^Player[ _]Spawn/i,
     zone: /^Throw[ _]Zone/i,
-    valley: /^Cluck[ _]Valley$/i, sands: /^Scorching[ _]Sands$/i, valleyEgg: /^Cluck[ _]Valley[ _]Egg(_\d+)?$/i,
+    valley: /^Cluck[ _]Valley$/i, sands: /^Scorching[ _]Sands$/i, valleyEgg: /^Cluck[ _]Valley[ _]Egg(_\d+)?$/i, sandsEgg: /^Scorching[ _]Sands[ _]Egg(_\d+)?$/i,
+    fence: /^Fence_?Pen(\d+)/i, spawnPen: /Pen(\d+)/i,
     nonSolid: [/^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg(_\d+)?$/i, /^Chicken/i],
     hidden: [/^Player[ _]Spawn/i, /Egg(_\d+)?$/i, /^Chicken/i],
   },
-  player: { walk: 5, run: 8, radius: 0.35, stepHeight: 0.35, jump: 7.5, gravity: 22, probeHeights: [0.4, 0.9, 1.4], turnSpeed: 12 },
+  // speed = the player's speed stat (walk speed). Starts at 5; run = speed * runMult (5 -> 8). Override with ?speed=N
+  player: { speed: params.has('speed') ? parseFloat(params.get('speed')) : 5, runMult: 1.6, radius: 0.35, stepHeight: 0.35, jump: 7.5, gravity: 22, probeHeights: [0.4, 0.9, 1.4], turnSpeed: 12 },
   camera: { distance: 4.5, sens: 0.0025, minPitch: -0.2, maxPitch: 1.3, height: 1.5 },
   power: { min: 5, max: 20, period: 1.1 },        // period = seconds for one full up-and-down sweep
-  throwing: { elevationDeg: 35, gravity: 9.8, cooldown: 1.2, maxLanded: 40, maxFlightTime: 12 },
+  // powerScale: the bar still reads 5-20, but the launch speed is power * powerScale (0.7 -> roughly half the old distance at 20).
+  throwing: { powerScale: 0.7, elevationDeg: 35, gravity: 9.8, cooldown: 1.2, maxLanded: 40, maxFlightTime: 12 },
   egg: { size: 0.45 },
+  // Per-area rules. speed = recommended player speed (shown at the top of the screen), chase = how fast that area's chicken runs
+  // when you steal, ptsMult = score multiplier for eggs stolen there. Set chicken:false / eggs:false to switch a part off.
+  areas: {
+    valley: { label: 'Cluck Valley',    speed: 5,  chase: 6.5, ptsMult: 1, chicken: true, eggs: true },
+    sands:  { label: 'Scorching Sands', speed: 10, chase: 12,  ptsMult: 2, chicken: true, eggs: true },
+  },
+  // range = how close you must be to an egg's edge to see Steal. carry* = size/height of the egg held over your head.
+  steal: { range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
 };
 
 const log = {
@@ -102,6 +153,8 @@ const $ = (id) => document.getElementById(id);
 const dom = {
   overlay: $('overlay'), overlayText: $('overlay-text'), status: $('status'), last: $('last'),
   bar: $('powerbar'), fill: $('pb-fill'), value: $('pb-value'), debug: $('debug'),
+  act: $('act'), actBtn: $('act-btn'), actLabel: $('act-label'), held: $('held'), pen: $('pen'),
+  speedVal: $('speed-val'), areasRow: $('areas-row'),
 };
 if (CONFIG.debug) dom.debug.style.display = 'block';
 
@@ -250,6 +303,15 @@ const eggs = [];
 const state = { mode: 'idle', power: CONFIG.power.min, t: 0, cooldown: 0 };
 let lastSpawnIdx = -1;
 let ready = false;
+let speedStat = CONFIG.player.speed;          // the player's speed stat; shown bottom-left
+let areas = [];                               // [{ id, label, speed, chase, ptsMult, box, ... }]
+const penBoxes = {};                          // pen number -> Box3 (from the Fence_PenN meshes)
+let playerSpawnIdx = null, playerPen = null;  // the spawn you first spawned on = your pen, for the rest of the session
+let penSlots = [], penSlotCursor = 0;
+const penEggs = [], placed = {};              // meshes standing in your pen / counts per type
+let carry = null;                             // { egg, item, area, status: 'stolen' | 'safe', held }
+const chickens = [];
+let playerModel = null, modelBaseY = 0, feetExtra = 0; const legMeshes = [];
 
 /* ------------------------------------------------------------------ */
 /* Loading                                                             */
@@ -278,8 +340,10 @@ async function init() {
   playerEggMesh.add(body);
   playerEggMesh.visible = false;
   scene.add(playerEggMesh);
-  setupChicken(chickGltf);
+  buildAreas();
+  setupChickens(chickGltf);
   setupEggSpawns();
+  buildAreasBar();
 
   respawn();
   ready = true;
@@ -311,7 +375,10 @@ function setupMap(root) {
   mapBox.setFromObject(root);
   root.traverse((o) => {
     const box = () => new THREE.Box3().setFromObject(o);
-    if (CONFIG.match.valleyEgg.test(o.name)) eggSpawnBoxes.push(box());
+    const pen = CONFIG.match.fence.exec(o.name);
+    if (pen) (penBoxes[pen[1]] ||= new THREE.Box3()).union(box());
+    if (CONFIG.match.valleyEgg.test(o.name)) eggSpawnBoxes.push({ box: box(), area: 'valley' });
+    else if (CONFIG.match.sandsEgg.test(o.name)) eggSpawnBoxes.push({ box: box(), area: 'sands' });
     else if (CONFIG.match.valley.test(o.name)) valleyBox = box();
     else if (CONFIG.match.sands.test(o.name)) sandsBox = box();
     else if (/^Chicken/i.test(o.name)) chickenStart = box().getCenter(new THREE.Vector3());
@@ -319,7 +386,8 @@ function setupMap(root) {
 
   spawnPoints = spawnObjs.map((o) => {
     const b = new THREE.Box3().setFromObject(o);
-    return { name: o.name, box: b, center: b.getCenter(new THREE.Vector3()) };
+    const pm = CONFIG.match.spawnPen.exec(o.name);
+    return { name: o.name, box: b, center: b.getCenter(new THREE.Vector3()), pen: pm ? pm[1] : null };
   });
   if (!spawnPoints.length) {
     log.warn('No Player_Spawn nodes found; using map center.');
@@ -339,6 +407,7 @@ function setupMap(root) {
     log.warn('No Throw Zone node found; throwing is disabled.');
   }
 
+  log.info('Pens found:', Object.keys(penBoxes).join(', ') || 'none');
   log.info('Map ready. scale:', CONFIG.mapScale, 'size:', mapBox.getSize(new THREE.Vector3()).toArray().map((v) => +v.toFixed(1)), 'solids:', solids.length, 'spawns:', spawnPoints.length, 'zone:', !!zoneBox);
   spawnPoints.forEach((s, i) => log.debug('spawn', i, s.name, s.center.toArray().map((v) => +v.toFixed(2))));
 }
@@ -348,13 +417,16 @@ function setupPlayer(gltf) {
   model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
   const box = new THREE.Box3().setFromObject(model);
   model.position.y -= box.min.y;           // put feet on origin
+  playerModel = model; modelBaseY = model.position.y;
+  model.traverse((o) => { if (o.isMesh && /Leg/i.test(o.name)) legMeshes.push(o); });
   playerRoot = new THREE.Group();
   playerRoot.add(model);
   scene.add(playerRoot);
 
   mixer = new THREE.AnimationMixer(model);
   for (const clip of gltf.animations) actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
-  if (actions.jump) { actions.jump.setLoop(THREE.LoopOnce, 1); actions.jump.clampWhenFinished = true; }
+  if (actions.jump) { actions.jump.setLoop(THREE.LoopOnce, 1); actions.jump.clampWhenFinished = true; }   // the new player has no Jump clip; this is skipped then
+  for (const need of ['walk', 'idle', 'steal run', 'steal idle']) if (!actions[need]) log.warn('Player is missing animation:', need);
   log.info('Player anims:', Object.keys(actions).join(', '));
   playAnim('idle');
 }
@@ -377,9 +449,14 @@ function endEggForm() {
 }
 function respawn() {
   endEggForm();
-  let idx;
-  if (CONFIG.forceSpawn !== null && spawnPoints[CONFIG.forceSpawn]) idx = CONFIG.forceSpawn;
-  else idx = Math.floor(Math.random() * spawnPoints.length);
+  if (carry && carry.status === 'stolen') dropCarry('You respawned - the stolen egg went back.');
+  // The spawn you land on first decides your pen. Every later respawn (R, falling, etc.) returns you to that same pen.
+  if (playerSpawnIdx === null) {
+    if (CONFIG.forceSpawn !== null && spawnPoints[CONFIG.forceSpawn]) playerSpawnIdx = CONFIG.forceSpawn;
+    else playerSpawnIdx = Math.floor(Math.random() * spawnPoints.length);
+    assignPen(spawnPoints[playerSpawnIdx]);
+  }
+  const idx = playerSpawnIdx;
   lastSpawnIdx = idx;
   const sp = spawnPoints[idx];
 
@@ -420,6 +497,7 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
   if (document.pointerLockElement !== renderer.domElement) return; // this click only grabs the pointer
+  if (act.kind) { doAct(); return; }                               // a Steal / Place button is showing: the click presses it
   tryThrow();
 });
 window.addEventListener('keydown', (e) => {
@@ -431,13 +509,16 @@ window.addEventListener('keydown', (e) => {
     else if (grounded && ready && form !== 'flying') { vy = (form === 'egg' ? CONFIG.eggForm : CONFIG.player).jump; grounded = false; }
   }
   if (e.code === 'KeyR') respawn();
+  if (e.code === 'KeyE') doAct();
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+dom.actBtn.addEventListener('click', (e) => { e.stopPropagation(); doAct(); });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
 /* ------------------------------------------------------------------ */
 /* Player movement                                                     */
 /* ------------------------------------------------------------------ */
+const _bb = new THREE.Box3();
 const _f = new THREE.Vector3(), _r = new THREE.Vector3(), _mv = new THREE.Vector3(), _o = new THREE.Vector3(), _d = new THREE.Vector3();
 
 let curP = CONFIG.player;
@@ -464,7 +545,8 @@ function updatePlayer(dt) {
   const moving = _mv.lengthSq() > 0;
   if (moving) {
     _mv.normalize();
-    const speed = (keys.ShiftLeft || keys.ShiftRight) ? P.run : P.walk;
+    const run = keys.ShiftLeft || keys.ShiftRight;
+    const speed = eggForm ? (run ? P.run : P.walk) : (run ? speedStat * CONFIG.player.runMult : speedStat);
     const mx = _mv.x * speed * dt, mz = _mv.z * speed * dt;
     if (mx !== 0 && !blocked(Math.sign(mx), 0)) pos.x += mx;
     if (mz !== 0 && !blocked(0, Math.sign(mz))) pos.z += mz;
@@ -503,14 +585,28 @@ function updatePlayer(dt) {
     playerEggMesh.position.set(pos.x, pos.y + THREE.MathUtils.lerp(CONFIG.eggs.baseHeight * 0.5, P.radius, eggLie), pos.z);
     return;
   }
-  // animation
-  if (!grounded && vy > 0) playAnim('jump');
-  else playAnim(moving ? 'walk' : 'idle');
-  if (grounded && currentAnim === 'jump') playAnim(moving ? 'walk' : 'idle');
+  // animation: holding an egg always uses the Steal clips
+  const winding = state.mode === 'charging' || state.mode === 'cooldown';
+  let anim;
+  if (carry) anim = moving ? 'steal run' : 'steal idle';
+  else if (!grounded && vy > 0 && actions.jump) anim = 'jump';
+  else if (winding && !moving && actions['throw idle']) anim = 'throw idle';
+  else anim = moving ? 'walk' : 'idle';
+  playAnim(anim);
 
   playerRoot.position.copy(pos);
   playerRoot.rotation.y = facing;
   mixer.update(dt);
+
+  // The Steal clips are authored with the feet well off the floor. While holding an egg, ease the model down so the feet stay on the ground.
+  if (legMeshes.length) {
+    playerRoot.updateMatrixWorld(true);
+    let low = Infinity;
+    for (const m of legMeshes) { _bb.setFromObject(m); low = Math.min(low, _bb.min.y); }
+    const target = carry ? feetExtra - (low - pos.y) : 0;
+    feetExtra += (target - feetExtra) * Math.min(1, 15 * dt);
+    playerModel.position.y = modelBaseY + feetExtra;
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -565,15 +661,23 @@ function updateThrowState(dt) {
 }
 
 const _w = new THREE.Vector3();
+function statusText() {
+  if (toast.t > 0) return toast.text;
+  if (carry) {
+    if (carry.status === 'stolen') { const a = areaAt(pos.x, pos.z); return 'The chicken is after you! Get out of ' + (a ? a.label : 'the area') + '!'; }
+    if (inOwnPen()) return 'Press E or click Place to put the egg in your pen';
+    return playerPen ? 'Safe! Take the egg to your pen (Pen ' + playerPen.num + ', ' + Math.round(Math.hypot(pos.x - playerPen.center.x, pos.z - playerPen.center.z)) + ' m away)' : 'Safe! Take the egg to your pen';
+  }
+  if (form === 'flying') return 'Flying...';
+  if (form === 'egg') return 'You are an egg! Roll up to an egg and press Steal. R = respawn';
+  if (!zoneBox) return 'No Throw Zone found in map';
+  return state.mode === 'charging' ? 'Press SPACE or CLICK to lock the power'
+    : state.mode === 'cooldown' ? 'Thrown!' : 'Walk into the yellow Throw Zone';
+}
 function updatePowerBar() {
   const show = form === 'human' && (state.mode === 'charging' || state.mode === 'cooldown');
   dom.bar.style.display = show ? 'block' : 'none';
-  dom.status.textContent = form === 'flying' ? 'Flying...'
-    : form === 'egg' ? 'You are an egg! Touch eggs to collect them. R = back to human'
-    : zoneBox
-    ? (state.mode === 'charging' ? 'Press SPACE or CLICK to lock the power'
-      : state.mode === 'cooldown' ? 'Thrown!' : 'Walk into the yellow Throw Zone')
-    : 'No Throw Zone found in map';
+  dom.status.textContent = statusText();
   if (!show) return;
 
   _r.set(Math.cos(yaw), 0, -Math.sin(yaw));
@@ -599,7 +703,7 @@ function tryThrow() {
   _f.set(-Math.sin(yaw), 0, -Math.cos(yaw));
   const dir = new THREE.Vector3().copy(_f).multiplyScalar(Math.cos(el)); dir.y = Math.sin(el);
   const start = new THREE.Vector3().copy(pos).addScaledVector(_f, 0.5); start.y += 1.3;
-  flight = { c: start, vel: dir.multiplyScalar(power), t: 0, origin: start.clone(), power };
+  flight = { c: start, vel: dir.multiplyScalar(power * T.powerScale), t: 0, origin: start.clone(), power };
   form = 'flying';
   playerRoot.visible = false;
   playerEggMesh.visible = true;
@@ -664,101 +768,310 @@ function spawnEgg(item) {
   mesh.position.set(item.x, item.groundY, item.z);     // pivot is the egg's base, so it rests on the floor, never in it or above it
   mesh.rotation.y = Math.random() * Math.PI * 2;
   scene.add(mesh);
-  item.egg = { type, mult, mesh, r: E.baseHeight * mult * 0.375, h: E.baseHeight * mult * tpl.h };
+  item.egg = { type, mult, mesh, area: item.area, r: E.baseHeight * mult * 0.375, h: E.baseHeight * mult * tpl.h };
 }
 function setupEggSpawns() {
-  for (const b of eggSpawnBoxes) {
+  for (const { box: b, area } of eggSpawnBoxes) {
+    if (!CONFIG.areas[area] || CONFIG.areas[area].eggs === false) continue;
     const c = b.getCenter(new THREE.Vector3());
     const g = groundAt(c.x, b.max.y + 2, c.z);
-    const item = { x: c.x, z: c.z, groundY: g === null ? b.min.y : g, egg: null, timer: 0 };
+    const item = { x: c.x, z: c.z, area, groundY: g === null ? b.min.y : g, egg: null, timer: 0, pending: false };
     eggItems.push(item);
     spawnEgg(item);
   }
-  log.info('Cluck Valley egg spawners:', eggItems.length);
+  log.info('Egg spawners:', eggItems.length, '(' + eggItems.filter((i) => i.area === 'valley').length + ' Cluck Valley, ' + eggItems.filter((i) => i.area === 'sands').length + ' Scorching Sands)');
 }
 function updateEggItems(dt) {
+  // Eggs are no longer collected by touching them: you Steal them. A stolen egg's spawner waits (pending) until
+  // the thief escapes (then it respawns after a delay) or is caught (then the egg is put back).
   for (const it of eggItems) {
-    const e = it.egg;
-    if (!e) { it.timer -= dt; if (it.timer <= 0) spawnEgg(it); continue; }
-    if (form !== 'egg') continue;
-    if (Math.hypot(pos.x - it.x, pos.z - it.z) < e.r + CONFIG.eggForm.radius && pos.y < it.groundY + e.h) {
-      const pts = CONFIG.eggs.types[e.type].pts * e.mult;
-      score += pts;
-      collected[e.type] = (collected[e.type] || 0) + 1;
-      dom.last.textContent = 'Collected ' + e.type + ' egg ' + e.mult.toFixed(1) + 'x  +' + Math.round(pts);
-      $('score').textContent = 'Score: ' + Math.round(score) + '  (' + Object.entries(collected).map(([k, n]) => k + ' ' + n).join(' · ') + ')';
-      scene.remove(e.mesh);
-      it.egg = null; it.timer = CONFIG.eggs.respawn;
-    }
+    if (it.egg || it.pending) continue;
+    it.timer -= dt;
+    if (it.timer <= 0) spawnEgg(it);
   }
 }
 
 /* ------------------------------------------------------------------ */
-/* Chicken: wanders inside Cluck Valley only                           */
+/* Areas, pens, stealing, carrying, placing                            */
 /* ------------------------------------------------------------------ */
-function chickenOk(x, z) {   // returns floor height, or null if (x,z) is not allowed
-  const m = CONFIG.chicken.margin;
-  if (!valleyBox || x < valleyBox.min.x + m || x > valleyBox.max.x - m || z < valleyBox.min.z + m || z > valleyBox.max.z - m) return null;
-  if (sandsBox && z > sandsBox.min.z - m) return null;
-  const h = castRay(new THREE.Vector3(x, valleyBox.max.y + 5, z), DOWN, 100);
-  if (!h || chainMatches(h.object, null, [CONFIG.match.sands])) return null;
+const act = { kind: null, item: null };      // the button currently on screen: 'steal' (at an egg) or 'place' (above you)
+let toast = { text: '', t: 0 };
+function say(text, secs = 3.5) { toast = { text, t: secs }; dom.last.textContent = text; }
+
+function buildAreas() {
+  const boxes = { valley: valleyBox, sands: sandsBox };
+  areas = Object.keys(CONFIG.areas).filter((id) => boxes[id]).map((id) => ({ id, ...CONFIG.areas[id], box: boxes[id] }));
+  if (!areas.length) log.warn('No Cluck Valley / Scorching Sands meshes found; stealing cannot be escaped.');
+}
+function buildAreasBar() {
+  dom.areasRow.innerHTML = '';
+  for (const a of areas) {
+    const el = document.createElement('div');
+    el.className = 'area'; el.dataset.id = a.id;
+    el.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><use href="#ico-bolt"/></svg><span>' + a.label + '</span><b>' + a.speed + '</b>';
+    dom.areasRow.appendChild(el);
+    a.el = el;
+  }
+}
+function areaAt(x, z) {   // 0.1 m tolerance so the hair-thin seam between Cluck Valley and Scorching Sands never counts as "outside"
+  const e = 0.1;
+  for (const a of areas) if (x >= a.box.min.x - e && x <= a.box.max.x + e && z >= a.box.min.z - e && z <= a.box.max.z + e) return a;
+  return null;
+}
+
+function assignPen(sp) {
+  const num = sp.pen;
+  let box = num && penBoxes[num] ? penBoxes[num].clone() : null;
+  if (!box) { log.warn('No fence group found for spawn', sp.name, '- using a box around the spawn as the pen.'); box = sp.box.clone().expandByVector(new THREE.Vector3(8, 0, 8)); }
+  playerPen = { num: num || '?', box, y: sp.center.y, center: box.getCenter(new THREE.Vector3()) };
+  // a grid of resting spots inside the pen, skipping the gate (where you spawn)
+  const m = 3, cols = 4, rows = 3;
+  penSlots = [];
+  for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
+    const x = THREE.MathUtils.lerp(box.min.x + m, box.max.x - m, (i + 0.5) / cols);
+    const z = THREE.MathUtils.lerp(box.min.z + m, box.max.z - m, (j + 0.5) / rows);
+    if (Math.hypot(x - sp.center.x, z - sp.center.z) > 4) penSlots.push({ x, z });
+  }
+  penSlots.sort(() => Math.random() - 0.5);
+  dom.pen.textContent = 'Your pen: Pen ' + playerPen.num + ' (the spawn you started on)';
+  log.info('Your pen: Pen', playerPen.num, 'slots:', penSlots.length);
+}
+function inOwnPen() {
+  if (!playerPen) return false;
+  const b = playerPen.box;   // the box spans the outer edge of the fences, and the spawn marker sits in the gate, so no inset
+  return pos.x > b.min.x && pos.x < b.max.x && pos.z > b.min.z && pos.z < b.max.z && Math.abs(pos.y - playerPen.y) < 4;
+}
+
+function nearestSteal() {
+  if (carry || (form !== 'human' && form !== 'egg')) return null;
+  let best = null, bd = Infinity;
+  for (const it of eggItems) {
+    const e = it.egg;
+    if (!e) continue;
+    const d = Math.hypot(pos.x - it.x, pos.z - it.z);
+    if (d < e.r + CONFIG.steal.range && Math.abs(pos.y - it.groundY) < e.h + 1.5 && d < bd) { best = it; bd = d; }
+  }
+  return best;
+}
+const carryHeight = (e) => THREE.MathUtils.clamp(CONFIG.steal.carryMin + 0.12 * e.mult, CONFIG.steal.carryMin, CONFIG.steal.carryMax);
+function makeHeld(e) {
+  const m = eggTpl[e.type].make();
+  m.scale.setScalar(carryHeight(e));
+  m.position.set(0, CONFIG.steal.carryBase, 0);          // sits just above the head, between the raised arms
+  return m;
+}
+
+function steal(it) {
+  const e = it.egg;
+  if (!e || carry) return;
+  if (form === 'egg') endEggForm();                       // clicking Steal turns you back into the player
+  scene.remove(e.mesh);
+  it.egg = null; it.pending = true;
+  const area = areas.find((a) => a.id === it.area);
+  carry = { egg: e, item: it, area: it.area, areaLabel: area ? area.label : null, status: 'stolen', held: makeHeld(e) };
+  playerRoot.add(carry.held);
+  state.mode = 'idle';
+  say('Stolen! RUN - the chicken is after you!', 4);
+  log.info('Stole', e.type, e.mult.toFixed(2) + 'x from', it.area);
+}
+function dropCarry(msg) {                                   // the stolen egg goes back where it came from
+  if (!carry) return;
+  if (carry.status === 'stolen' && !carry.item.egg) {
+    const e = carry.egg, it = carry.item;
+    scene.add(e.mesh); it.egg = e;
+  }
+  carry.item.pending = false;
+  playerRoot.remove(carry.held);
+  carry = null;
+  if (msg) say(msg);
+}
+function updateCarry() {
+  if (!carry) { dom.held.textContent = 'Holding: nothing'; return; }
+  const e = carry.egg;
+  dom.held.textContent = 'Holding: ' + e.type + ' egg ' + e.mult.toFixed(1) + 'x' + (carry.status === 'stolen' ? '  (STOLEN - escape!)' : '  (safe - take it to your pen)');
+  if (carry.status === 'stolen' && form === 'human' && !areaAt(pos.x, pos.z)) {   // out of Cluck Valley AND Scorching Sands = escaped
+    carry.status = 'safe';
+    carry.item.pending = false; carry.item.timer = CONFIG.eggs.respawn;
+    say('You escaped! The egg is in your inventory. Take it to Pen ' + (playerPen ? playerPen.num : '?') + '.', 5);
+    log.info('Escaped with the egg');
+  }
+}
+function placeEgg() {
+  if (!carry || carry.status !== 'safe' || !inOwnPen() || !penSlots.length) return;
+  const e = carry.egg, E = CONFIG.eggs;
+  const slot = penSlots[penSlotCursor % penSlots.length];
+  const old = penEggs[penSlotCursor % penSlots.length];
+  if (old) scene.remove(old);                              // pen is full: the oldest egg in that spot is replaced
+  penSlotCursor++;
+  const gy = groundAt(slot.x, playerPen.y + 3, slot.z);
+  const mesh = eggTpl[e.type].make();
+  mesh.scale.setScalar(Math.min(CONFIG.steal.placeMaxH, Math.max(E.baseHeight, E.baseHeight * e.mult)));
+  mesh.position.set(slot.x, gy === null ? playerPen.y : gy, slot.z);
+  mesh.rotation.y = Math.random() * Math.PI * 2;
+  scene.add(mesh);
+  penEggs[(penSlotCursor - 1) % penSlots.length] = mesh;
+  const A = CONFIG.areas[e.area] || { ptsMult: 1 };
+  const pts = E.types[e.type].pts * e.mult * A.ptsMult;
+  score += pts; placed[e.type] = (placed[e.type] || 0) + 1;
+  $('score').textContent = 'Score: ' + Math.round(score) + '  (' + Object.entries(placed).map(([k, n]) => k + ' ' + n).join(' · ') + ')';
+  playerRoot.remove(carry.held);
+  carry = null;
+  say('Placed ' + e.type + ' egg ' + e.mult.toFixed(1) + 'x in your pen  +' + Math.round(pts));
+}
+function doAct() {
+  if (!act.kind || !ready) return;
+  if (act.kind === 'steal' && act.item) steal(act.item);
+  else if (act.kind === 'place') placeEgg();
+}
+function updateAct() {
+  act.kind = null; act.item = null;
+  let wx = 0, wy = 0, wz = 0, label = '';
+  const it = nearestSteal();
+  if (it) { act.kind = 'steal'; act.item = it; label = 'Steal'; wx = it.x; wy = it.groundY + it.egg.h * 0.6; wz = it.z; }
+  else if (form === 'human' && carry && carry.status === 'safe' && inOwnPen()) {
+    act.kind = 'place'; label = 'Place'; wx = pos.x; wy = pos.y + CONFIG.steal.carryBase + carryHeight(carry.egg) + 0.5; wz = pos.z;
+  }
+  if (!act.kind) { dom.act.style.display = 'none'; return; }
+  _w.set(wx, wy, wz).project(camera);
+  if (_w.z > 1) { act.kind = null; dom.act.style.display = 'none'; return; }
+  dom.actLabel.textContent = label;
+  dom.act.style.display = 'block';
+  dom.act.style.left = ((_w.x * 0.5 + 0.5) * window.innerWidth) + 'px';
+  dom.act.style.top = ((-_w.y * 0.5 + 0.5) * window.innerHeight) + 'px';
+}
+
+let hudSpeed = null;
+function updateHud() {
+  if (hudSpeed !== speedStat) { hudSpeed = speedStat; dom.speedVal.textContent = String(+speedStat.toFixed(1)); }
+  const here = areaAt(pos.x, pos.z);
+  for (const a of areas) {
+    a.el.classList.toggle('here', here === a);
+    a.el.classList.toggle('low', speedStat < a.speed);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Chickens: one per area. Wander inside their own area; chase a thief */
+/* ------------------------------------------------------------------ */
+// Bounding box of a skinned model in its bind pose, from the real skinned vertices. (Box3.setFromObject on a model that has not been
+// posed yet gives a wrong box for skinned meshes - that is what made the chicken hover.)
+function bindPoseBox(model) {
+  model.updateMatrixWorld(true);
+  const box = new THREE.Box3(), v = new THREE.Vector3();
+  model.traverse((o) => {
+    if (o.isSkinnedMesh) {
+      o.skeleton.update();
+      const pa = o.geometry.attributes.position;
+      for (let i = 0; i < pa.count; i++) { o.getVertexPosition(i, v); v.applyMatrix4(o.matrixWorld); box.expandByPoint(v); }
+    } else if (o.isMesh) box.union(new THREE.Box3().setFromObject(o));
+  });
+  return box;
+}
+function chickenOk(ch, x, z, m) {   // returns floor height, or null if (x,z) is not allowed for this chicken
+  const b = ch.area.box;
+  if (x < b.min.x + m || x > b.max.x - m || z < b.min.z + m || z > b.max.z - m) return null;
+  const h = castRay(new THREE.Vector3(x, b.max.y + 5, z), DOWN, 100);
+  if (!h) return null;
+  if (ch.area.id === 'valley' && chainMatches(h.object, null, [CONFIG.match.sands])) return null;
   return h.point.y;
 }
-function setupChicken(gltf) {
-  if (!valleyBox) { log.warn('No Cluck Valley mesh found; chicken disabled.'); return; }
-  const model = gltf.scene;
-  model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
-  const box = new THREE.Box3().setFromObject(model);
-  const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
-  model.position.set(-c.x, -box.min.y, -c.z);
-  const inner = new THREE.Group(); inner.scale.setScalar(CONFIG.chicken.height / size.y); inner.add(model);
-  const root = new THREE.Group(); root.add(inner); scene.add(root);
-  const mx = new THREE.AnimationMixer(model), actions = {};
-  for (const clip of gltf.animations) actions[clip.name.toLowerCase()] = mx.clipAction(clip);
-  const vc = valleyBox.getCenter(new THREE.Vector3());
-  const start = chickenStart && chickenOk(chickenStart.x, chickenStart.z) !== null ? chickenStart : vc;
-  const gy = chickenOk(start.x, start.z);
-  chicken = { root, mixer: mx, actions, anim: '', target: null, wait: 1, yaw: 0, pos: new THREE.Vector3(start.x, gy === null ? valleyBox.max.y : gy, start.z) };
-  log.info('Chicken ready; area x', valleyBox.min.x.toFixed(1), valleyBox.max.x.toFixed(1), 'z', valleyBox.min.z.toFixed(1), valleyBox.max.z.toFixed(1));
+function randomSpot(ch, m) {
+  const b = ch.area.box;
+  for (let i = 0; i < 30; i++) {
+    const x = THREE.MathUtils.lerp(b.min.x + m, b.max.x - m, Math.random()), z = THREE.MathUtils.lerp(b.min.z + m, b.max.z - m, Math.random());
+    if (chickenOk(ch, x, z, m) !== null) return { x, z };
+  }
+  return null;
 }
-function chickenPlay(n) {
-  if (chicken.anim === n || !chicken.actions[n]) return;
-  const nx = chicken.actions[n], pv = chicken.actions[chicken.anim];
+function setupChickens(gltf) {
+  for (const area of areas) {
+    if (area.chicken === false) continue;
+    const model = SkeletonUtils.clone(gltf.scene);
+    model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+    const box = bindPoseBox(model);
+    const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+    model.position.set(-c.x, -box.min.y, -c.z);              // feet exactly on the origin
+    const inner = new THREE.Group(); inner.scale.setScalar(CONFIG.chicken.height / size.y); inner.add(model);
+    const root = new THREE.Group(); root.add(inner); scene.add(root);
+    const mx = new THREE.AnimationMixer(model), actions = {};
+    for (const clip of gltf.animations) actions[clip.name.toLowerCase()] = mx.clipAction(clip);
+    const ch = { area, root, mixer: mx, actions, anim: '', state: 'wander', target: null, wait: 1, yaw: 0, alert: 0, pos: new THREE.Vector3() };
+    let start = area.id === 'valley' && chickenStart && chickenOk(ch, chickenStart.x, chickenStart.z, CONFIG.chicken.margin) !== null ? chickenStart : null;
+    if (!start) start = randomSpot(ch, CONFIG.chicken.margin) || area.box.getCenter(new THREE.Vector3());
+    const gy = chickenOk(ch, start.x, start.z, 0);
+    ch.pos.set(start.x, gy === null ? area.box.max.y : gy, start.z);
+    chickens.push(ch);
+    log.info('Chicken ready in', area.label, 'model height', size.y.toFixed(3), '-> scale', (CONFIG.chicken.height / size.y).toFixed(3));
+  }
+}
+function chickenPlay(ch, n) {
+  if (ch.anim === n || !ch.actions[n]) return;
+  const nx = ch.actions[n], pv = ch.actions[ch.anim];
   nx.reset().play();
   if (pv) pv.crossFadeTo(nx, 0.2, false);
-  chicken.anim = n;
+  ch.anim = n;
 }
-function updateChicken(dt) {
-  if (!chicken) return;
-  const C = CONFIG.chicken, p = chicken.pos;
-  if (chicken.target) {
-    _d.set(chicken.target.x - p.x, 0, chicken.target.z - p.z);
-    const dist = _d.length();
-    if (dist < 0.3) { chicken.target = null; chicken.wait = 2 + Math.random() * 4; }
-    else {
-      _d.divideScalar(dist);
-      const nx = p.x + _d.x * C.speed * dt, nz = p.z + _d.z * C.speed * dt;
-      const gy = chickenOk(nx, nz);
-      _o.set(p.x, p.y + 0.3, p.z);
-      if (gy === null || castRay(_o, _d, 0.6)) { chicken.target = null; chicken.wait = 0.5; }
-      else { p.set(nx, gy, nz); chicken.yaw = angleLerp(chicken.yaw, Math.atan2(_d.x, _d.z) + C.yawOffset, 8 * dt); }
+const _cd = new THREE.Vector3(), _co = new THREE.Vector3();
+function chickenMove(ch, dx, dz, margin) {                   // tries the full move, then sliding along either axis
+  const p = ch.pos;
+  for (const [mx, mz] of [[dx, dz], [dx, 0], [0, dz]]) {
+    if (!mx && !mz) continue;
+    const nx = p.x + mx, nz = p.z + mz, gy = chickenOk(ch, nx, nz, margin);
+    if (gy === null) continue;
+    _co.set(p.x, p.y + 0.3, p.z); _cd.set(mx, 0, mz).normalize();
+    if (castRay(_co, _cd, Math.hypot(mx, mz) + 0.5)) continue;
+    p.set(nx, gy, nz);
+    return true;
+  }
+  return false;
+}
+function updateChicken(ch, dt) {
+  const C = CONFIG.chicken, p = ch.pos, A = ch.area;
+  // A thief is chased by whichever area's chicken they are currently inside (steal in the Sands and you meet the Valley chicken next).
+  const chasing = !!carry && carry.status === 'stolen' && form === 'human' && areaAt(pos.x, pos.z) === A;
+  if (chasing && ch.state !== 'chase') { ch.state = 'chase'; ch.alert = C.alert; ch.target = null; }
+  if (!chasing && ch.state === 'chase') { ch.state = 'wander'; ch.target = null; ch.wait = 1; }   // thief escaped: back to wandering in its area
+
+  let anim = 'idle';
+  if (ch.state === 'chase') {
+    _cd.set(pos.x - p.x, 0, pos.z - p.z);
+    const dist = _cd.length();
+    if (dist > 1e-4) ch.yaw = angleLerp(ch.yaw, Math.atan2(_cd.x, _cd.z) + C.yawOffset, 10 * dt);
+    if (ch.alert > 0) ch.alert -= dt;                        // a short moment of "hey!" before it runs
+    else if (dist < C.catchRadius && Math.abs(pos.y - p.y) < 2.5) {
+      ch.state = 'wander'; ch.target = null; ch.wait = 1.5;
+      dropCarry('The chicken caught you! The egg went back.');
+    } else if (dist > 1e-4) {
+      const step = Math.min(A.chase * dt, dist);
+      chickenMove(ch, _cd.x / dist * step, _cd.z / dist * step, C.chaseMargin);
+      anim = ch.actions.run ? 'run' : 'walk';
     }
   } else {
-    chicken.wait -= dt;
-    if (chicken.wait <= 0) {
-      for (let i = 0; i < 12 && !chicken.target; i++) {
-        const tx = THREE.MathUtils.lerp(valleyBox.min.x + C.margin, valleyBox.max.x - C.margin, Math.random());
-        const tz = THREE.MathUtils.lerp(valleyBox.min.z + C.margin, valleyBox.max.z - C.margin, Math.random());
-        if (chickenOk(tx, tz) !== null && Math.hypot(tx - p.x, tz - p.z) > 2) chicken.target = { x: tx, z: tz };
+    if (ch.target) {
+      _cd.set(ch.target.x - p.x, 0, ch.target.z - p.z);
+      const dist = _cd.length();
+      if (dist < 0.3) { ch.target = null; ch.wait = 2 + Math.random() * 4; }
+      else {
+        _cd.divideScalar(dist);
+        if (chickenMove(ch, _cd.x * C.speed * dt, _cd.z * C.speed * dt, C.margin)) {
+          ch.yaw = angleLerp(ch.yaw, Math.atan2(_cd.x, _cd.z) + C.yawOffset, 8 * dt);
+          anim = 'walk';
+        } else { ch.target = null; ch.wait = 0.5; }
       }
-      if (!chicken.target) chicken.wait = 1;
+    } else {
+      ch.wait -= dt;
+      if (ch.wait <= 0) {
+        const t = randomSpot(ch, C.margin);
+        if (t && Math.hypot(t.x - p.x, t.z - p.z) > 2) ch.target = t; else ch.wait = 1;
+      }
     }
   }
-  chickenPlay(chicken.target ? 'walk' : 'idle');
-  chicken.root.position.copy(p);
-  chicken.root.rotation.y = chicken.yaw;
-  chicken.mixer.update(dt);
+  chickenPlay(ch, anim);
+  ch.root.position.copy(p);
+  ch.root.rotation.y = ch.yaw;
+  ch.mixer.update(dt);
 }
+function updateChickens(dt) { for (const ch of chickens) updateChicken(ch, dt); }
 
 /* ------------------------------------------------------------------ */
 /* Main loop                                                           */
@@ -770,13 +1083,17 @@ function tick() {
   requestAnimationFrame(tick);
   const dt = Math.min(clock.getDelta(), 0.05);
 
+  if (toast.t > 0) toast.t -= dt;
   updatePlayer(dt);
-  if (form === 'human') updateThrowState(dt);
+  if (form === 'human' && !carry) updateThrowState(dt);
   updateFlight(dt);
   updateEggItems(dt);
-  updateChicken(dt);
+  updateChickens(dt);
+  updateCarry();
   updateCamera();
+  updateAct();
   updatePowerBar();
+  updateHud();
   renderer.render(scene, camera);
 
   if (CONFIG.debug) {
@@ -791,6 +1108,8 @@ function tick() {
       'mode     ' + state.mode + '\n' +
       'power    ' + state.power.toFixed(2) + '\n' +
       'form     ' + form + '\n' +
+      'carry    ' + (carry ? carry.egg.type + ' ' + carry.status : 'none') + '\n' +
+      'pen      ' + (playerPen ? playerPen.num : '-') + '  speed ' + speedStat + '\n' +
       'solids   ' + solids.length;
   }
 }
