@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>TAE Test Map</title>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #9ad1ff; font-family: system-ui, sans-serif; }
@@ -49,6 +49,34 @@
                 border: 3px solid #fff; border-radius: 12px; cursor: pointer; box-shadow: 0 3px 12px rgba(0,0,0,.55); animation: actpulse 1s ease-in-out infinite; }
   #act kbd { font: 700 11px system-ui; background: rgba(0,0,0,.18); border-radius: 4px; padding: 2px 6px; }
   @keyframes actpulse { 50% { transform: scale(1.08); } }
+  /* ---------------- mobile / touch ---------------- */
+  html, body { touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  #touch { display: none; }
+  body.touch #touch { display: block; }
+  #joyzone { position: fixed; left: 0; top: 0; bottom: 0; width: 45%; z-index: 2; touch-action: none; }
+  #lookzone { position: fixed; right: 0; top: 0; bottom: 0; width: 55%; z-index: 2; touch-action: none; }
+  #joy { position: fixed; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 3px solid rgba(255,255,255,.55);
+         background: rgba(0,0,0,.25); display: none; z-index: 3; pointer-events: none; }
+  #joy.run { border-color: #ffd34d; box-shadow: 0 0 14px #ffd34d; }
+  #joy-knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: rgba(255,255,255,.75); }
+  .tbtn { position: fixed; z-index: 3; border: 3px solid #fff; border-radius: 50%; color: #fff; font: 800 15px system-ui; background: rgba(0,0,0,.45);
+          display: flex; align-items: center; justify-content: center; touch-action: none; }
+  .tbtn:active { background: rgba(255,211,77,.7); color: #3a2a00; }
+  #t-jump { right: calc(26px + env(safe-area-inset-right)); bottom: calc(34px + env(safe-area-inset-bottom)); width: 78px; height: 78px; }
+  #t-throw { right: calc(118px + env(safe-area-inset-right)); bottom: calc(60px + env(safe-area-inset-bottom)); width: 88px; height: 88px; display: none;
+             background: #ffd34d; color: #3a2a00; font-size: 17px; animation: actpulse 1s ease-in-out infinite; }
+  #t-respawn { right: calc(12px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width: 44px; height: 44px; font-size: 22px; }
+  body.touch #hud { top: calc(62px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); font-size: 11px; line-height: 1.4; max-width: 46vw; }
+  body.touch #hud .kb, body:not(.touch) #hud .tc { display: none; }
+  body.touch #areas { top: calc(8px + env(safe-area-inset-top)); }
+  body.touch .area { padding: 3px 10px 3px 7px; font-size: 12px; } body.touch .area b { font-size: 14px; }
+  body.touch #areas .cap { font-size: 9px; margin-bottom: 3px; }
+  body.touch #speed { left: calc(12px + env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom)); }
+  body.touch #speed svg { width: 46px; height: 46px; } body.touch #speed .val { font-size: 26px; }
+  body.touch #status { bottom: calc(14px + env(safe-area-inset-bottom)); max-width: 34vw; font-size: 12px; }
+  body.touch #act kbd { display: none; }
+  body.touch #act button { padding: 10px 22px; font-size: 18px; }
+  body.touch #overlay { font-size: 20px; }
 </style>
 <script type="importmap">
 { "imports": {
@@ -62,9 +90,11 @@
   <symbol id="ico-bolt" viewBox="0 0 24 24"><path d="M13.5 2 4 13.5h6.2L9 22l10-12.2h-6.4z"/></symbol>
 </svg>
 <div id="hud">
-  <b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>Space</b> jump &nbsp; <b>E</b> / <b>Click</b> Steal or Place<br>
-  Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br>
-  Walk up to an egg and hit <b>Steal</b>. Get out of the area before the chicken catches you, then <b>Place</b> it in your pen.<br>
+  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>Space</b> jump &nbsp; <b>E</b> / <b>Click</b> Steal or Place<br>
+  Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br></span>
+  <span class="tc"><b>Left</b> stick move (push all the way to run) &nbsp; <b>Right</b> side drag to look<br>
+  In the yellow <b>Throw Zone</b> tap <b>Throw</b> to stop the power bar<br></span>
+  Walk up to an egg and hit <b>Steal</b>. Get out of the area before the chicken catches you (it sends you back to your pen), then <b>Place</b> it in your pen.<br>
   <span id="pen">Your pen: -</span><br><span id="held">Holding: nothing</span><br>
   <span id="last">Last throw: none</span><br><span id="score">Score: 0</span>
 </div>
@@ -85,6 +115,13 @@
   <div id="pb-bot" class="pb-label">5</div>
   <div id="pb-value"></div>
 </div>
+<div id="touch">
+  <div id="joyzone"></div><div id="lookzone"></div>
+  <div id="joy"><div id="joy-knob"></div></div>
+  <button class="tbtn" id="t-jump" type="button">Jump</button>
+  <button class="tbtn" id="t-throw" type="button">Throw</button>
+  <button class="tbtn" id="t-respawn" type="button" aria-label="Respawn">&#8634;</button>
+</div>
 <div id="overlay"><div id="overlay-text">Loading...</div></div>
 
 <script type="module">
@@ -97,6 +134,8 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 /* Config. URL params: ?debug=1  ?verbose=1  ?spawn=<index>  ?mapscale=<n>  ?map=<file.glb>  ?speed=<n>   */
 /* ------------------------------------------------------------------ */
 const params = new URLSearchParams(location.search);
+const IS_TOUCH = params.get('touch') === '1' || (params.get('touch') !== '0' && ((typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in window));
+if (IS_TOUCH) document.body.classList.add('touch');
 const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
@@ -124,7 +163,7 @@ const CONFIG = {
   },
   // speed = the player's speed stat (walk speed). Starts at 5; run = speed * runMult (5 -> 8). Override with ?speed=N
   player: { speed: params.has('speed') ? parseFloat(params.get('speed')) : 5, runMult: 1.6, radius: 0.35, stepHeight: 0.35, jump: 7.5, gravity: 22, probeHeights: [0.4, 0.9, 1.4], turnSpeed: 12 },
-  camera: { distance: 4.5, sens: 0.0025, minPitch: -0.2, maxPitch: 1.3, height: 1.5 },
+  camera: { distance: 4.5, sens: 0.0025, touchSens: 0.006, minPitch: -0.2, maxPitch: 1.3, height: 1.5 },
   power: { min: 5, max: 20, period: 1.1 },        // period = seconds for one full up-and-down sweep
   // powerScale: the bar still reads 5-20, but the launch speed is power * powerScale (0.7 -> roughly half the old distance at 20).
   throwing: { powerScale: 0.7, elevationDeg: 35, gravity: 9.8, cooldown: 1.2, maxLanded: 40, maxFlightTime: 12 },
@@ -171,7 +210,7 @@ function fatal(err) {
 /* Renderer / scene                                                    */
 /* ------------------------------------------------------------------ */
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_TOUCH ? 1.5 : 2));   // lighter on phones
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -184,7 +223,7 @@ const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerH
 scene.add(new THREE.HemisphereLight(0xffffff, 0x667788, 1.1));
 const sun = new THREE.DirectionalLight(0xffffff, 1.6);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(IS_TOUCH ? 1024 : 2048, IS_TOUCH ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 200 });
 sun.shadow.bias = -0.0005;
 scene.add(sun, sun.target);
@@ -347,7 +386,8 @@ async function init() {
 
   respawn();
   ready = true;
-  dom.overlayText.innerHTML = 'Click to play<small>Pointer lock is used for mouse look. Esc releases it.</small>';
+  dom.overlayText.innerHTML = IS_TOUCH ? 'Tap to play<small>Left side: move (push the stick all the way to run)<br>Right side: drag to look. Best in landscape.</small>'
+    : 'Click to play<small>Pointer lock is used for mouse look. Esc releases it.</small>';
   dom.overlay.style.display = 'flex';
   requestAnimationFrame(tick);
 }
@@ -482,12 +522,70 @@ function respawn() {
 /* ------------------------------------------------------------------ */
 dom.overlay.addEventListener('click', () => {
   if (!ready) return;
+  if (IS_TOUCH) {                                   // no pointer lock on phones: just hide the overlay
+    dom.overlay.style.display = 'none';
+    const fs = document.documentElement.requestFullscreen;
+    if (fs && !document.fullscreenElement) { try { Promise.resolve(fs.call(document.documentElement)).catch(() => {}); } catch (e) { /* not supported */ } }
+    return;
+  }
   renderer.domElement.requestPointerLock();
 });
 document.addEventListener('pointerlockchange', () => {
+  if (IS_TOUCH) return;
   const locked = document.pointerLockElement === renderer.domElement;
   dom.overlay.style.display = locked ? 'none' : 'flex';
 });
+function jump() {
+  if (grounded && ready && form !== 'flying') { vy = (form === 'egg' ? CONFIG.eggForm : CONFIG.player).jump; grounded = false; }
+}
+/* Touch controls: left half = floating stick (push to the rim = run), right half = drag to look, buttons for Jump / Throw / Respawn. */
+const touch = { x: 0, y: 0, run: false };
+if (IS_TOUCH) {
+  const joy = $('joy'), knob = $('joy-knob'), R = 55;
+  let joyId = null, jx = 0, jy = 0, lookId = null, lx = 0, ly = 0;
+  const find = (list, id) => { for (const t of list) if (t.identifier === id) return t; return null; };
+  const joyZone = $('joyzone'), lookZone = $('lookzone');
+  joyZone.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (joyId !== null) return;
+    const t = e.changedTouches[0]; joyId = t.identifier; jx = t.clientX; jy = t.clientY;
+    joy.style.display = 'block'; joy.style.left = jx + 'px'; joy.style.top = jy + 'px'; knob.style.transform = 'translate(0,0)';
+  }, { passive: false });
+  joyZone.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const t = find(e.changedTouches, joyId); if (!t) return;
+    let dx = t.clientX - jx, dy = t.clientY - jy; const len = Math.hypot(dx, dy);
+    if (len > R) { dx = dx / len * R; dy = dy / len * R; }
+    knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    touch.x = dx / R; touch.y = -dy / R;
+    touch.run = Math.hypot(touch.x, touch.y) > 0.85;
+    joy.classList.toggle('run', touch.run);
+  }, { passive: false });
+  const joyEnd = (e) => {
+    if (!find(e.changedTouches, joyId)) return;
+    joyId = null; touch.x = touch.y = 0; touch.run = false; joy.style.display = 'none'; joy.classList.remove('run');
+  };
+  joyZone.addEventListener('touchend', joyEnd); joyZone.addEventListener('touchcancel', joyEnd);
+  lookZone.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (lookId !== null) return;
+    const t = e.changedTouches[0]; lookId = t.identifier; lx = t.clientX; ly = t.clientY;
+  }, { passive: false });
+  lookZone.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const t = find(e.changedTouches, lookId); if (!t) return;
+    yaw -= (t.clientX - lx) * CONFIG.camera.touchSens; pitch += (t.clientY - ly) * CONFIG.camera.touchSens;
+    pitch = Math.max(CONFIG.camera.minPitch, Math.min(CONFIG.camera.maxPitch, pitch));
+    lx = t.clientX; ly = t.clientY;
+  }, { passive: false });
+  const lookEnd = (e) => { if (find(e.changedTouches, lookId)) lookId = null; };
+  lookZone.addEventListener('touchend', lookEnd); lookZone.addEventListener('touchcancel', lookEnd);
+  const press = (id, fn) => $(id).addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); fn(); }, { passive: false });
+  press('t-jump', () => { if (state.mode === 'charging') tryThrow(); else jump(); });
+  press('t-throw', () => tryThrow());
+  press('t-respawn', () => respawn());
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
+}
 document.addEventListener('mousemove', (e) => {
   if (document.pointerLockElement !== renderer.domElement) return;
   yaw -= e.movementX * CONFIG.camera.sens;
@@ -506,7 +604,7 @@ window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'Space') {
     if (state.mode === 'charging') tryThrow();
-    else if (grounded && ready && form !== 'flying') { vy = (form === 'egg' ? CONFIG.eggForm : CONFIG.player).jump; grounded = false; }
+    else jump();
   }
   if (e.code === 'KeyR') respawn();
   if (e.code === 'KeyE') doAct();
@@ -539,13 +637,13 @@ function updatePlayer(dt) {
   const px = pos.x, pz = pos.z;
   _f.set(-Math.sin(yaw), 0, -Math.cos(yaw));
   _r.set(Math.cos(yaw), 0, -Math.sin(yaw));
-  const ix = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
-  const iz = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
+  const ix = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touch.x;
+  const iz = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touch.y;
   _mv.set(0, 0, 0).addScaledVector(_f, iz).addScaledVector(_r, ix);
-  const moving = _mv.lengthSq() > 0;
+  const moving = _mv.lengthSq() > 0.04;               // small dead zone for the touch stick
   if (moving) {
     _mv.normalize();
-    const run = keys.ShiftLeft || keys.ShiftRight;
+    const run = keys.ShiftLeft || keys.ShiftRight || touch.run;
     const speed = eggForm ? (run ? P.run : P.walk) : (run ? speedStat * CONFIG.player.runMult : speedStat);
     const mx = _mv.x * speed * dt, mz = _mv.z * speed * dt;
     if (mx !== 0 && !blocked(Math.sign(mx), 0)) pos.x += mx;
@@ -940,8 +1038,12 @@ function updateAct() {
   dom.act.style.top = ((-_w.y * 0.5 + 0.5) * window.innerHeight) + 'px';
 }
 
-let hudSpeed = null;
+let hudSpeed = null, hudThrow = null;
 function updateHud() {
+  if (IS_TOUCH) {
+    const showThrow = form === 'human' && !carry && state.mode === 'charging';
+    if (hudThrow !== showThrow) { hudThrow = showThrow; $('t-throw').style.display = showThrow ? 'flex' : 'none'; }
+  }
   if (hudSpeed !== speedStat) { hudSpeed = speedStat; dom.speedVal.textContent = String(+speedStat.toFixed(1)); }
   const here = areaAt(pos.x, pos.z);
   for (const a of areas) {
@@ -1040,7 +1142,8 @@ function updateChicken(ch, dt) {
     if (ch.alert > 0) ch.alert -= dt;                        // a short moment of "hey!" before it runs
     else if (dist < C.catchRadius && Math.abs(pos.y - p.y) < 2.5) {
       ch.state = 'wander'; ch.target = null; ch.wait = 1.5;
-      dropCarry('The chicken caught you! The egg went back.');
+      dropCarry('The chicken caught you! The egg went back and you woke up in your pen.');
+      respawn();                                             // caught = sent back to your pen
     } else if (dist > 1e-4) {
       const step = Math.min(A.chase * dt, dist);
       chickenMove(ch, _cd.x / dist * step, _cd.z / dist * step, C.chaseMargin);
