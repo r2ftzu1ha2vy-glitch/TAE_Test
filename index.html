@@ -116,17 +116,32 @@
   .slot .k { position: absolute; top: 2px; left: 6px; font: 600 11px var(--font); opacity: .65; }
   .slot .n { position: absolute; right: 5px; bottom: 1px; font: 700 14px var(--font); text-shadow: 0 1px 3px #000; }
   .slot.sel { border-color: var(--gold); background: rgba(255,211,77,.2); box-shadow: 0 0 14px rgba(255,211,77,.5); transform: translateY(-5px); }
-  /* pet index */
-  #dex { position: fixed; left: 12px; top: 50%; transform: translateY(-50%); width: 190px; padding: 10px 10px 8px; border-radius: 18px; background: var(--panel);
-         border: 2px solid var(--edge); backdrop-filter: blur(6px); color: #fff; pointer-events: none; }
-  #dex .dex-h { display: flex; justify-content: space-between; align-items: baseline; font: 700 16px var(--font); margin: 0 4px 8px; color: var(--gold); letter-spacing: .04em; }
-  #dex .dex-h b { font-size: 14px; color: #fff; opacity: .8; }
-  #dex .dex-row { display: flex; align-items: center; gap: 10px; padding: 5px 6px; border-radius: 12px; background: rgba(255,255,255,.06); margin-top: 5px; }
-  #dex .dex-ic { font-size: 26px; width: 34px; text-align: center; }
+  /* pet index: a button on the left opens a panel with every pet */
+  #dex-btn { position: fixed; left: 12px; top: 50%; transform: translateY(-50%); z-index: 4; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 3px solid #fff;
+             border-radius: 16px; font: 700 17px var(--font); color: #3a2a00; background: linear-gradient(#ffe27a, #ffbf2e); box-shadow: 0 4px 0 #b8860b, 0 8px 16px rgba(0,0,0,.4);
+             cursor: pointer; pointer-events: auto; }
+  #dex-btn:hover { filter: brightness(1.06); } #dex-btn:active { transform: translateY(calc(-50% + 2px)); box-shadow: 0 1px 0 #b8860b; }
+  #dex-btn small { font: 700 12px var(--font); opacity: .65; } #dex-btn .cnt { font: 700 13px var(--font); padding: 1px 7px; border-radius: 999px; background: rgba(58,42,0,.18); }
+  #dex { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 7; background: rgba(8,12,28,.62); backdrop-filter: blur(4px); color: #fff; }
+  #dex.open { display: flex; }
+  #dex .dex-panel { width: min(600px, 92vw); max-height: 86vh; overflow-y: auto; padding: 16px 18px 14px; border-radius: 22px; background: rgba(18,22,40,.94); border: 2px solid var(--edge); box-shadow: 0 20px 60px rgba(0,0,0,.55); }
+  #dex .dex-h { display: flex; align-items: center; gap: 10px; font: 700 24px var(--font); margin-bottom: 12px; color: var(--gold); letter-spacing: .04em; }
+  #dex .dex-h b { font-size: 16px; color: #fff; opacity: .8; margin-right: auto; }
+  #dex .dex-h .dex-title { }
+  #dex .dex-x { border: 2px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12); color: #fff; border-radius: 12px; font: 700 15px var(--font); padding: 6px 12px; cursor: pointer; }
+  #dex .dex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  #dex .dex-row { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px 8px; border-radius: 16px; background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.1); }
+  #dex .dex-ic { width: 96px; height: 96px; display: flex; align-items: center; justify-content: center; font-size: 56px; }
+  #dex .dex-ic img { width: 100%; height: 100%; object-fit: contain; }
   #dex .dex-row.locked .dex-ic { filter: brightness(0); opacity: .45; }
-  #dex .dex-t { flex: 1; display: flex; flex-direction: column; line-height: 1.15; }
-  #dex .dex-t b { font: 600 15px var(--font); } #dex .dex-t small { font: 600 11px var(--font); letter-spacing: .06em; text-transform: uppercase; }
-  #dex .dex-n { font: 700 15px var(--font); opacity: .85; }
+  #dex .dex-t { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+  #dex .dex-t b { font: 700 17px var(--font); } #dex .dex-t small { font: 600 11px var(--font); letter-spacing: .06em; text-transform: uppercase; }
+  #dex .dex-n { font: 700 15px var(--font); opacity: .85; min-height: 1.2em; }
+  #dex .dex-foot { margin-top: 12px; text-align: center; font: 500 13px var(--font); opacity: .6; }
+  .pet-ic { pointer-events: none; display: block; } .slot .ic { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .slot .ic img { width: 46px; height: 46px; object-fit: contain; }
+  .slot.get { animation: slotget .45s ease; } @keyframes slotget { 40% { transform: translateY(-10px) scale(1.18); border-color: var(--gold); } }
+  #banner img.bn { display: inline-block; height: 1.15em; width: 1.15em; vertical-align: middle; object-fit: contain; margin-right: 6px; }
   /* egg hatch timers, popups, banner */
   .egg-timer { position: fixed; left: 0; top: 0; display: none; pointer-events: none; z-index: 2; min-width: 66px; padding: 4px 10px 6px; border-radius: 12px; text-align: center; color: #fff;
                background: rgba(18,22,40,.78); border: 2px solid rgba(255,255,255,.35); font: 600 16px var(--font); white-space: nowrap; }
@@ -167,8 +182,8 @@
   body.touch .slot { width: 40px; height: 40px; font-size: 22px; } body.touch .slot .k { display: none; }
   body.touch #money { top: calc(12px + env(safe-area-inset-top)); right: calc(66px + env(safe-area-inset-right)); font-size: 17px; }
   body.touch #money .coin { width: 22px; height: 22px; font-size: 13px; }
-  body.touch #dex { width: 120px; top: 56%; padding: 6px; left: calc(8px + env(safe-area-inset-left)); }
-  body.touch #dex .dex-ic { font-size: 20px; width: 24px; } body.touch #dex .dex-t b { font-size: 12px; } body.touch #dex .dex-t small { font-size: 9px; }
+  body.touch #dex-btn { left: calc(8px + env(safe-area-inset-left)); top: 56%; padding: 6px 10px; font-size: 14px; border-width: 2px; } body.touch #dex-btn small { display: none; }
+  body.touch .slot .ic img { width: 30px; height: 30px; } body.touch #dex .dex-ic { width: 72px; height: 72px; }
   body.touch #banner b { font-size: 32px; }
   body.touch #overlay { font-size: 16px; }
 </style>
@@ -184,7 +199,7 @@
   <symbol id="ico-bolt" viewBox="0 0 24 24"><path d="M13.5 2 4 13.5h6.2L9 22l10-12.2h-6.4z"/></symbol>
 </svg>
 <div id="hud">
-  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>Space</b> jump &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
+  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>Space</b> jump &nbsp; <b>I</b> pet index &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
   Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br></span>
   <span class="tc"><b>Left</b> stick move (push all the way to run) &nbsp; <b>Right</b> side drag to look<br>
   In the yellow <b>Throw Zone</b> tap <b>Throw</b> to stop the power bar<br></span>
@@ -219,6 +234,7 @@
   <button class="tbtn" id="t-respawn" type="button" aria-label="Respawn">&#8634;</button>
 </div>
 <div id="money"><span class="coin">$</span><b>0</b></div>
+<button type="button" id="dex-btn">Index</button>
 <div id="dex"></div>
 <div id="hotbar"></div>
 <div id="banner"></div>
@@ -234,9 +250,10 @@
       <li>Walk into the yellow <b>Throw Zone</b> and throw an egg with <b>Space</b> / <b>Click</b> (touch: <b>Throw</b>).</li>
       <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken catches you!</li>
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
-      <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-8</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it and get paid.</li>
+      <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-8</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it and get paid. Bigger egg = bigger pet.</li>
+      <li>Open the <b>Index</b> button (or press <b>I</b>) to see every pet.</li>
     </ol>
-    <div style="margin-top:8px;opacity:.85"><b>WASD</b> move &middot; <b>Shift</b> run &middot; <b>Space</b> jump &middot; <b>Mouse</b> look &middot; <b>R</b> respawn &middot; <b>Esc</b> pause</div>
+    <div style="margin-top:8px;opacity:.85"><b>WASD</b> move &middot; <b>Shift</b> run &middot; <b>Space</b> jump &middot; <b>Mouse</b> look &middot; <b>R</b> respawn &middot; <b>I</b> index &middot; <b>Esc</b> pause</div>
   </div>
   <div id="menu-stats"></div>
   <button type="button" id="reset-btn" class="link">Reset progress</button>
@@ -261,7 +278,7 @@ const CONFIG = {
   models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb' },
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb' } },
   eggs: { baseHeight: 0.8, maxMult: 10, respawn: 6,   // 1x egg = baseHeight metres tall; size never exceeds maxMult
-    sizeTiers: [ { w: 60, min: 1, max: 2 }, { w: 25, min: 2, max: 4 }, { w: 10, min: 4, max: 6 }, { w: 4, min: 6, max: 8 }, { w: 1, min: 8, max: 10 } ],   // big eggs are rare
+    sizeTiers: [ { w: 72, min: 1, max: 2 }, { w: 21, min: 2, max: 4 }, { w: 5.5, min: 4, max: 6 }, { w: 1.2, min: 6, max: 8 }, { w: 0.3, min: 8, max: 10 } ],   // big eggs are MUCH rarer now (10x was 1 in 100, now 1 in ~330)
     types: { normal: { w: 45, pts: 10 }, brown: { w: 28, pts: 20 }, cracked: { w: 12, pts: 5 }, golden: { w: 10, pts: 100 }, rainbow: { w: 5, pts: 250 } } },
   // height 1.6 = the size the chicken actually appeared at before (the old bounding-box bug scaled it up from the configured 1.0).
   // margin = keep-out distance from area edges while wandering; chaseMargin = same while chasing; alert = seconds it freezes before it runs.
@@ -307,6 +324,7 @@ const CONFIG = {
   rarities: { common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' } },
   eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
   hotbarSlots: 8, petPenMax: 30, petSpeed: 0.8,
+  petSizeGain: 0.25,   // pet size = base height * (1 + (eggMult - 1) * petSizeGain): a 1x egg gives a normal pet, a 10x egg gives a pet 3.25x taller
   // range = how close you must be to an egg's edge to see Steal. carry* = size/height of the egg held over your head.
   steal: { penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
 };
@@ -330,7 +348,7 @@ const dom = {
 };
 if (CONFIG.debug) { dom.debug.style.display = 'block'; document.body.classList.add('dbg'); }
 dom.arrow = $('arrow');
-const ui = { hotbar: $('hotbar'), dex: $('dex'), money: $('money'), banner: $('banner'), play: $('play-btn'), slotEls: [] };
+const ui = { hotbar: $('hotbar'), dex: $('dex'), dexBtn: $('dex-btn'), money: $('money'), banner: $('banner'), play: $('play-btn'), slotEls: [] };
 
 function showOverlay(html) { dom.overlayText.innerHTML = html; dom.overlay.style.display = 'flex'; }
 function fatal(err) {
@@ -698,7 +716,7 @@ $('reset-btn').addEventListener('click', () => {
 document.addEventListener('pointerlockchange', () => {
   if (IS_TOUCH) return;
   const locked = document.pointerLockElement === renderer.domElement;
-  if (locked) dom.overlay.style.display = 'none'; else if (ready) showMenu();
+  if (locked) dom.overlay.style.display = 'none'; else if (ready && !dexOpen) showMenu();
 });
 function jump() {
   if (grounded && ready && form !== 'flying') { vy = (form === 'egg' ? CONFIG.eggForm : CONFIG.player).jump; grounded = false; }
@@ -778,6 +796,8 @@ document.addEventListener('mousedown', (e) => {
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Space') e.preventDefault();
   if (e.repeat) return;
+  if (e.code === 'KeyI') { setDex(!dexOpen); return; }
+  if (dexOpen) { if (e.code === 'Escape') setDex(false); return; }   // the index is a pause-style panel: no game keys while it is open
   keys[e.code] = true;
   if (e.code === 'Space') {
     if (state.mode === 'charging') tryThrow();
@@ -789,7 +809,7 @@ window.addEventListener('keydown', (e) => {
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 window.addEventListener('wheel', (e) => {
-  if (!ready || dom.overlay.style.display !== 'none') return;
+  if (!ready || dexOpen || dom.overlay.style.display !== 'none') return;
   selectSlot(inv.sel + (e.deltaY > 0 ? 1 : -1));
 }, { passive: true });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -1514,7 +1534,12 @@ function loadSave() {
     if (!d) return;
     money = Math.max(0, +d.money || 0);
     for (const id of Object.keys(CONFIG.pets)) if (d.dex && d.dex[id] > 0) dex[id] = d.dex[id] | 0;
-    (d.slots || []).slice(0, CONFIG.hotbarSlots).forEach((sl, i) => { if (sl && CONFIG.pets[sl.pet] && sl.count > 0) inv.slots[i] = { pet: sl.pet, count: sl.count | 0 }; });
+    (d.slots || []).slice(0, CONFIG.hotbarSlots).forEach((sl, i) => {
+      if (!sl || !CONFIG.pets[sl.pet] || !(sl.count > 0)) return;
+      const n = sl.count | 0, sizes = Array.isArray(sl.sizes) ? sl.sizes.map((v) => clampN(+v || 1, 1, CONFIG.eggs.maxMult)).slice(0, n) : [];
+      while (sizes.length < n) sizes.push(1);
+      inv.slots[i] = { pet: sl.pet, count: n, sizes };
+    });
   } catch (e) { log.warn('Could not read the save', e); }
 }
 function saveGame() {
@@ -1536,9 +1561,9 @@ function refreshHotbar() {
   inv.slots.forEach((sl, i) => {
     const el = ui.slotEls[i]; if (!el) return;
     el.classList.toggle('sel', i === inv.sel);
-    el.querySelector('.ic').textContent = sl ? CONFIG.pets[sl.pet].icon : '';
+    el.querySelector('.ic').innerHTML = sl ? petIcon(sl.pet) : '';
     el.querySelector('.n').textContent = sl && sl.count > 1 ? sl.count : '';
-    el.title = sl ? CONFIG.pets[sl.pet].name : '';
+    el.title = sl ? CONFIG.pets[sl.pet].name + (sl.sizes && sl.sizes.length ? '  (' + sl.sizes.map((v) => v.toFixed(1) + 'x').join(', ') + ')' : '') : '';
   });
 }
 function selectSlot(i) { const n = CONFIG.hotbarSlots; inv.sel = ((i % n) + n) % n; refreshHotbar(); }
@@ -1546,11 +1571,70 @@ function heldPet() { const sl = inv.slots[inv.sel]; return sl ? sl.pet : null; }
 
 function buildDex() {
   const ids = Object.keys(CONFIG.pets), found = ids.filter((id) => dex[id] > 0).length;
-  ui.dex.innerHTML = '<div class="dex-h"><span>Pet Index</span><b>' + found + '/' + ids.length + '</b></div>' + ids.map((id) => {
-    const P = CONFIG.pets[id], R = CONFIG.rarities[P.rarity], n = dex[id] || 0;
-    return '<div class="dex-row' + (n ? '' : ' locked') + '"><span class="dex-ic">' + P.icon + '</span><span class="dex-t"><b>' + (n ? P.name : '???') +
-      '</b><small style="color:' + R.color + '">' + R.label + '</small></span><span class="dex-n">' + (n ? '\u00d7' + n : '') + '</span></div>';
-  }).join('');
+  ui.dexBtn.innerHTML = 'Index <span class="cnt">' + found + '/' + ids.length + '</span><small>[I]</small>';
+  ui.dex.innerHTML = '<div class="dex-panel"><div class="dex-h"><span class="dex-title">Pet Index</span><b>' + found + '/' + ids.length + ' discovered</b><button type="button" class="dex-x">Close</button></div>' +
+    '<div class="dex-grid">' + ids.map((id) => {
+      const P = CONFIG.pets[id], R = CONFIG.rarities[P.rarity], n = dex[id] || 0;
+      return '<div class="dex-row' + (n ? '' : ' locked') + '"><span class="dex-ic">' + petIcon(id) + '</span><span class="dex-t"><b>' + (n ? P.name : '???') +
+        '</b><small style="color:' + R.color + '">' + R.label + '</small></span><span class="dex-n">' + (n ? 'Hatched \u00d7' + n : 'Not found yet') + '</span></div>';
+    }).join('') + '</div><div class="dex-foot">' + (IS_TOUCH ? 'Tap outside to close' : 'Press I or Esc to close') + '</div></div>';
+}
+let dexOpen = false;
+function setDex(open) {
+  if (open === dexOpen) return;
+  if (open && (!ready || dom.overlay.style.display !== 'none')) return;       // not while the main menu is showing
+  dexOpen = open;
+  ui.dex.classList.toggle('open', open);
+  if (open) {
+    buildDex();
+    for (const k in keys) keys[k] = false;
+    if (!IS_TOUCH && document.pointerLockElement) document.exitPointerLock();   // free the cursor so the panel can be used
+  } else if (!IS_TOUCH) {
+    try { const r = renderer.domElement.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* ignore */ }
+    setTimeout(() => { if (!dexOpen && ready && document.pointerLockElement !== renderer.domElement && dom.overlay.style.display === 'none') showMenu(); }, 400);
+  }
+}
+ui.dexBtn.addEventListener('click', () => setDex(!dexOpen));
+if (IS_TOUCH) ui.dexBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); setDex(!dexOpen); }, { passive: false });
+const dexClose = (e) => { if (e.target === ui.dex || e.target.closest('.dex-x')) { e.preventDefault(); setDex(false); } };
+ui.dex.addEventListener('click', dexClose);
+if (IS_TOUCH) ui.dex.addEventListener('touchstart', (e) => { e.stopPropagation(); if (e.target === ui.dex || e.target.closest('.dex-x')) { e.preventDefault(); setDex(false); } }, { passive: false });
+
+/* Pet icons: every pet model is rendered once to a small transparent image, used in the hotbar, the index and the hatch banner instead of emoji */
+const petImg = {};
+function petIcon(id, cls) {
+  const u = petImg[id];
+  return u ? '<img class="pet-ic' + (cls ? ' ' + cls : '') + '" src="' + u + '" alt="' + CONFIG.pets[id].name + '">' : '<span class="pet-emoji">' + CONFIG.pets[id].icon + '</span>';
+}
+function renderPetIcons() {
+  let r = null;
+  try {
+    r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    r.setPixelRatio(1); r.setSize(192, 192, false); r.setClearColor(0x000000, 0);
+    const sc = new THREE.Scene();
+    sc.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.5));
+    const dl = new THREE.DirectionalLight(0xffffff, 1.9); dl.position.set(2, 4, 3); sc.add(dl);
+    const cam = new THREE.PerspectiveCamera(30, 1, 0.01, 100);
+    for (const id of Object.keys(CONFIG.pets)) {
+      try {
+        const T = petTpl[id], model = SkeletonUtils.clone(T.gltf.scene);
+        model.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
+        model.position.set(T.ox, T.oy, T.oz);
+        const inner = new THREE.Group(); inner.scale.setScalar(T.scale); inner.add(model);
+        const root = new THREE.Group(); root.add(inner); sc.add(root);
+        const clip = T.gltf.animations.find((c) => /idle/i.test(c.name)) || T.gltf.animations[0];
+        if (clip) { const mx = new THREE.AnimationMixer(model); mx.clipAction(clip).play(); mx.update(0.05); }
+        const box = bindPoseBox(root), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+        const d = Math.max(size.x, size.y, size.z) * 0.5 / Math.tan(THREE.MathUtils.degToRad(15)) * 1.3;
+        cam.position.copy(c).addScaledVector(new THREE.Vector3(0.7, 0.35, 1).normalize(), d);
+        cam.lookAt(c);
+        r.render(sc, cam);
+        petImg[id] = r.domElement.toDataURL('image/png');
+        sc.remove(root);
+      } catch (e) { log.warn('Icon render failed for', id, e); }
+    }
+  } catch (e) { log.warn('Pet icons unavailable, falling back to emoji', e); }
+  finally { if (r) { r.dispose(); if (r.forceContextLoss) r.forceContextLoss(); } }
 }
 function refreshMoney(bump) {
   ui.money.querySelector('b').textContent = money.toLocaleString();
@@ -1590,24 +1674,71 @@ function pickPet(eggType) {
   for (let i = 0; i < ids.length; i++) { r -= w[i]; if (r <= 0) return ids[i]; }
   return ids[0];
 }
-function invCanTake(id) { return inv.slots.some((sl) => sl && sl.pet === id) || inv.slots.some((sl) => !sl); }
-function addPet(id) {
+function invCanTake(id) {                           // counts pets that are still flying to the hotbar so two hatches never fight over the last slot
+  const sim = inv.slots.map((sl) => (sl ? sl.pet : null));
+  for (const f of flyers) { if (sim.includes(f.id)) continue; const i = sim.indexOf(null); if (i < 0) return false; sim[i] = f.id; }
+  return sim.includes(id) || sim.includes(null);
+}
+function addPet(id, mult) {
+  mult = Math.round(clampN(mult || 1, 1, CONFIG.eggs.maxMult) * 100) / 100;
   let i = inv.slots.findIndex((sl) => sl && sl.pet === id);
-  if (i >= 0) inv.slots[i].count++;
-  else { i = inv.slots.findIndex((sl) => !sl); inv.slots[i] = { pet: id, count: 1 }; }
+  if (i >= 0) { inv.slots[i].count++; (inv.slots[i].sizes ||= []).push(mult); }
+  else { i = inv.slots.findIndex((sl) => !sl); inv.slots[i] = { pet: id, count: 1, sizes: [mult] }; }
   if (!inv.slots[inv.sel]) inv.sel = i;               // nothing held: pick up the new pet
   refreshHotbar(); saveGame();
+  const el = ui.slotEls[i]; if (el) { el.classList.remove('get'); void el.offsetWidth; el.classList.add('get'); }
 }
-function hatchNow(h) {
-  scene.remove(h.mesh); h.el.remove();
+const petSizeFactor = (mult) => 1 + (clampN(mult || 1, 1, CONFIG.eggs.maxMult) - 1) * CONFIG.petSizeGain;
+
+/* Hatch sequence: the egg pops, the pet rises out of it, flies into the player and vanishes into the hotbar */
+const flyers = [];
+const EMERGE_T = 1.1, FLY_T = 1.0;
+const easeOutBack = (t) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+function startHatch(h) {
   hatching.splice(hatching.indexOf(h), 1);
-  const id = h.pet, P = CONFIG.pets[id], R = CONFIG.rarities[P.rarity];
+  h.el.remove();
+  h.mesh.rotation.z = 0;
+  const m = makePetModel(h.pet, h.egg.mult);
+  m.root.scale.setScalar(0.02);
+  m.root.position.set(h.mesh.position.x, h.mesh.position.y + h.size * 0.1, h.mesh.position.z);
+  scene.add(m.root);
+  flyers.push({ id: h.pet, mult: h.egg.mult, pet: m, egg: h.mesh, eggScale: h.mesh.scale.x, eggSize: h.size, base: h.mesh.position.clone(), t: 0, phase: 'emerge', from: new THREE.Vector3(), to: new THREE.Vector3() });
+  log.info('Hatching', h.pet, h.egg.mult.toFixed(2) + 'x');
+}
+function finishHatch(f) {
+  const id = f.id, P = CONFIG.pets[id], R = CONFIG.rarities[P.rarity];
   const first = !(dex[id] > 0);
   dex[id] = (dex[id] || 0) + 1;
-  addPet(id); buildDex();
-  banner('<small>' + (first ? 'New pet!' : 'Egg hatched!') + '</small><b>' + P.icon + ' ' + P.name + '</b><em>' + R.label + '</em>', R.color);
+  addPet(id, f.mult); buildDex();
+  banner('<small>' + (first ? 'New pet!' : 'Egg hatched!') + '</small><b>' + petIcon(id, 'bn') + P.name + ' <span style="font-size:.5em;opacity:.8">' + f.mult.toFixed(1) + 'x</span></b><em>' + R.label + '</em>', R.color);
   say('Hatched a ' + P.name + '! It is in your hotbar.');
-  log.info('Hatched', id);
+}
+function updateFlyers(dt) {
+  for (let i = flyers.length - 1; i >= 0; i--) {
+    const f = flyers[i], p = f.pet, r = p.root;
+    f.t += dt;
+    if (f.phase === 'emerge') {
+      const eu = clampN(f.t / 0.55, 0, 1);
+      if (f.egg) {
+        if (eu >= 1) { scene.remove(f.egg); f.egg = null; }
+        else f.egg.scale.setScalar(f.eggScale * (eu < 0.25 ? 1 + eu : Math.max(0, 1.25 * (1 - (eu - 0.25) / 0.75))));   // swells, then bursts away
+      }
+      const pu = clampN((f.t - 0.15) / 0.85, 0, 1);
+      r.scale.setScalar(Math.max(0.02, easeOutBack(pu)));
+      r.position.set(f.base.x, f.base.y + f.eggSize * (0.1 + 0.5 * pu) + Math.sin(f.t * 8) * 0.04 * pu, f.base.z);
+      r.rotation.y = Math.atan2(pos.x - r.position.x, pos.z - r.position.z);
+      petPlay(p, 'idle');
+      if (f.t >= EMERGE_T) { f.phase = 'fly'; f.t = 0; f.from.copy(r.position); }
+    } else {
+      const u = clampN(f.t / FLY_T, 0, 1), e = u * u;
+      f.to.set(pos.x, pos.y + 1.0, pos.z);
+      r.position.lerpVectors(f.from, f.to, e); r.position.y += Math.sin(Math.PI * u) * 1.0;
+      r.scale.setScalar(Math.max(0.02, 1 - 0.95 * e));
+      r.rotation.y = Math.atan2(f.to.x - r.position.x, f.to.z - r.position.z);
+      if (u >= 1) { scene.remove(r); flyers.splice(i, 1); finishHatch(f); continue; }
+    }
+    p.mixer.update(dt);
+  }
 }
 function updateHatching(dt) {
   for (let i = hatching.length - 1; i >= 0; i--) {
@@ -1616,7 +1747,7 @@ function updateHatching(dt) {
     if (h.left < 3) { h.wob += dt * 26; h.mesh.rotation.z = Math.sin(h.wob) * 0.2 * (1 - h.left / 3); }   // the egg shakes before it hatches
     if (h.left <= 0) {
       if (!h.pet) h.pet = pickPet(h.egg.type);
-      if (invCanTake(h.pet)) hatchNow(h);
+      if (invCanTake(h.pet)) startHatch(h);
     }
   }
 }
@@ -1642,6 +1773,7 @@ function setupPets(gltfs) {
     petTpl[id] = { gltf: g, scale: CONFIG.pets[id].height / size.y, ox: -c.x, oy: -box.min.y, oz: -c.z };
     log.info('Pet ready:', id, 'height', size.y.toFixed(3), 'anims', g.animations.map((a) => a.name).join(','));
   }
+  renderPetIcons();
 }
 function petPlay(p, n) {
   if (p.anim === n || !p.actions[n]) return;
@@ -1650,18 +1782,23 @@ function petPlay(p, n) {
   if (pv) pv.crossFadeTo(nx, 0.2, false);
   p.anim = n;
 }
-function spawnPet(id, pt) {
+function makePetModel(id, mult) {                       // a pet scaled by how big its egg was
   const T = petTpl[id];
   const model = SkeletonUtils.clone(T.gltf.scene);
   model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
   model.position.set(T.ox, T.oy, T.oz);
-  const inner = new THREE.Group(); inner.scale.setScalar(T.scale); inner.add(model);
-  const root = new THREE.Group(); root.add(inner); root.position.copy(pt); scene.add(root);
+  const inner = new THREE.Group(); inner.scale.setScalar(T.scale * petSizeFactor(mult)); inner.add(model);
+  const root = new THREE.Group(); root.add(inner);
   const mixer = new THREE.AnimationMixer(model), actions = {};
   for (const clip of T.gltf.animations) actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
-  const p = { id, root, mixer, actions, anim: '', pos: pt.clone(), yaw: Math.random() * Math.PI * 2, target: null, wait: 0.5 + Math.random() * 3 };
-  root.rotation.y = p.yaw;
-  petPlay(p, 'idle'); mixer.update(Math.random() * 2);
+  return { root, mixer, actions, anim: '' };
+}
+function spawnPet(id, pt, mult) {
+  const m = makePetModel(id, mult);
+  m.root.position.copy(pt); scene.add(m.root);
+  const p = Object.assign(m, { id, mult, pos: pt.clone(), yaw: Math.random() * Math.PI * 2, target: null, wait: 0.5 + Math.random() * 3 });
+  p.root.rotation.y = p.yaw;
+  petPlay(p, 'idle'); p.mixer.update(Math.random() * 2);
   petsInPen.push(p);
   if (petsInPen.length > CONFIG.petPenMax) { const old = petsInPen.shift(); scene.remove(old.root); }
 }
@@ -1669,12 +1806,13 @@ function placePet(pt) {                                 // put the pet you are h
   const sl = inv.slots[inv.sel];
   if (!sl) return;
   const P = CONFIG.pets[sl.pet];
-  spawnPet(sl.pet, pt);
+  const mult = sl.sizes && sl.sizes.length ? sl.sizes.pop() : 1;
+  spawnPet(sl.pet, pt, mult);
   sl.count--; if (sl.count <= 0) inv.slots[inv.sel] = null;
   money += P.value;
   refreshHotbar(); refreshMoney(true); saveGame();
-  popupAt('+$' + P.value, new THREE.Vector3(pt.x, pt.y + 1.2, pt.z), '#ffd34d');
-  say('Placed ' + P.name + '  +$' + P.value);
+  popupAt('+$' + P.value, new THREE.Vector3(pt.x, pt.y + 1.2 * petSizeFactor(mult), pt.z), '#ffd34d');
+  say('Placed ' + P.name + ' (' + mult.toFixed(1) + 'x)  +$' + P.value);
 }
 function updatePets(dt) {
   const b = playerPen ? playerPen.box : null;
@@ -1724,6 +1862,7 @@ function tick() {
   updateAim();
   updateHatching(dt);
   updatePets(dt);
+  updateFlyers(dt);
   updateEggLabels();
   updateTutorial();
   updateTutorialArrow();
