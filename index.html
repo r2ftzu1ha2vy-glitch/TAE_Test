@@ -326,11 +326,13 @@ const CONFIG = {
   // gripAlign: where the Training clip's raised arms sit on the bar (0 = lowest point of the pull, 1 = highest, 0.5 = middle).
   // strength: every point adds throwBonusPerStrength to the launch speed (0.01 = +1%). speed: every rep adds speedPerRep to your speed stat.
   gym: { reach: 2.2, barRepFirst: 1.0, barRepEvery: 2.0, treadRepFirst: 0.5, treadRepEvery: 0.5, gripAlign: 0.5, strengthPerRep: 1, throwBonusPerStrength: 0.01, speedPerRep: 0.25, barHeight: 2.7, treadmillLength: 2.9, wallInset: 3.5, spread: 4.5 },
+  // Areas are islands ordered from nearest to furthest (the order below). Humans can never enter an area (only thrown eggs, and thieves with a stolen egg, are allowed in),
+  // and you can only go to the island your egg landed on and the ones before it; anything further sends you back out.
   // Per-area rules. speed = recommended player speed (shown at the top of the screen), chase = how fast that area's chicken runs
   // when you steal, ptsMult = score multiplier for eggs stolen there. Set chicken:false / eggs:false to switch a part off.
   areas: {
     valley: { label: 'Cluck Valley',    speed: 5,  chase: 5, ptsMult: 1, chicken: true, eggs: true },
-    sands:  { label: 'Scorching Sands', speed: 10, chase: 10,  ptsMult: 2, chicken: true, eggs: true },
+    sands:  { label: 'Scorching Sands', speed: 1000, chase: 10,  ptsMult: 2, chicken: true, eggs: true },
   },
   // Hatching: an egg placed in your pen hatches after hatch.min (smallest egg) .. hatch.max (biggest egg, eggs.maxMult) seconds.
   hatch: { min: 10, max: 30 },
@@ -525,6 +527,8 @@ const state = { mode: 'idle', power: CONFIG.power.min, t: 0, cooldown: 0 };
 let lastSpawnIdx = -1;
 let ready = false;
 let speedStat = CONFIG.player.speed;          // the player's speed stat; shown bottom-left
+const lastOk = new THREE.Vector3(); let lastOkValid = false;   // last position that was allowed (outside every area, or inside one you may be in)
+let throwCap = 0;                              // furthest island you may be on: 1 = first area, 2 = second... (set where your egg lands; 0 = none)
 let areas = [];                               // [{ id, label, speed, chase, ptsMult, box, ... }]
 const penBoxes = {};                          // pen number -> Box3 (from the Fence_PenN meshes)
 let playerSpawnIdx = null, playerPen = null;  // the spawn you first spawned on = your pen, for the rest of the session
@@ -693,6 +697,7 @@ function endEggForm() {
 }
 function respawn() {
   stopGym();
+  throwCap = 0; lastOkValid = false;
   endEggForm();
   if (carry && carry.status === 'stolen') dropCarry('You respawned - the stolen egg went back.');
   // The spawn you land on first decides your pen. Every later respawn (R, falling, etc.) returns you to that same pen.
@@ -1153,6 +1158,9 @@ function landAsEgg(hit) {
   else { pos.copy(hit.point).addScaledVector(_n, CONFIG.eggForm.radius); pos.y -= CONFIG.eggs.baseHeight * 0.5; grounded = false; }
   vy = 0;
   form = 'egg';
+  const landed = areaAt(pos.x, pos.z);
+  throwCap = landed ? areas.indexOf(landed) + 1 : 1;       // the island you landed on (and the ones before it) are open; landing short of every island opens the first
+  lastOk.copy(pos); lastOkValid = true;
   const dist = Math.hypot(pos.x - flight.origin.x, pos.z - flight.origin.z);
   dom.last.textContent = 'Last throw: power ' + flight.power.toFixed(1) + ', landed ' + dist.toFixed(1) + ' m away';
   log.info('Landed as egg', dist.toFixed(2), 'm');
@@ -1223,7 +1231,7 @@ function buildAreasBar() {
   for (const a of areas) {
     const el = document.createElement('div');
     el.className = 'area'; el.dataset.id = a.id;
-    el.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><use href="#ico-bolt"/></svg><span>' + a.label + '</span><b>' + a.speed + '</b>';
+    el.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><use href="#ico-bolt"/></svg><span>' + a.label + '</span><b>' + (a.speed >= 1000 ? +(a.speed / 1000).toFixed(1) + 'k' : a.speed) + '</b>';
     dom.areasRow.appendChild(el);
     a.el = el;
   }
@@ -1232,6 +1240,22 @@ function areaAt(x, z) {   // 0.1 m tolerance so the hair-thin seam between Cluck
   const e = 0.1;
   for (const a of areas) if (x >= a.box.min.x - e && x <= a.box.max.x + e && z >= a.box.min.z - e && z <= a.box.max.z + e) return a;
   return null;
+}
+
+// Keeps people out of areas they may not be in: humans (unless thieving a stolen egg) and anyone on an island further than the one their egg landed on.
+function enforceAreas() {
+  if (!ready || form === 'flying' || !areas.length) return;
+  const a = areaAt(pos.x, pos.z);
+  let msg = null;
+  if (a && form === 'human' && !(carry && carry.status === 'stolen')) msg = 'Only eggs can enter ' + a.label + ' - throw an egg to get in!';
+  else if (a && areas.indexOf(a) + 1 > throwCap) msg = a.label + ' is too far for this throw - throw further to reach it!';
+  if (!msg) { lastOk.copy(pos); lastOkValid = true; return; }
+  if (!lastOkValid) { respawn(); return; }
+  pos.copy(lastOk); vy = 0; grounded = true;
+  if (form === 'human') playerRoot.position.copy(pos);
+  else if (playerEggMesh) playerEggMesh.position.set(pos.x, pos.y + THREE.MathUtils.lerp(CONFIG.eggs.baseHeight * 0.5, CONFIG.eggForm.radius, eggLie), pos.z);
+  say(msg, 3);
+  log.info('Sent back out of', a.label);
 }
 
 function assignPen(sp) {
@@ -2044,6 +2068,7 @@ function tick() {
   updateTraining(dt);
   if (form === 'human' && !carry) updateThrowState(dt);
   updateFlight(dt);
+  enforceAreas();
   updateEggItems(dt);
   updateChickens(dt);
   updateCarry();
