@@ -210,7 +210,7 @@
   Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br></span>
   <span class="tc"><b>Left</b> stick move (push all the way to run) &nbsp; <b>Right</b> side drag to look<br>
   In the yellow <b>Throw Zone</b> tap <b>Throw</b> to stop the power bar<br></span>
-  Walk up to an egg and click it to steal it. Get out of the area before the chicken catches you (it sends you back to your pen), then click a spot in your pen to place it.<br>
+  Walk up to an egg and click it to steal it. Get out of the area before its guard (the chicken, or the scorpion in the Sands) catches you (it sends you back to your pen), then click a spot in your pen to place it.<br>
   <span id="pen">Your pen: -</span><br><span id="held">Holding: nothing</span><br>
   <span id="last">Last throw: none</span><br><span id="score">Score: 0</span>
 </div>
@@ -260,7 +260,7 @@
     <b>Goal:</b> collect pets and earn money.
     <ol>
       <li>Walk into the yellow <b>Throw Zone</b> and throw an egg with <b>Space</b> / <b>Click</b> (touch: <b>Throw</b>).</li>
-      <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken catches you!</li>
+      <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken (or the scorpion in the Sands) catches you!</li>
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
       <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-8</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s, bunny and ladybug $25/s at 1x, more for bigger eggs).</li>
       <li>In your pen, <b>click the Pull-Up Bar</b> to gain <b>Strength</b> (throws go farther) and <b>click the Treadmill</b> to gain <b>Speed</b>. You hop on automatically and keep training on your own; <b>click again</b> to stop.</li>
@@ -288,7 +288,7 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb' },
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb' },
     gym: { treadmill: 'Treadmill.glb', bar: 'PullUp_Bar.glb' },
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb' } },
   eggs: { baseHeight: 0.8, maxMult: 10, respawn: 6,   // 1x egg = baseHeight metres tall; size never exceeds maxMult
@@ -297,6 +297,8 @@ const CONFIG = {
   // height 1.6 = the size the chicken actually appeared at before (the old bounding-box bug scaled it up from the configured 1.0).
   // margin = keep-out distance from area edges while wandering; chaseMargin = same while chasing; alert = seconds it freezes before it runs.
   chicken: { height: 1.6, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: 0 },
+  // The Scorching Sands enemy. Same settings as the chicken. The scorpion model faces -Z, hence yawOffset = PI.
+  scorpion: { height: 1.5, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: Math.PI },
   eggForm: { walk: 4, run: 6.5, radius: 0.3, stepHeight: 0.25, jump: 6, probeHeights: [0.2, 0.5], cameraDistance: 4, cameraHeight: 0.8 },
   // Uniform scale applied to the whole map. Source map is ~253 x 304 m; 0.4 -> ~101 x 122 m.
   // Override with ?mapscale=0.3 (smaller) or ?mapscale=0.6 (bigger).
@@ -329,10 +331,10 @@ const CONFIG = {
   // Areas are islands ordered from nearest to furthest (the order below). Humans can never enter an area (only thrown eggs, and thieves with a stolen egg, are allowed in),
   // and you can only go to the island your egg landed on and the ones before it; anything further sends you back out.
   // Per-area rules. speed = recommended player speed (shown at the top of the screen), chase = how fast that area's chicken runs
-  // when you steal, ptsMult = score multiplier for eggs stolen there. Set chicken:false / eggs:false to switch a part off.
+  // when you steal (enemy = which creature guards the area: 'chicken' or 'scorpion'; chicken:false switches it off), ptsMult = score multiplier for eggs stolen there. Set chicken:false / eggs:false to switch a part off.
   areas: {
-    valley: { label: 'Cluck Valley',    speed: 5,  chase: 5, ptsMult: 1, chicken: true, eggs: true },
-    sands:  { label: 'Scorching Sands', speed: 1000, chase: 10,  ptsMult: 2, chicken: true, eggs: true },
+    valley: { label: 'Cluck Valley',    speed: 5,  chase: 5, ptsMult: 1, enemy: 'chicken', chicken: true, eggs: true },
+    sands:  { label: 'Scorching Sands', speed: 1000, chase: 1250, ptsMult: 2, enemy: 'scorpion', chicken: true, eggs: true },
   },
   // Hatching: an egg placed in your pen hatches after hatch.min (smallest egg) .. hatch.max (biggest egg, eggs.maxMult) seconds.
   hatch: { min: 10, max: 30 },
@@ -548,8 +550,8 @@ async function init() {
   });
 
   const names = Object.keys(CONFIG.models.eggs);
-  const [mapGltf, playerGltf, eggGltf, chickGltf, bunnyGltf, ladyGltf, treadGltf, barGltf, ...typeGltfs] = await Promise.all([
-    load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.chicken),
+  const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, bunnyGltf, ladyGltf, treadGltf, barGltf, ...typeGltfs] = await Promise.all([
+    load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.chicken), load(CONFIG.models.scorpion),
     load(CONFIG.models.pets.bunny), load(CONFIG.models.pets.ladybug),
     load(CONFIG.models.gym.treadmill), load(CONFIG.models.gym.bar),
     ...names.map((n) => load(CONFIG.models.eggs[n])),
@@ -568,7 +570,7 @@ async function init() {
   playerEggMesh.visible = false;
   scene.add(playerEggMesh);
   buildAreas();
-  setupChickens(chickGltf);
+  setupChickens({ chicken: chickGltf, scorpion: scorpGltf });
   setupPets({ chicken: chickGltf, bunny: bunnyGltf, ladybug: ladyGltf });
   setupGym({ treadmill: treadGltf, bar: barGltf });
   loadSave(); buildHotbar(); buildDex(); refreshHotbar(); refreshMoney(false);
@@ -1082,7 +1084,7 @@ function statusText() {
   if (tt) return tt;
   if (toast.t > 0) return toast.text;
   if (carry) {
-    if (carry.status === 'stolen') { const a = areaAt(pos.x, pos.z); return 'The chicken is after you! Get out of ' + (a ? a.label : 'the area') + '!'; }
+    if (carry.status === 'stolen') { const a = areaAt(pos.x, pos.z); return 'The ' + (a && a.enemy || 'chicken') + ' is after you! Get out of ' + (a ? a.label : 'the area') + '!'; }
     if (nearPen()) return IS_TOUCH ? 'Tap a spot in your pen to place the egg' : 'Click a spot in your pen to place the egg';
     return playerPen ? 'Safe! Take the egg to your pen (Pen ' + playerPen.num + ', ' + Math.round(Math.hypot(pos.x - playerPen.center.x, pos.z - playerPen.center.z)) + ' m away)' : 'Safe! Take the egg to your pen';
   }
@@ -1311,7 +1313,7 @@ function steal(it) {
   carry = { egg: e, item: it, area: it.area, areaLabel: area ? area.label : null, status: 'stolen', held: makeHeld(e) };
   playerRoot.add(carry.held);
   state.mode = 'idle';
-  say('Stolen! RUN - the chicken is after you!', 4);
+  say('Stolen! RUN - the ' + (area && area.enemy || 'chicken') + ' is after you!', 4);
   log.info('Stole', e.type, e.mult.toFixed(2) + 'x from', it.area);
 }
 function dropCarry(msg) {                                   // the stolen egg goes back where it came from
@@ -1502,25 +1504,26 @@ function randomSpot(ch, m) {
   }
   return null;
 }
-function setupChickens(gltf) {
+function setupChickens(gltfs) {
   for (const area of areas) {
     if (area.chicken === false) continue;
+    const kind = area.enemy && gltfs[area.enemy] ? area.enemy : 'chicken', gltf = gltfs[kind], E = CONFIG[kind];
     const model = SkeletonUtils.clone(gltf.scene);
     model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
     const box = bindPoseBox(model);
     const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
     model.position.set(-c.x, -box.min.y, -c.z);              // feet exactly on the origin
-    const inner = new THREE.Group(); inner.scale.setScalar(CONFIG.chicken.height / size.y); inner.add(model);
+    const inner = new THREE.Group(); inner.scale.setScalar(E.height / size.y); inner.add(model);
     const root = new THREE.Group(); root.add(inner); scene.add(root);
     const mx = new THREE.AnimationMixer(model), actions = {};
     for (const clip of gltf.animations) actions[clip.name.toLowerCase()] = mx.clipAction(clip);
-    const ch = { area, root, mixer: mx, actions, anim: '', state: 'wander', target: null, wait: 1, yaw: 0, alert: 0, pos: new THREE.Vector3() };
-    let start = area.id === 'valley' && chickenStart && chickenOk(ch, chickenStart.x, chickenStart.z, CONFIG.chicken.margin) !== null ? chickenStart : null;
-    if (!start) start = randomSpot(ch, CONFIG.chicken.margin) || area.box.getCenter(new THREE.Vector3());
+    const ch = { area, kind, cfg: E, root, mixer: mx, actions, anim: '', state: 'wander', target: null, wait: 1, yaw: 0, alert: 0, pos: new THREE.Vector3() };
+    let start = area.id === 'valley' && chickenStart && chickenOk(ch, chickenStart.x, chickenStart.z, E.margin) !== null ? chickenStart : null;
+    if (!start) start = randomSpot(ch, E.margin) || area.box.getCenter(new THREE.Vector3());
     const gy = chickenOk(ch, start.x, start.z, 0);
     ch.pos.set(start.x, gy === null ? area.box.max.y : gy, start.z);
     chickens.push(ch);
-    log.info('Chicken ready in', area.label, 'model height', size.y.toFixed(3), '-> scale', (CONFIG.chicken.height / size.y).toFixed(3));
+    log.info(kind, 'ready in', area.label, 'model height', size.y.toFixed(3), '-> scale', (E.height / size.y).toFixed(3));
   }
 }
 function chickenPlay(ch, n) {
@@ -1545,7 +1548,7 @@ function chickenMove(ch, dx, dz, margin) {                   // tries the full m
   return false;
 }
 function updateChicken(ch, dt) {
-  const C = CONFIG.chicken, p = ch.pos, A = ch.area;
+  const C = ch.cfg, p = ch.pos, A = ch.area;
   // A thief is chased by whichever area's chicken they are currently inside (steal in the Sands and you meet the Valley chicken next).
   const chasing = !!carry && carry.status === 'stolen' && form === 'human' && areaAt(pos.x, pos.z) === A;
   if (chasing && ch.state !== 'chase') { ch.state = 'chase'; ch.alert = C.alert; ch.target = null; }
@@ -1556,14 +1559,19 @@ function updateChicken(ch, dt) {
     _cd.set(pos.x - p.x, 0, pos.z - p.z);
     const dist = _cd.length();
     if (dist > 1e-4) ch.yaw = angleLerp(ch.yaw, Math.atan2(_cd.x, _cd.z) + C.yawOffset, 10 * dt);
-    if (ch.alert > 0) ch.alert -= dt;                        // a short moment of "hey!" before it runs
+    if (ch.alert > 0) { ch.alert -= dt; if (ch.actions.attack) anim = 'attack'; }   // a short moment of "hey!" before it runs
     else if (dist < C.catchRadius && Math.abs(pos.y - p.y) < 2.5) {
       ch.state = 'wander'; ch.target = null; ch.wait = 1.5;
-      dropCarry('The chicken caught you! The egg went back and you woke up in your pen.');
+      dropCarry('The ' + ch.kind + ' caught you! The egg went back and you woke up in your pen.');
       respawn();                                             // caught = sent back to your pen
     } else if (dist > 1e-4) {
-      const step = Math.min(A.chase * CONFIG.speedUnit * dt, dist);
-      chickenMove(ch, _cd.x / dist * step, _cd.z / dist * step, C.chaseMargin);
+      let left = Math.min(A.chase * CONFIG.speedUnit * dt, dist);
+      const dx = _cd.x / dist, dz = _cd.z / dist;
+      while (left > 1e-3) {                                  // fast chasers move in short hops so they cannot jump over fences or out of their area
+        const st = Math.min(left, 2);
+        if (!chickenMove(ch, dx * st, dz * st, C.chaseMargin)) break;
+        left -= st;
+      }
       anim = ch.actions.run ? 'run' : 'walk';
     }
   } else {
