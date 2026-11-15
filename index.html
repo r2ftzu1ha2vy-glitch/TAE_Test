@@ -106,6 +106,7 @@
            border: 2px solid var(--edge); backdrop-filter: blur(6px); color: #fff; pointer-events: none; font: 600 22px var(--font); }
   #money .coin { width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff2a8, var(--gold) 55%, #e09b12); color: #7a4b00; display: flex; align-items: center;
                  justify-content: center; font: 700 17px var(--font); box-shadow: 0 2px 4px rgba(0,0,0,.4); }
+  #money small { font: 700 14px var(--font); color: #7dff9a; margin-left: 2px; }
   #money.bump { animation: moneybump .45s ease; }
   @keyframes moneybump { 40% { transform: scale(1.18); border-color: var(--gold); } }
   /* hotbar */
@@ -233,7 +234,7 @@
   <button class="tbtn" id="t-throw" type="button">Throw</button>
   <button class="tbtn" id="t-respawn" type="button" aria-label="Respawn">&#8634;</button>
 </div>
-<div id="money"><span class="coin">$</span><b>0</b></div>
+<div id="money"><span class="coin">$</span><b>0</b><small></small></div>
 <button type="button" id="dex-btn">Index</button>
 <div id="dex"></div>
 <div id="hotbar"></div>
@@ -250,7 +251,7 @@
       <li>Walk into the yellow <b>Throw Zone</b> and throw an egg with <b>Space</b> / <b>Click</b> (touch: <b>Throw</b>).</li>
       <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken catches you!</li>
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
-      <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-8</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it and get paid. Bigger egg = bigger pet.</li>
+      <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-8</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s, bunny and ladybug $25/s at 1x, more for bigger eggs).</li>
       <li>Open the <b>Index</b> button (or press <b>I</b>) to see every pet.</li>
     </ol>
     <div style="margin-top:8px;opacity:.85"><b>WASD</b> move &middot; <b>Shift</b> run &middot; <b>Space</b> jump &middot; <b>Mouse</b> look &middot; <b>R</b> respawn &middot; <b>I</b> index &middot; <b>Esc</b> pause</div>
@@ -315,11 +316,11 @@ const CONFIG = {
   },
   // Hatching: an egg placed in your pen hatches after hatch.min (smallest egg) .. hatch.max (biggest egg, eggs.maxMult) seconds.
   hatch: { min: 10, max: 30 },
-  // Pets. weight = chance when an egg hatches (chicken 70 : bunny 15 : ladybug 15), value = money for placing one, height = placed size in metres.
+  // Pets. weight = chance when an egg hatches (chicken 70 : bunny 15 : ladybug 15), income = money per second while it stands in your pen (at a 1x egg; multiplied by the egg size it hatched from), height = placed size in metres.
   pets: {
-    chicken: { name: 'Chicken', rarity: 'common',   weight: 70, value: 25, height: 0.9, icon: '\u{1F414}' },
-    bunny:   { name: 'Bunny',   rarity: 'uncommon', weight: 15, value: 75, height: 1.0, icon: '\u{1F430}' },
-    ladybug: { name: 'Ladybug', rarity: 'uncommon', weight: 15, value: 75, height: 0.5, icon: '\u{1F41E}' },
+    chicken: { name: 'Chicken', rarity: 'common',   weight: 70, income: 10, height: 0.9, icon: '\u{1F414}' },
+    bunny:   { name: 'Bunny',   rarity: 'uncommon', weight: 15, income: 25, height: 1.0, icon: '\u{1F430}' },
+    ladybug: { name: 'Ladybug', rarity: 'uncommon', weight: 15, income: 25, height: 0.5, icon: '\u{1F41E}' },
   },
   rarities: { common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' } },
   eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
@@ -711,6 +712,7 @@ $('help-btn').addEventListener('click', () => { const h = $('menu-help'); h.hidd
 $('reset-btn').addEventListener('click', () => {
   if (!confirm('Erase your money, pets and pet index?')) return;
   money = 0; for (const k of Object.keys(dex)) delete dex[k]; inv.slots.fill(null); inv.sel = 0;
+  for (const pp of petsInPen) scene.remove(pp.root); petsInPen.length = 0;
   saveGame(); buildDex(); refreshHotbar(); refreshMoney(false); refreshMenuStats();
 });
 document.addEventListener('pointerlockchange', () => {
@@ -1358,7 +1360,7 @@ function updateAim() {
   const verb = IS_TOUCH ? 'Tap' : 'Click';
   if (eggs.length) hint = verb + ' the egg to steal it';
   else if (place) hint = verb + ' a spot in your pen to place the egg';
-  else if (petPlace) { const P = CONFIG.pets[heldPet()]; hint = verb + ' a spot in your pen to place your ' + P.name + '  (+$' + P.value + ')'; }
+  else if (petPlace) { const P = CONFIG.pets[heldPet()]; hint = verb + ' a spot in your pen to place your ' + P.name + '  ($' + P.income + '/s at 1x)'; }
   if (!IS_TOUCH && hint) {
     const ray = rayAt(0, 0);
     const it = eggs.length ? pickSteal(ray, eggs) : null;
@@ -1636,13 +1638,24 @@ function renderPetIcons() {
   } catch (e) { log.warn('Pet icons unavailable, falling back to emoji', e); }
   finally { if (r) { r.dispose(); if (r.forceContextLoss) r.forceContextLoss(); } }
 }
+const fmtMoney = (v) => (Math.round(v * 10) / 10).toLocaleString();
+function incomePerSec() { let t = 0; for (const p of petsInPen) t += CONFIG.pets[p.id].income * (p.mult || 1); return t; }
+let incAcc = 0, saveAcc = 0;
+function updateIncome(dt) {                             // every pet standing in your pen pays money per second
+  const r = incomePerSec();
+  money += r * dt; incAcc += dt; saveAcc += dt;
+  if (incAcc >= 0.2) { incAcc = 0; refreshMoney(false); }
+  if (saveAcc >= 5) { saveAcc = 0; saveGame(); }
+}
 function refreshMoney(bump) {
-  ui.money.querySelector('b').textContent = money.toLocaleString();
+  ui.money.querySelector('b').textContent = Math.floor(money).toLocaleString();
+  const r = incomePerSec(), inc = ui.money.querySelector('small');
+  if (inc) inc.textContent = r > 0 ? '+$' + fmtMoney(r) + '/s' : '';
   if (bump) { ui.money.classList.remove('bump'); void ui.money.offsetWidth; ui.money.classList.add('bump'); }
 }
 function refreshMenuStats() {
   const ids = Object.keys(CONFIG.pets);
-  $('menu-stats').textContent = '$' + money.toLocaleString() + '  \u00b7  ' + ids.filter((id) => dex[id] > 0).length + '/' + ids.length + ' pets discovered';
+  $('menu-stats').textContent = '$' + Math.floor(money).toLocaleString() + '  \u00b7  ' + ids.filter((id) => dex[id] > 0).length + '/' + ids.length + ' pets discovered';
 }
 function banner(html, color) {
   const el = ui.banner;
@@ -1809,10 +1822,9 @@ function placePet(pt) {                                 // put the pet you are h
   const mult = sl.sizes && sl.sizes.length ? sl.sizes.pop() : 1;
   spawnPet(sl.pet, pt, mult);
   sl.count--; if (sl.count <= 0) inv.slots[inv.sel] = null;
-  money += P.value;
-  refreshHotbar(); refreshMoney(true); saveGame();
-  popupAt('+$' + P.value, new THREE.Vector3(pt.x, pt.y + 1.2 * petSizeFactor(mult), pt.z), '#ffd34d');
-  say('Placed ' + P.name + ' (' + mult.toFixed(1) + 'x)  +$' + P.value);
+  refreshHotbar(); refreshMoney(false); saveGame();
+  popupAt('+$' + fmtMoney(P.income * mult) + '/s', new THREE.Vector3(pt.x, pt.y + 1.2 * petSizeFactor(mult), pt.z), '#ffd34d');
+  say('Placed ' + P.name + ' (' + mult.toFixed(1) + 'x)  earns $' + fmtMoney(P.income * mult) + '/s');
 }
 function updatePets(dt) {
   const b = playerPen ? playerPen.box : null;
@@ -1862,6 +1874,7 @@ function tick() {
   updateAim();
   updateHatching(dt);
   updatePets(dt);
+  updateIncome(dt);
   updateFlyers(dt);
   updateEggLabels();
   updateTutorial();
