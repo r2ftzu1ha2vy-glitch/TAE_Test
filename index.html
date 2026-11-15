@@ -331,10 +331,11 @@ const CONFIG = {
   // Areas are islands ordered from nearest to furthest (the order below). Humans can never enter an area (only thrown eggs, and thieves with a stolen egg, are allowed in),
   // and you can only go to the island your egg landed on and the ones before it; anything further sends you back out.
   // Per-area rules. speed = recommended player speed (shown at the top of the screen), chase = how fast that area's chicken runs
-  // when you steal (enemy = which creature guards the area: 'chicken' or 'scorpion'; chicken:false switches it off), ptsMult = score multiplier for eggs stolen there. Set chicken:false / eggs:false to switch a part off.
+  // when you steal (enemy = which creature guards the area: 'chicken' or 'scorpion'; chicken:false switches it off;
+  // chaseAnywhere:true = its guard follows a thief out of the area too, and only your own pen is safe), ptsMult = score multiplier for eggs stolen there. Set chicken:false / eggs:false to switch a part off.
   areas: {
     valley: { label: 'Cluck Valley',    speed: 5,  chase: 5, ptsMult: 1, enemy: 'chicken', chicken: true, eggs: true },
-    sands:  { label: 'Scorching Sands', speed: 1000, chase: 1250, ptsMult: 2, enemy: 'scorpion', chicken: true, eggs: true },
+    sands:  { label: 'Scorching Sands', speed: 1000, chase: 1250, ptsMult: 2, enemy: 'scorpion', chaseAnywhere: true, chicken: true, eggs: true },
   },
   // Hatching: an egg placed in your pen hatches after hatch.min (smallest egg) .. hatch.max (biggest egg, eggs.maxMult) seconds.
   hatch: { min: 10, max: 30 },
@@ -1084,7 +1085,11 @@ function statusText() {
   if (tt) return tt;
   if (toast.t > 0) return toast.text;
   if (carry) {
-    if (carry.status === 'stolen') { const a = areaAt(pos.x, pos.z); return 'The ' + (a && a.enemy || 'chicken') + ' is after you! Get out of ' + (a ? a.label : 'the area') + '!'; }
+    if (carry.status === 'stolen') {
+      const h = areas.find((x) => x.id === carry.area);
+      if (h && h.chaseAnywhere) return 'The ' + h.enemy + ' is after you! Get to your pen' + (playerPen ? ' (Pen ' + playerPen.num + ', ' + Math.round(Math.hypot(pos.x - playerPen.center.x, pos.z - playerPen.center.z)) + ' m away)' : '') + '!';
+      const a = areaAt(pos.x, pos.z); return 'The ' + (a && a.enemy || 'chicken') + ' is after you! Get out of ' + (a ? a.label : 'the area') + '!';
+    }
     if (nearPen()) return IS_TOUCH ? 'Tap a spot in your pen to place the egg' : 'Click a spot in your pen to place the egg';
     return playerPen ? 'Safe! Take the egg to your pen (Pen ' + playerPen.num + ', ' + Math.round(Math.hypot(pos.x - playerPen.center.x, pos.z - playerPen.center.z)) + ' m away)' : 'Safe! Take the egg to your pen';
   }
@@ -1313,7 +1318,7 @@ function steal(it) {
   carry = { egg: e, item: it, area: it.area, areaLabel: area ? area.label : null, status: 'stolen', held: makeHeld(e) };
   playerRoot.add(carry.held);
   state.mode = 'idle';
-  say('Stolen! RUN - the ' + (area && area.enemy || 'chicken') + ' is after you!', 4);
+  say('Stolen! RUN - the ' + (area && area.enemy || 'chicken') + ' is after you!' + (area && area.chaseAnywhere ? ' It will not stop - get to your pen!' : ''), 4);
   log.info('Stole', e.type, e.mult.toFixed(2) + 'x from', it.area);
 }
 function dropCarry(msg) {                                   // the stolen egg goes back where it came from
@@ -1331,10 +1336,12 @@ function updateCarry() {
   if (!carry) { dom.held.textContent = 'Holding: nothing'; return; }
   const e = carry.egg;
   dom.held.textContent = 'Holding: ' + e.type + ' egg ' + e.mult.toFixed(1) + 'x' + (carry.status === 'stolen' ? '  (STOLEN - escape!)' : '  (safe - take it to your pen)');
-  if (carry.status === 'stolen' && form === 'human' && !areaAt(pos.x, pos.z)) {   // out of Cluck Valley AND Scorching Sands = escaped
+  const hunter = areas.find((a) => a.id === carry.area);
+  const chased = !!(hunter && hunter.chaseAnywhere);        // this area's guard follows you everywhere: only your own pen is safe
+  if (carry.status === 'stolen' && form === 'human' && (chased ? inOwnPen() : !areaAt(pos.x, pos.z))) {   // out of Cluck Valley AND Scorching Sands (or, if chased, inside your pen) = escaped
     carry.status = 'safe';
     carry.item.pending = false; carry.item.timer = CONFIG.eggs.respawn;
-    say('You escaped! The egg is in your inventory. Take it to Pen ' + (playerPen ? playerPen.num : '?') + '.', 5);
+    say(chased ? 'You made it to your pen! Click a spot to place the egg.' : 'You escaped! The egg is in your inventory. Take it to Pen ' + (playerPen ? playerPen.num : '?') + '.', 5);
     log.info('Escaped with the egg');
   }
 }
@@ -1490,6 +1497,10 @@ function bindPoseBox(model) {
 }
 function chickenOk(ch, x, z, m) {   // returns floor height, or null if (x,z) is not allowed for this chicken
   const b = ch.area.box;
+  if (ch.free) {                    // a chasing guard that may leave its area: any floor within a step's reach (fences still block it in chickenMove)
+    const f = castRay(new THREE.Vector3(x, ch.pos.y + 1.5, z), DOWN, 12);
+    return f ? f.point.y : null;
+  }
   if (x < b.min.x + m || x > b.max.x - m || z < b.min.z + m || z > b.max.z - m) return null;
   const h = castRay(new THREE.Vector3(x, b.max.y + 5, z), DOWN, 100);
   if (!h) return null;
@@ -1526,6 +1537,15 @@ function setupChickens(gltfs) {
     log.info(kind, 'ready in', area.label, 'model height', size.y.toFixed(3), '-> scale', (E.height / size.y).toFixed(3));
   }
 }
+function sendHome(ch) {            // after a chase that left the area: back to a spot inside its own area
+  ch.free = false;
+  const p = ch.pos, b = ch.area.box;
+  if (p.x >= b.min.x && p.x <= b.max.x && p.z >= b.min.z && p.z <= b.max.z) return;
+  const t = randomSpot(ch, ch.cfg.margin);
+  if (!t) return;
+  const gy = chickenOk(ch, t.x, t.z, 0);
+  p.set(t.x, gy === null ? p.y : gy, t.z);
+}
 function chickenPlay(ch, n) {
   if (ch.anim === n || !ch.actions[n]) return;
   const nx = ch.actions[n], pv = ch.actions[ch.anim];
@@ -1550,9 +1570,11 @@ function chickenMove(ch, dx, dz, margin) {                   // tries the full m
 function updateChicken(ch, dt) {
   const C = ch.cfg, p = ch.pos, A = ch.area;
   // A thief is chased by whichever area's chicken they are currently inside (steal in the Sands and you meet the Valley chicken next).
-  const chasing = !!carry && carry.status === 'stolen' && form === 'human' && areaAt(pos.x, pos.z) === A;
+  const hunting = !!carry && carry.status === 'stolen' && form === 'human';
+  const chasing = hunting && (areaAt(pos.x, pos.z) === A || (!!A.chaseAnywhere && carry.area === A.id));   // chaseAnywhere: it follows its thief out of the area
+  ch.free = chasing && !!A.chaseAnywhere;
   if (chasing && ch.state !== 'chase') { ch.state = 'chase'; ch.alert = C.alert; ch.target = null; }
-  if (!chasing && ch.state === 'chase') { ch.state = 'wander'; ch.target = null; ch.wait = 1; }   // thief escaped: back to wandering in its area
+  if (!chasing && ch.state === 'chase') { ch.state = 'wander'; ch.target = null; ch.wait = 1; sendHome(ch); }   // thief escaped: back to wandering in its area
 
   let anim = 'idle';
   if (ch.state === 'chase') {
@@ -1561,7 +1583,7 @@ function updateChicken(ch, dt) {
     if (dist > 1e-4) ch.yaw = angleLerp(ch.yaw, Math.atan2(_cd.x, _cd.z) + C.yawOffset, 10 * dt);
     if (ch.alert > 0) { ch.alert -= dt; if (ch.actions.attack) anim = 'attack'; }   // a short moment of "hey!" before it runs
     else if (dist < C.catchRadius && Math.abs(pos.y - p.y) < 2.5) {
-      ch.state = 'wander'; ch.target = null; ch.wait = 1.5;
+      ch.state = 'wander'; ch.target = null; ch.wait = 1.5; ch.free = false; sendHome(ch);
       dropCarry('The ' + ch.kind + ' caught you! The egg went back and you woke up in your pen.');
       respawn();                                             // caught = sent back to your pen
     } else if (dist > 1e-4) {
