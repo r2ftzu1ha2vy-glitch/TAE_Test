@@ -168,11 +168,15 @@ const CONFIG = {
     zone: /^Throw[ _]Zone/i,
     valley: /^Cluck[ _]Valley$/i, sands: /^Scorching[ _]Sands$/i, valleyEgg: /^Cluck[ _]Valley[ _]Egg(_\d+)?$/i, sandsEgg: /^Scorching[ _]Sands[ _]Egg(_\d+)?$/i,
     fence: /^Fence_?Pen(\d+)/i, spawnPen: /Pen(\d+)/i,
+    barrier: [/^Fence_?Pen/i, /^Wall/i],          // always solid at every height and from every side: never stepped on, never walked through
     nonSolid: [/^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg(_\d+)?$/i, /^Chicken/i],
     hidden: [/^Player[ _]Spawn/i, /Egg(_\d+)?$/i, /^Chicken/i],
   },
   // speed = the player's speed stat (walk speed). Starts at 10; run = speed * runMult (10 -> 16). Override with ?speed=N
-  player: { speed: params.has('speed') ? parseFloat(params.get('speed')) : 10, runMult: 1.6, radius: 0.35, stepHeight: 0.35, jump: 7.5, gravity: 22, probeHeights: [0.4, 0.9, 1.4], turnSpeed: 12 },
+  // speedUnit: metres per second per point of speed (player AND chickens), so "10" reads big but moves at a comfortable 5 m/s.
+  // stepHeight 1.0 = you walk straight up anything up to 1 unit tall. probeHeights start just above it so steps are never treated as walls.
+  speedUnit: 0.5,
+  player: { speed: params.has('speed') ? parseFloat(params.get('speed')) : 10, runMult: 1.6, radius: 0.35, stepHeight: 1.0, jump: 7.5, gravity: 22, probeHeights: [1.05, 1.45, 1.75], height: 1.7, turnSpeed: 12 },
   camera: { distance: 4.5, sens: 0.0025, touchSens: 0.006, minPitch: -0.2, maxPitch: 1.3, height: 1.5 },
   power: { min: 5, max: 20, period: 1.1 },        // period = seconds for one full up-and-down sweep
   // powerScale: the bar still reads 5-20, but the launch speed is power * powerScale (0.7 -> roughly half the old distance at 20).
@@ -259,6 +263,15 @@ function castRay(origin, dir, far) {
   const hits = raycaster.intersectObjects(solids, false);
   return hits.length ? hits[0] : null;
 }
+function castRayIn(list, origin, dir, far) {
+  raycaster.set(origin, dir);
+  raycaster.near = 0;
+  raycaster.far = far;
+  const hits = raycaster.intersectObjects(list, false);
+  return hits.length ? hits[0] : null;
+}
+let walkSolids = [];            // everything you can stand on / step up onto (ground, beams...) - no fences or walls
+const barrierBoxes = [];        // world-space boxes of every fence post, fence rail and wall piece
 function matches(list, name) { return list.some((re) => re.test(name)); }
 function chainMatches(obj, root, list) {
   for (let o = obj; o && o !== root; o = o.parent) if (matches(list, o.name || '')) return true;
@@ -420,7 +433,10 @@ function setupMap(root) {
     o.castShadow = true;
     o.receiveShadow = true;
     if (chainMatches(o, root, CONFIG.match.hidden)) { o.visible = false; return; }
-    if (!chainMatches(o, root, CONFIG.match.nonSolid)) solids.push(o);
+    if (chainMatches(o, root, CONFIG.match.nonSolid)) return;
+    solids.push(o);
+    if (chainMatches(o, root, CONFIG.match.barrier)) barrierBoxes.push(new THREE.Box3().setFromObject(o));
+    else walkSolids.push(o);
   });
 
   mapBox.setFromObject(root);
@@ -512,7 +528,7 @@ function respawn() {
   const sp = spawnPoints[idx];
 
   const origin = new THREE.Vector3(sp.center.x, sp.box.max.y + 0.5, sp.center.z);
-  const hit = castRay(origin, DOWN, 500);
+  const hit = castRayIn(walkSolids, origin, DOWN, 500);
   pos.set(sp.center.x, hit ? hit.point.y : sp.box.min.y, sp.center.z);
   vy = 0; grounded = true;
 
@@ -635,7 +651,21 @@ function blocked(dx, dz) {
   _d.set(dx, 0, dz).normalize();
   for (const h of curP.probeHeights) {
     _o.set(pos.x, pos.y + h, pos.z);
-    if (castRay(_o, _d, curP.radius + 0.02)) return true;
+    if (castRayIn(walkSolids, _o, _d, curP.radius + 0.02)) return true;
+  }
+  return false;
+}
+// Fences and walls are boxes, so test the player's footprint against them directly. That cannot slip between rails or posts and works from every side.
+const _nb = [];
+function gatherBarriers() {
+  _nb.length = 0;
+  for (const b of barrierBoxes) {
+    if (pos.x > b.min.x - 3 && pos.x < b.max.x + 3 && pos.z > b.min.z - 3 && pos.z < b.max.z + 3 && pos.y < b.max.y + 4 && pos.y > b.min.y - 6) _nb.push(b);
+  }
+}
+function hitsBarrier(x, z, r, h) {
+  for (const b of _nb) {
+    if (x > b.min.x - r && x < b.max.x + r && z > b.min.z - r && z < b.max.z + r && b.max.y > pos.y + 0.05 && b.min.y < pos.y + h) return true;
   }
   return false;
 }
@@ -656,10 +686,13 @@ function updatePlayer(dt) {
   if (moving) {
     _mv.normalize();
     const run = keys.ShiftLeft || keys.ShiftRight || touch.run;
-    const speed = eggForm ? (run ? P.run : P.walk) : (run ? speedStat * CONFIG.player.runMult : speedStat);
+    const speed = eggForm ? (run ? P.run : P.walk) : (run ? speedStat * CONFIG.player.runMult : speedStat) * CONFIG.speedUnit;
     const mx = _mv.x * speed * dt, mz = _mv.z * speed * dt;
-    if (mx !== 0 && !blocked(Math.sign(mx), 0)) pos.x += mx;
-    if (mz !== 0 && !blocked(0, Math.sign(mz))) pos.z += mz;
+    const bh = eggForm ? CONFIG.eggs.baseHeight : CONFIG.player.height;
+    gatherBarriers();
+    const stuck = hitsBarrier(pos.x, pos.z, P.radius, bh);        // already overlapping a fence (odd spawn/landing): let the player walk out
+    if (mx !== 0 && !blocked(Math.sign(mx), 0) && (stuck || !hitsBarrier(pos.x + mx, pos.z, P.radius, bh))) pos.x += mx;
+    if (mz !== 0 && !blocked(0, Math.sign(mz)) && (stuck || !hitsBarrier(pos.x, pos.z + mz, P.radius, bh))) pos.z += mz;
     facing = angleLerp(facing, Math.atan2(_mv.x, _mv.z), P.turnSpeed * dt);
   } else if (state.mode === 'charging' || state.mode === 'cooldown') {
     facing = angleLerp(facing, Math.atan2(_f.x, _f.z), P.turnSpeed * dt);
@@ -668,7 +701,7 @@ function updatePlayer(dt) {
   // vertical
   const wasGrounded = grounded;
   _o.set(pos.x, pos.y + P.stepHeight + 0.1, pos.z);
-  const g = castRay(_o, DOWN, 500);
+  const g = castRayIn(walkSolids, _o, DOWN, 500);       // fences and walls are never ground
   vy -= P.gravity * dt;
   let ny = pos.y + vy * dt;
   grounded = false;
@@ -1214,7 +1247,7 @@ function updateChicken(ch, dt) {
       dropCarry('The chicken caught you! The egg went back and you woke up in your pen.');
       respawn();                                             // caught = sent back to your pen
     } else if (dist > 1e-4) {
-      const step = Math.min(A.chase * dt, dist);
+      const step = Math.min(A.chase * CONFIG.speedUnit * dt, dist);
       chickenMove(ch, _cd.x / dist * step, _cd.z / dist * step, C.chaseMargin);
       anim = ch.actions.run ? 'run' : 'walk';
     }
