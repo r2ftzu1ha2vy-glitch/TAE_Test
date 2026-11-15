@@ -3,9 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>TAE Test Map</title>
+<title>Throw An Egg</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #9ad1ff; font-family: system-ui, sans-serif; }
+  :root { --font: 'Fredoka', ui-rounded, 'Baloo 2', system-ui, sans-serif; --panel: rgba(18,22,40,.62); --edge: rgba(255,255,255,.16); --gold: #ffd34d; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #9ad1ff; font-family: var(--font); }
   canvas { display: block; }
   #hud { position: fixed; top: 10px; left: 12px; color: #fff; font-size: 13px; line-height: 1.5;
          text-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; }
@@ -14,7 +18,7 @@
   body.dbg #hud { display: block; }
   #status { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 15px;
             text-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; text-align: center; }
-  #status.tut { font: 800 26px/1.2 system-ui; padding: 10px 24px; border-radius: 999px; background: rgba(0,0,0,.55); border: 2px solid #ffd34d;
+  #status.tut { font: 800 26px/1.2 var(--font); padding: 10px 24px; border-radius: 999px; background: rgba(0,0,0,.55); border: 2px solid #ffd34d;
                 white-space: nowrap; letter-spacing: .02em; }
   #arrow { position: fixed; left: 0; top: 0; width: 56px; height: 56px; margin: -28px 0 0 -28px; display: none; pointer-events: none; z-index: 3; }
   #arrow svg { width: 100%; height: 100%; filter: drop-shadow(0 3px 5px rgba(0,0,0,.6)); animation: arrowbob .7s ease-in-out infinite alternate; }
@@ -27,19 +31,19 @@
   #powerbar { position: fixed; left: 0; top: 0; width: 30px; height: 190px; display: none; pointer-events: none;
               border: 3px solid #fff; border-radius: 6px; background: rgba(0,0,0,.5); transform: translate(-50%, -50%); }
   #pb-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; border-radius: 2px; }
-  .pb-label { position: absolute; left: 38px; color: #fff; font: bold 13px system-ui; text-shadow: 0 1px 3px #000; }
+  .pb-label { position: absolute; left: 38px; color: #fff; font: bold 13px var(--font); text-shadow: 0 1px 3px #000; }
   #pb-top { top: -4px; } #pb-bot { bottom: -4px; }
   #pb-value { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 6px; color: #fff;
-              font: bold 16px system-ui; text-shadow: 0 1px 3px #000; white-space: nowrap; }
+              font: bold 16px var(--font); text-shadow: 0 1px 3px #000; white-space: nowrap; }
   #powerbar.locked { border-color: #ffd34d; box-shadow: 0 0 14px #ffd34d; }
   #powerbar.locked #pb-value { color: #ffd34d; }
   /* recommended speed per area (top centre) */
   #areas { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none;
            color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
-  #areas .cap { font: 700 11px system-ui; letter-spacing: .14em; text-transform: uppercase; opacity: .9; margin-bottom: 5px; }
+  #areas .cap { font: 700 11px var(--font); letter-spacing: .14em; text-transform: uppercase; opacity: .9; margin-bottom: 5px; }
   #areas .row { display: flex; gap: 8px; justify-content: center; }
   .area { display: flex; align-items: center; gap: 6px; padding: 5px 13px 5px 9px; border-radius: 999px; background: rgba(0,0,0,.5);
-          border: 2px solid transparent; font: 600 14px system-ui; transition: border-color .15s, background .15s; }
+          border: 2px solid transparent; font: 600 14px var(--font); transition: border-color .15s, background .15s; }
   .area .ico { width: 16px; height: 16px; fill: #ffd34d; }
   .area b { font-size: 17px; color: #ffd34d; }
   .area.here { border-color: #fff; background: rgba(0,0,0,.72); }
@@ -48,14 +52,14 @@
   #speed { position: fixed; left: 14px; bottom: 14px; display: flex; align-items: center; gap: 10px; color: #fff; pointer-events: none;
            text-shadow: 0 1px 3px rgba(0,0,0,.8); }
   #speed svg { width: 64px; height: 64px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
-  #speed .val { font: 800 36px/1 system-ui; }
-  #speed small { display: block; font: 700 11px system-ui; letter-spacing: .16em; opacity: .9; margin-top: 3px; }
-  /* floating Steal / Place button */
-  #act { position: fixed; left: 0; top: 0; transform: translate(-50%, -50%); display: none; z-index: 4; }
-  #act button { display: flex; align-items: center; gap: 8px; padding: 8px 18px; font: 800 17px system-ui; color: #3a2a00; background: #ffd34d;
-                border: 3px solid #fff; border-radius: 12px; cursor: pointer; box-shadow: 0 3px 12px rgba(0,0,0,.55); animation: actpulse 1s ease-in-out infinite; }
-  #act kbd { font: 700 11px system-ui; background: rgba(0,0,0,.18); border-radius: 4px; padding: 2px 6px; }
-  @keyframes actpulse { 50% { transform: scale(1.08); } }
+  #speed .val { font: 800 36px/1 var(--font); }
+  #speed small { display: block; font: 700 11px var(--font); letter-spacing: .16em; opacity: .9; margin-top: 3px; }
+  /* aim reticle + hint (click the egg to steal, click a spot in your pen to place) */
+  #cross { position: fixed; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 3px solid rgba(255,255,255,.85); border-radius: 50%;
+           box-shadow: 0 0 6px rgba(0,0,0,.6); display: none; pointer-events: none; transition: all .1s; }
+  #cross.on { width: 30px; height: 30px; margin: -15px 0 0 -15px; border-color: #ffd34d; background: rgba(255,211,77,.25); }
+  #hint { position: fixed; bottom: 74px; left: 50%; transform: translateX(-50%); display: none; pointer-events: none; color: #3a2a00; background: #ffd34d;
+          font: 800 16px var(--font); padding: 6px 16px; border-radius: 999px; border: 2px solid #fff; box-shadow: 0 3px 12px rgba(0,0,0,.45); white-space: nowrap; }
   /* ---------------- mobile / touch ---------------- */
   html, body { touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
   #touch { display: none; }
@@ -66,7 +70,7 @@
          background: rgba(0,0,0,.25); display: none; z-index: 3; pointer-events: none; }
   #joy.run { border-color: #ffd34d; box-shadow: 0 0 14px #ffd34d; }
   #joy-knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: rgba(255,255,255,.75); }
-  .tbtn { position: fixed; z-index: 3; border: 3px solid #fff; border-radius: 50%; color: #fff; font: 800 15px system-ui; background: rgba(0,0,0,.45);
+  .tbtn { position: fixed; z-index: 3; border: 3px solid #fff; border-radius: 50%; color: #fff; font: 800 15px var(--font); background: rgba(0,0,0,.45);
           display: flex; align-items: center; justify-content: center; touch-action: none; }
   .tbtn:active { background: rgba(255,211,77,.7); color: #3a2a00; }
   #t-jump { right: calc(26px + env(safe-area-inset-right)); bottom: calc(34px + env(safe-area-inset-bottom)); width: 78px; height: 78px; }
@@ -83,9 +87,90 @@
   body.touch #status { bottom: calc(14px + env(safe-area-inset-bottom)); max-width: 34vw; font-size: 12px; }
   body.touch #status.tut { max-width: 60vw; font-size: 17px; padding: 6px 16px; white-space: normal; }
   body.touch #arrow { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
-  body.touch #act kbd { display: none; }
-  body.touch #act button { padding: 10px 22px; font-size: 18px; }
+  body.touch #hint { bottom: calc(60px + env(safe-area-inset-bottom)); font-size: 14px; white-space: normal; max-width: 60vw; text-align: center; }
   body.touch #overlay { font-size: 20px; }
+
+  /* ================= UI theme ================= */
+  #status { bottom: 92px; padding: 6px 18px; border-radius: 999px; background: var(--panel); border: 2px solid var(--edge); font: 500 16px var(--font); backdrop-filter: blur(6px); }
+  #status:empty { display: none; }
+  #hint { bottom: 140px; }
+  #debug { top: 60px; }
+  #speed { padding: 6px 16px 6px 8px; border-radius: 18px; background: var(--panel); border: 2px solid var(--edge); backdrop-filter: blur(6px); }
+  #speed svg { width: 46px; height: 46px; } #speed .val { font: 700 32px/1 var(--font); }
+  #areas .cap { display: none; }
+  .area { background: var(--panel); border: 2px solid var(--edge); backdrop-filter: blur(6px); padding: 6px 16px 6px 11px; font: 600 15px var(--font); }
+  .area.here { border-color: var(--gold); }
+  #powerbar { border-radius: 10px; }
+  /* money */
+  #money { position: fixed; top: 12px; right: 14px; display: flex; align-items: center; gap: 8px; padding: 6px 16px 6px 8px; border-radius: 999px; background: var(--panel);
+           border: 2px solid var(--edge); backdrop-filter: blur(6px); color: #fff; pointer-events: none; font: 600 22px var(--font); }
+  #money .coin { width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff2a8, var(--gold) 55%, #e09b12); color: #7a4b00; display: flex; align-items: center;
+                 justify-content: center; font: 700 17px var(--font); box-shadow: 0 2px 4px rgba(0,0,0,.4); }
+  #money.bump { animation: moneybump .45s ease; }
+  @keyframes moneybump { 40% { transform: scale(1.18); border-color: var(--gold); } }
+  /* hotbar */
+  #hotbar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; border-radius: 18px; background: var(--panel);
+            border: 2px solid var(--edge); backdrop-filter: blur(6px); pointer-events: none; z-index: 3; }
+  .slot { position: relative; width: 54px; height: 54px; border-radius: 12px; background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.14); display: flex;
+          align-items: center; justify-content: center; font-size: 30px; line-height: 1; color: #fff; transition: transform .1s, border-color .1s, background .1s; }
+  .slot .k { position: absolute; top: 2px; left: 6px; font: 600 11px var(--font); opacity: .65; }
+  .slot .n { position: absolute; right: 5px; bottom: 1px; font: 700 14px var(--font); text-shadow: 0 1px 3px #000; }
+  .slot.sel { border-color: var(--gold); background: rgba(255,211,77,.2); box-shadow: 0 0 14px rgba(255,211,77,.5); transform: translateY(-5px); }
+  /* pet index */
+  #dex { position: fixed; left: 12px; top: 50%; transform: translateY(-50%); width: 190px; padding: 10px 10px 8px; border-radius: 18px; background: var(--panel);
+         border: 2px solid var(--edge); backdrop-filter: blur(6px); color: #fff; pointer-events: none; }
+  #dex .dex-h { display: flex; justify-content: space-between; align-items: baseline; font: 700 16px var(--font); margin: 0 4px 8px; color: var(--gold); letter-spacing: .04em; }
+  #dex .dex-h b { font-size: 14px; color: #fff; opacity: .8; }
+  #dex .dex-row { display: flex; align-items: center; gap: 10px; padding: 5px 6px; border-radius: 12px; background: rgba(255,255,255,.06); margin-top: 5px; }
+  #dex .dex-ic { font-size: 26px; width: 34px; text-align: center; }
+  #dex .dex-row.locked .dex-ic { filter: brightness(0); opacity: .45; }
+  #dex .dex-t { flex: 1; display: flex; flex-direction: column; line-height: 1.15; }
+  #dex .dex-t b { font: 600 15px var(--font); } #dex .dex-t small { font: 600 11px var(--font); letter-spacing: .06em; text-transform: uppercase; }
+  #dex .dex-n { font: 700 15px var(--font); opacity: .85; }
+  /* egg hatch timers, popups, banner */
+  .egg-timer { position: fixed; left: 0; top: 0; display: none; pointer-events: none; z-index: 2; min-width: 66px; padding: 4px 10px 6px; border-radius: 12px; text-align: center; color: #fff;
+               background: rgba(18,22,40,.78); border: 2px solid rgba(255,255,255,.35); font: 600 16px var(--font); white-space: nowrap; }
+  .egg-timer .bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.22); margin-top: 3px; overflow: hidden; }
+  .egg-timer .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffd34d, #ff9f43); }
+  .egg-timer.soon { border-color: var(--gold); color: var(--gold); }
+  .pop { position: fixed; z-index: 6; pointer-events: none; color: var(--gold); font: 700 28px var(--font); text-shadow: 0 2px 0 #7a4b00, 0 3px 8px rgba(0,0,0,.6); animation: popup 1.1s ease-out forwards; }
+  @keyframes popup { from { opacity: 1; transform: translate(-50%, -50%); } to { opacity: 0; transform: translate(-50%, -220%); } }
+  #banner { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); opacity: 0; pointer-events: none; text-align: center; z-index: 6; color: #fff; text-shadow: 0 3px 10px rgba(0,0,0,.6); }
+  #banner small { display: block; font: 600 15px var(--font); letter-spacing: .2em; text-transform: uppercase; opacity: .9; }
+  #banner b { display: block; font: 700 46px/1.1 var(--font); color: var(--c, #ffd34d); }
+  #banner em { display: block; font: 600 18px var(--font); font-style: normal; color: var(--c, #ffd34d); }
+  #banner.show { animation: bannershow 3.2s ease forwards; }
+  @keyframes bannershow { 0% { opacity: 0; transform: translate(-50%, 14px) scale(.8); } 10% { opacity: 1; transform: translate(-50%, 0) scale(1.08); } 16% { transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -12px); } }
+  /* main menu */
+  #overlay { cursor: default; background: radial-gradient(ellipse at 50% 25%, rgba(255,211,77,.28), rgba(10,14,30,.86) 70%); backdrop-filter: blur(5px); font-family: var(--font); }
+  #menu { width: min(440px, 92vw); max-height: 94vh; overflow-y: auto; text-align: center; padding: 26px 26px 20px; border-radius: 26px; background: rgba(18,22,40,.74);
+          border: 2px solid rgba(255,255,255,.18); box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  #menu-logo { font-size: 58px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); animation: logobob 1.6s ease-in-out infinite alternate; }
+  @keyframes logobob { from { transform: translateY(-4px) rotate(-6deg); } to { transform: translateY(4px) rotate(6deg); } }
+  #menu-title { margin: 6px 0 0; font: 700 42px/1.1 var(--font); color: var(--gold); text-shadow: 0 3px 0 #a8730a, 0 6px 14px rgba(0,0,0,.5); letter-spacing: .02em; }
+  #overlay-text { font: 500 15px/1.4 var(--font); opacity: .85; margin: 8px 0 16px; min-height: 1.4em; }
+  #menu button { display: block; width: 100%; margin: 8px 0 0; padding: 12px 18px; border: 3px solid #fff; border-radius: 16px; font: 700 22px var(--font); cursor: pointer; color: #3a2a00;
+                 background: linear-gradient(#ffe27a, #ffbf2e); box-shadow: 0 4px 0 #b8860b, 0 8px 16px rgba(0,0,0,.4); transition: transform .08s; }
+  #menu button:hover:not(:disabled) { transform: translateY(-2px); }
+  #menu button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #b8860b; }
+  #menu button:disabled { opacity: .55; cursor: default; }
+  #menu button.sec { font-size: 17px; padding: 9px 14px; color: #fff; background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.35); box-shadow: none; }
+  #menu button.link { width: auto; display: inline-block; border: 0; background: none; box-shadow: none; color: rgba(255,255,255,.55); font: 500 13px var(--font); text-decoration: underline; padding: 4px; margin-top: 10px; }
+  #menu-help { text-align: left; font: 500 15px/1.5 var(--font); margin-top: 12px; padding: 12px 16px; border-radius: 14px; background: rgba(255,255,255,.07); }
+  #menu-help[hidden] { display: none; }
+  #menu-help b { color: var(--gold); } #menu-help ol { margin: 6px 0 0 18px; padding: 0; }
+  #menu-stats { font: 600 14px var(--font); opacity: .8; margin-top: 12px; }
+  /* touch layout for the new UI */
+  body.touch #status { bottom: calc(62px + env(safe-area-inset-bottom)); }
+  body.touch #hint { bottom: calc(104px + env(safe-area-inset-bottom)); }
+  body.touch #hotbar { bottom: calc(10px + env(safe-area-inset-bottom)); gap: 4px; padding: 4px; pointer-events: auto; }
+  body.touch .slot { width: 40px; height: 40px; font-size: 22px; } body.touch .slot .k { display: none; }
+  body.touch #money { top: calc(12px + env(safe-area-inset-top)); right: calc(66px + env(safe-area-inset-right)); font-size: 17px; }
+  body.touch #money .coin { width: 22px; height: 22px; font-size: 13px; }
+  body.touch #dex { width: 120px; top: 56%; padding: 6px; left: calc(8px + env(safe-area-inset-left)); }
+  body.touch #dex .dex-ic { font-size: 20px; width: 24px; } body.touch #dex .dex-t b { font-size: 12px; } body.touch #dex .dex-t small { font-size: 9px; }
+  body.touch #banner b { font-size: 32px; }
+  body.touch #overlay { font-size: 16px; }
 </style>
 <script type="importmap">
 { "imports": {
@@ -99,11 +184,11 @@
   <symbol id="ico-bolt" viewBox="0 0 24 24"><path d="M13.5 2 4 13.5h6.2L9 22l10-12.2h-6.4z"/></symbol>
 </svg>
 <div id="hud">
-  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>Space</b> jump &nbsp; <b>E</b> / <b>Click</b> Steal or Place<br>
+  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>Space</b> jump &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
   Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br></span>
   <span class="tc"><b>Left</b> stick move (push all the way to run) &nbsp; <b>Right</b> side drag to look<br>
   In the yellow <b>Throw Zone</b> tap <b>Throw</b> to stop the power bar<br></span>
-  Walk up to an egg and hit <b>Steal</b>. Get out of the area before the chicken catches you (it sends you back to your pen), then <b>Place</b> it in your pen.<br>
+  Walk up to an egg and click it to steal it. Get out of the area before the chicken catches you (it sends you back to your pen), then click a spot in your pen to place it.<br>
   <span id="pen">Your pen: -</span><br><span id="held">Holding: nothing</span><br>
   <span id="last">Last throw: none</span><br><span id="score">Score: 0</span>
 </div>
@@ -115,7 +200,8 @@
   </svg>
   <div><span class="val" id="speed-val">5</span><small>SPEED</small></div>
 </div>
-<div id="act"><button type="button" id="act-btn"><span id="act-label">Steal</span><kbd>E</kbd></button></div>
+<div id="cross"></div>
+<div id="hint"></div>
 <div id="status"></div>
 <div id="arrow"><svg viewBox="0 0 48 48"><path d="M24 44 6 22h11V4h14v18h11z" fill="#ffd34d" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg></div>
 <div id="debug"></div>
@@ -132,7 +218,29 @@
   <button class="tbtn" id="t-throw" type="button">Throw</button>
   <button class="tbtn" id="t-respawn" type="button" aria-label="Respawn">&#8634;</button>
 </div>
-<div id="overlay"><div id="overlay-text">Loading...</div></div>
+<div id="money"><span class="coin">$</span><b>0</b></div>
+<div id="dex"></div>
+<div id="hotbar"></div>
+<div id="banner"></div>
+<div id="overlay"><div id="menu">
+  <div id="menu-logo">&#129370;</div>
+  <h1 id="menu-title">Throw An Egg</h1>
+  <p id="overlay-text">Loading...</p>
+  <button type="button" id="play-btn" disabled>Loading...</button>
+  <button type="button" id="help-btn" class="sec">How To Play</button>
+  <div id="menu-help" hidden>
+    <b>Goal:</b> collect pets and earn money.
+    <ol>
+      <li>Walk into the yellow <b>Throw Zone</b> and throw an egg with <b>Space</b> / <b>Click</b> (touch: <b>Throw</b>).</li>
+      <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken catches you!</li>
+      <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
+      <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-8</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it and get paid.</li>
+    </ol>
+    <div style="margin-top:8px;opacity:.85"><b>WASD</b> move &middot; <b>Shift</b> run &middot; <b>Space</b> jump &middot; <b>Mouse</b> look &middot; <b>R</b> respawn &middot; <b>Esc</b> pause</div>
+  </div>
+  <div id="menu-stats"></div>
+  <button type="button" id="reset-btn" class="link">Reset progress</button>
+</div></div>
 
 <script type="module">
 import * as THREE from 'three';
@@ -150,7 +258,7 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb',
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb' },
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb' } },
   eggs: { baseHeight: 0.8, maxMult: 10, respawn: 6,   // 1x egg = baseHeight metres tall; size never exceeds maxMult
     sizeTiers: [ { w: 60, min: 1, max: 2 }, { w: 25, min: 2, max: 4 }, { w: 10, min: 4, max: 6 }, { w: 4, min: 6, max: 8 }, { w: 1, min: 8, max: 10 } ],   // big eggs are rare
@@ -188,8 +296,19 @@ const CONFIG = {
     valley: { label: 'Cluck Valley',    speed: 5,  chase: 5, ptsMult: 1, chicken: true, eggs: true },
     sands:  { label: 'Scorching Sands', speed: 10, chase: 10,  ptsMult: 2, chicken: true, eggs: true },
   },
+  // Hatching: an egg placed in your pen hatches after hatch.min (smallest egg) .. hatch.max (biggest egg, eggs.maxMult) seconds.
+  hatch: { min: 10, max: 30 },
+  // Pets. weight = chance when an egg hatches (chicken 70 : bunny 15 : ladybug 15), value = money for placing one, height = placed size in metres.
+  pets: {
+    chicken: { name: 'Chicken', rarity: 'common',   weight: 70, value: 25, height: 0.9, icon: '\u{1F414}' },
+    bunny:   { name: 'Bunny',   rarity: 'uncommon', weight: 15, value: 75, height: 1.0, icon: '\u{1F430}' },
+    ladybug: { name: 'Ladybug', rarity: 'uncommon', weight: 15, value: 75, height: 0.5, icon: '\u{1F41E}' },
+  },
+  rarities: { common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' } },
+  eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
+  hotbarSlots: 8, petPenMax: 30, petSpeed: 0.8,
   // range = how close you must be to an egg's edge to see Steal. carry* = size/height of the egg held over your head.
-  steal: { range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
+  steal: { penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
 };
 
 const log = {
@@ -206,11 +325,12 @@ const $ = (id) => document.getElementById(id);
 const dom = {
   overlay: $('overlay'), overlayText: $('overlay-text'), status: $('status'), last: $('last'),
   bar: $('powerbar'), fill: $('pb-fill'), value: $('pb-value'), debug: $('debug'),
-  act: $('act'), actBtn: $('act-btn'), actLabel: $('act-label'), held: $('held'), pen: $('pen'),
+  cross: $('cross'), hint: $('hint'), held: $('held'), pen: $('pen'),
   speedVal: $('speed-val'), areasRow: $('areas-row'), areasWrap: $('areas'),
 };
 if (CONFIG.debug) { dom.debug.style.display = 'block'; document.body.classList.add('dbg'); }
 dom.arrow = $('arrow');
+const ui = { hotbar: $('hotbar'), dex: $('dex'), money: $('money'), banner: $('banner'), play: $('play-btn'), slotEls: [] };
 
 function showOverlay(html) { dom.overlayText.innerHTML = html; dom.overlay.style.display = 'flex'; }
 function fatal(err) {
@@ -386,8 +506,9 @@ async function init() {
   });
 
   const names = Object.keys(CONFIG.models.eggs);
-  const [mapGltf, playerGltf, eggGltf, chickGltf, ...typeGltfs] = await Promise.all([
+  const [mapGltf, playerGltf, eggGltf, chickGltf, bunnyGltf, ladyGltf, ...typeGltfs] = await Promise.all([
     load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.chicken),
+    load(CONFIG.models.pets.bunny), load(CONFIG.models.pets.ladybug),
     ...names.map((n) => load(CONFIG.models.eggs[n])),
   ]);
 
@@ -405,14 +526,16 @@ async function init() {
   scene.add(playerEggMesh);
   buildAreas();
   setupChickens(chickGltf);
+  setupPets({ chicken: chickGltf, bunny: bunnyGltf, ladybug: ladyGltf });
+  loadSave(); buildHotbar(); buildDex(); refreshHotbar(); refreshMoney(false);
   setupEggSpawns();
   buildAreasBar();
 
   respawn();
   ready = true;
-  dom.overlayText.innerHTML = IS_TOUCH ? 'Tap to play<small>Left side: move (push the stick all the way to run)<br>Right side: drag to look. Best in landscape.</small>'
-    : 'Click to play<small>Pointer lock is used for mouse look. Esc releases it.</small>';
-  dom.overlay.style.display = 'flex';
+  dom.overlayText.textContent = 'Throw eggs, steal eggs, hatch pets!';
+  ui.play.disabled = false; ui.play.textContent = 'Play';
+  refreshMenuStats();
   requestAnimationFrame(tick);
 }
 
@@ -547,20 +670,35 @@ function respawn() {
 /* ------------------------------------------------------------------ */
 /* Input                                                               */
 /* ------------------------------------------------------------------ */
-dom.overlay.addEventListener('click', () => {
+let started = false;
+function showMenu() {
+  $('menu-title').textContent = started ? 'Paused' : 'Throw An Egg';
+  ui.play.textContent = started ? 'Resume' : 'Play';
+  refreshMenuStats();
+  dom.overlay.style.display = 'flex';
+}
+function startPlay() {
   if (!ready) return;
-  if (IS_TOUCH) {                                   // no pointer lock on phones: just hide the overlay
+  started = true;
+  if (IS_TOUCH) {                                   // no pointer lock on phones: just hide the menu
     dom.overlay.style.display = 'none';
     const fs = document.documentElement.requestFullscreen;
     if (fs && !document.fullscreenElement) { try { Promise.resolve(fs.call(document.documentElement)).catch(() => {}); } catch (e) { /* not supported */ } }
     return;
   }
   renderer.domElement.requestPointerLock();
+}
+ui.play.addEventListener('click', startPlay);
+$('help-btn').addEventListener('click', () => { const h = $('menu-help'); h.hidden = !h.hidden; });
+$('reset-btn').addEventListener('click', () => {
+  if (!confirm('Erase your money, pets and pet index?')) return;
+  money = 0; for (const k of Object.keys(dex)) delete dex[k]; inv.slots.fill(null); inv.sel = 0;
+  saveGame(); buildDex(); refreshHotbar(); refreshMoney(false); refreshMenuStats();
 });
 document.addEventListener('pointerlockchange', () => {
   if (IS_TOUCH) return;
   const locked = document.pointerLockElement === renderer.domElement;
-  dom.overlay.style.display = locked ? 'none' : 'flex';
+  if (locked) dom.overlay.style.display = 'none'; else if (ready) showMenu();
 });
 function jump() {
   if (grounded && ready && form !== 'flying') { vy = (form === 'egg' ? CONFIG.eggForm : CONFIG.player).jump; grounded = false; }
@@ -607,6 +745,17 @@ if (IS_TOUCH) {
   }, { passive: false });
   const lookEnd = (e) => { if (find(e.changedTouches, lookId)) lookId = null; };
   lookZone.addEventListener('touchend', lookEnd); lookZone.addEventListener('touchcancel', lookEnd);
+  // a quick tap (no drag) is a click at that spot
+  const taps = {};
+  const tapStart = (e) => { for (const t of e.changedTouches) taps[t.identifier] = { x: t.clientX, y: t.clientY, t: performance.now() }; };
+  const tapEnd = (e) => {
+    for (const t of e.changedTouches) {
+      const st = taps[t.identifier]; if (!st) continue; delete taps[t.identifier];
+      if (performance.now() - st.t < 350 && Math.hypot(t.clientX - st.x, t.clientY - st.y) < 14 && dom.overlay.style.display === 'none')
+        worldClick((t.clientX / window.innerWidth) * 2 - 1, -(t.clientY / window.innerHeight) * 2 + 1);
+    }
+  };
+  for (const z of [joyZone, lookZone]) { z.addEventListener('touchstart', tapStart, { passive: true }); z.addEventListener('touchend', tapEnd); }
   const press = (id, fn) => $(id).addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); fn(); }, { passive: false });
   press('t-jump', () => { if (state.mode === 'charging') tryThrow(); else jump(); });
   press('t-throw', () => tryThrow());
@@ -622,7 +771,8 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
   if (document.pointerLockElement !== renderer.domElement) return; // this click only grabs the pointer
-  if (act.kind) { doAct(); return; }                               // a Steal / Place button is showing: the click presses it
+  if (state.mode === 'charging' && !carry && form === 'human') { tryThrow(); return; }   // in the Throw Zone a click throws
+  if (worldClick(0, 0)) return;                                    // otherwise the click goes where the crosshair points: steal that egg / place in the pen
   tryThrow();
 });
 window.addEventListener('keydown', (e) => {
@@ -634,10 +784,14 @@ window.addEventListener('keydown', (e) => {
     else jump();
   }
   if (e.code === 'KeyR') respawn();
-  if (e.code === 'KeyE') doAct();
+  const dg = /^Digit([1-9])$/.exec(e.code);
+  if (dg && +dg[1] <= CONFIG.hotbarSlots) selectSlot(+dg[1] - 1);
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; });
-dom.actBtn.addEventListener('click', (e) => { e.stopPropagation(); doAct(); });
+window.addEventListener('wheel', (e) => {
+  if (!ready || dom.overlay.style.display !== 'none') return;
+  selectSlot(inv.sel + (e.deltaY > 0 ? 1 : -1));
+}, { passive: true });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
 /* ------------------------------------------------------------------ */
@@ -863,11 +1017,11 @@ function statusText() {
   if (toast.t > 0) return toast.text;
   if (carry) {
     if (carry.status === 'stolen') { const a = areaAt(pos.x, pos.z); return 'The chicken is after you! Get out of ' + (a ? a.label : 'the area') + '!'; }
-    if (inOwnPen()) return 'Press E or click Place to put the egg in your pen';
+    if (nearPen()) return IS_TOUCH ? 'Tap a spot in your pen to place the egg' : 'Click a spot in your pen to place the egg';
     return playerPen ? 'Safe! Take the egg to your pen (Pen ' + playerPen.num + ', ' + Math.round(Math.hypot(pos.x - playerPen.center.x, pos.z - playerPen.center.z)) + ' m away)' : 'Safe! Take the egg to your pen';
   }
   if (form === 'flying') return 'Flying...';
-  if (form === 'egg') return 'You are an egg! Roll up to an egg and press Steal. R = respawn';
+  if (form === 'egg') return 'You are an egg! Roll up to an egg and click it. R = respawn';
   if (!zoneBox) return 'No Throw Zone found in map';
   return state.mode === 'charging' ? 'Press SPACE or CLICK to lock the power'
     : state.mode === 'cooldown' ? 'Thrown!' : 'Walk into the yellow Throw Zone';
@@ -1095,48 +1249,112 @@ function updateCarry() {
     log.info('Escaped with the egg');
   }
 }
-function placeEgg() {
-  if (!carry || carry.status !== 'safe' || !inOwnPen() || !penSlots.length) return;
+function placeEgg(pt) {                                  // pt = the spot in the pen you clicked; the egg starts hatching there
+  if (!carry || carry.status !== 'safe' || !pt) return;
+  if (hatching.length >= CONFIG.steal.penMax) { say('Your pen is full of eggs! Wait for one to hatch.'); return; }
   const e = carry.egg, E = CONFIG.eggs;
-  const slot = penSlots[penSlotCursor % penSlots.length];
-  const old = penEggs[penSlotCursor % penSlots.length];
-  if (old) scene.remove(old);                              // pen is full: the oldest egg in that spot is replaced
-  penSlotCursor++;
-  const gy = groundAt(slot.x, playerPen.y + 3, slot.z);
   const mesh = eggTpl[e.type].make();
   mesh.scale.setScalar(Math.min(CONFIG.steal.placeMaxH, Math.max(E.baseHeight, E.baseHeight * e.mult)));
-  mesh.position.set(slot.x, gy === null ? playerPen.y : gy, slot.z);
+  mesh.position.set(pt.x, pt.y, pt.z);
   mesh.rotation.y = Math.random() * Math.PI * 2;
   scene.add(mesh);
-  penEggs[(penSlotCursor - 1) % penSlots.length] = mesh;
-  const A = CONFIG.areas[e.area] || { ptsMult: 1 };
-  const pts = E.types[e.type].pts * e.mult * A.ptsMult;
-  score += pts; placed[e.type] = (placed[e.type] || 0) + 1;
-  $('score').textContent = 'Score: ' + Math.round(score) + '  (' + Object.entries(placed).map(([k, n]) => k + ' ' + n).join(' · ') + ')';
+  const total = hatchSeconds(e.mult);
+  const el = document.createElement('div');
+  el.className = 'egg-timer'; el.innerHTML = '<span class="t"></span><div class="bar"><i></i></div>';
+  document.body.appendChild(el);
+  hatching.push({ mesh, total, left: total, egg: e, size: mesh.scale.x, el, txt: '', wob: Math.random() * 6, pet: null, bar: el.querySelector('i'), t: el.querySelector('.t') });
   playerRoot.remove(carry.held);
   carry = null;
-  say('Placed ' + e.type + ' egg ' + e.mult.toFixed(1) + 'x in your pen  +' + Math.round(pts));
+  say('Egg placed - it hatches in ' + fmtTime(total));
 }
-function doAct() {
-  if (!act.kind || !ready) return;
-  if (act.kind === 'steal' && act.item) steal(act.item);
-  else if (act.kind === 'place') placeEgg();
-}
-function updateAct() {
-  act.kind = null; act.item = null;
-  let wx = 0, wy = 0, wz = 0, label = '';
-  const it = nearestSteal();
-  if (it) { act.kind = 'steal'; act.item = it; label = 'Steal'; wx = it.x; wy = it.groundY + it.egg.h * 0.6; wz = it.z; }
-  else if (form === 'human' && carry && carry.status === 'safe' && inOwnPen()) {
-    act.kind = 'place'; label = 'Place'; wx = pos.x; wy = pos.y + CONFIG.steal.carryBase + carryHeight(carry.egg) + 0.5; wz = pos.z;
+
+/* Clicking: eggs are stolen by clicking them, and a stolen egg is placed by clicking a spot in your pen.
+   Desktop clicks go where the crosshair (screen centre) points because the mouse is locked for looking; touch taps go where you tap. */
+const aim = { kind: null, item: null, point: null };
+const _pr = new THREE.Raycaster();
+let placeMarker = null;
+function rayAt(nx, ny) { _pr.setFromCamera({ x: nx, y: ny }, camera); return _pr.ray; }
+function reachEggs() {                                   // eggs close enough to steal
+  const out = [];
+  if (carry || (form !== 'human' && form !== 'egg')) return out;
+  for (const it of eggItems) {
+    const e = it.egg;
+    if (!e) continue;
+    if (Math.hypot(pos.x - it.x, pos.z - it.z) < e.r + CONFIG.steal.reach && Math.abs(pos.y - it.groundY) < e.h + 1.5) out.push(it);
   }
-  if (!act.kind) { dom.act.style.display = 'none'; return; }
-  _w.set(wx, wy, wz).project(camera);
-  if (_w.z > 1) { act.kind = null; dom.act.style.display = 'none'; return; }
-  dom.actLabel.textContent = label;
-  dom.act.style.display = 'block';
-  dom.act.style.left = ((_w.x * 0.5 + 0.5) * window.innerWidth) + 'px';
-  dom.act.style.top = ((-_w.y * 0.5 + 0.5) * window.innerHeight) + 'px';
+  return out;
+}
+function nearPen() {
+  if (!playerPen) return false;
+  const b = playerPen.box, m = 3;
+  return pos.x > b.min.x - m && pos.x < b.max.x + m && pos.z > b.min.z - m && pos.z < b.max.z + m && Math.abs(pos.y - playerPen.y) < 4;
+}
+function canPlaceNow() { return ready && form === 'human' && !!carry && carry.status === 'safe' && nearPen(); }
+function canPlacePetNow() { return ready && form === 'human' && !carry && !!heldPet() && nearPen(); }
+function pickSteal(ray, list) {                          // the in-reach egg the ray points at (with a forgiving margin)
+  let best = null, bs = 1;
+  for (const it of list) {
+    _w.set(it.x, it.groundY + it.egg.h * 0.5, it.z);
+    _d.subVectors(_w, ray.origin);
+    if (_d.dot(ray.direction) <= 0) continue;
+    const slack = Math.max(it.egg.r, it.egg.h * 0.5) * 1.2 + 0.3;
+    const sc = ray.distanceToPoint(_w) / slack;
+    if (sc <= bs) { bs = sc; best = it; }
+  }
+  return best;
+}
+function pickPlace(ray) {                                // the floor spot inside your pen that the ray points at
+  const hit = castRayIn(walkSolids, ray.origin, ray.direction, 300);   // fences are not in walkSolids, so you can aim through them
+  if (!hit) return null;
+  const b = playerPen.box, m = 0.6, p = hit.point;
+  if (p.x < b.min.x + m || p.x > b.max.x - m || p.z < b.min.z + m || p.z > b.max.z - m || Math.abs(p.y - playerPen.y) > 3) return null;
+  return p.clone();
+}
+function worldClick(nx, ny) {
+  if (!ready || form === 'flying') return false;
+  const ray = rayAt(nx, ny);
+  const eggs = reachEggs();
+  if (eggs.length) { const it = pickSteal(ray, eggs); if (it) { steal(it); return true; } }
+  if (canPlaceNow()) {
+    const pt = pickPlace(ray);
+    if (pt) { placeEgg(pt); return true; }
+    say(IS_TOUCH ? 'Tap a spot inside your pen' : 'Aim at a spot inside your pen and click');
+    return true;
+  }
+  if (canPlacePetNow()) {
+    const pt = pickPlace(ray);
+    if (pt) { placePet(pt); return true; }
+    say(IS_TOUCH ? 'Tap a spot inside your pen' : 'Aim at a spot inside your pen and click');
+    return true;
+  }
+  return false;
+}
+function updateAim() {
+  aim.kind = null; aim.item = null; aim.point = null;
+  const live = ready && dom.overlay.style.display === 'none' && form !== 'flying' && !(state.mode === 'charging' && !carry && form === 'human');
+  const eggs = live ? reachEggs() : [];
+  const place = live && canPlaceNow(), petPlace = live && canPlacePetNow();
+  let hint = '';
+  const verb = IS_TOUCH ? 'Tap' : 'Click';
+  if (eggs.length) hint = verb + ' the egg to steal it';
+  else if (place) hint = verb + ' a spot in your pen to place the egg';
+  else if (petPlace) { const P = CONFIG.pets[heldPet()]; hint = verb + ' a spot in your pen to place your ' + P.name + '  (+$' + P.value + ')'; }
+  if (!IS_TOUCH && hint) {
+    const ray = rayAt(0, 0);
+    const it = eggs.length ? pickSteal(ray, eggs) : null;
+    const pt = !eggs.length && (place || petPlace) ? pickPlace(ray) : null;
+    if (it) { aim.kind = 'steal'; aim.item = it; } else if (pt) { aim.kind = 'place'; aim.point = pt; }
+  }
+  if (!placeMarker) {
+    placeMarker = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.75, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.9, depthTest: false }));
+    placeMarker.renderOrder = 10; placeMarker.visible = false; scene.add(placeMarker);
+  }
+  placeMarker.visible = aim.kind === 'place';
+  if (aim.point) placeMarker.position.set(aim.point.x, aim.point.y + 0.06, aim.point.z);
+  dom.hint.textContent = hint;
+  dom.hint.style.display = hint ? 'block' : 'none';
+  dom.cross.style.display = !IS_TOUCH && hint ? 'block' : 'none';
+  dom.cross.classList.toggle('on', !!aim.kind);
 }
 
 let hudSpeed = null, hudThrow = null;
@@ -1279,6 +1497,213 @@ function updateChicken(ch, dt) {
 function updateChickens(dt) { for (const ch of chickens) updateChicken(ch, dt); }
 
 /* ------------------------------------------------------------------ */
+/* Pets, hotbar, pet index, money, hatching                            */
+/* ------------------------------------------------------------------ */
+const SAVE_KEY = 'tae_save_v1';
+const inv = { slots: Array(CONFIG.hotbarSlots).fill(null), sel: 0 };   // slot = { pet, count } or null
+let money = 0;
+const dex = {};                                       // pet id -> how many you have hatched (0 / missing = not discovered yet)
+const hatching = [];                                  // eggs standing in your pen, counting down
+const petsInPen = [];                                 // hatched pets you placed; they wander about the pen
+const petTpl = {};
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+function loadSave() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (!d) return;
+    money = Math.max(0, +d.money || 0);
+    for (const id of Object.keys(CONFIG.pets)) if (d.dex && d.dex[id] > 0) dex[id] = d.dex[id] | 0;
+    (d.slots || []).slice(0, CONFIG.hotbarSlots).forEach((sl, i) => { if (sl && CONFIG.pets[sl.pet] && sl.count > 0) inv.slots[i] = { pet: sl.pet, count: sl.count | 0 }; });
+  } catch (e) { log.warn('Could not read the save', e); }
+}
+function saveGame() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money, dex, slots: inv.slots })); } catch (e) { /* storage unavailable */ }
+}
+
+function buildHotbar() {
+  ui.hotbar.innerHTML = ''; ui.slotEls = [];
+  for (let i = 0; i < CONFIG.hotbarSlots; i++) {
+    const el = document.createElement('div');
+    el.className = 'slot';
+    el.innerHTML = '<span class="k">' + (i + 1) + '</span><span class="ic"></span><span class="n"></span>';
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectSlot(i); }, { passive: false });
+    el.addEventListener('click', () => selectSlot(i));
+    ui.hotbar.appendChild(el); ui.slotEls.push(el);
+  }
+}
+function refreshHotbar() {
+  inv.slots.forEach((sl, i) => {
+    const el = ui.slotEls[i]; if (!el) return;
+    el.classList.toggle('sel', i === inv.sel);
+    el.querySelector('.ic').textContent = sl ? CONFIG.pets[sl.pet].icon : '';
+    el.querySelector('.n').textContent = sl && sl.count > 1 ? sl.count : '';
+    el.title = sl ? CONFIG.pets[sl.pet].name : '';
+  });
+}
+function selectSlot(i) { const n = CONFIG.hotbarSlots; inv.sel = ((i % n) + n) % n; refreshHotbar(); }
+function heldPet() { const sl = inv.slots[inv.sel]; return sl ? sl.pet : null; }
+
+function buildDex() {
+  const ids = Object.keys(CONFIG.pets), found = ids.filter((id) => dex[id] > 0).length;
+  ui.dex.innerHTML = '<div class="dex-h"><span>Pet Index</span><b>' + found + '/' + ids.length + '</b></div>' + ids.map((id) => {
+    const P = CONFIG.pets[id], R = CONFIG.rarities[P.rarity], n = dex[id] || 0;
+    return '<div class="dex-row' + (n ? '' : ' locked') + '"><span class="dex-ic">' + P.icon + '</span><span class="dex-t"><b>' + (n ? P.name : '???') +
+      '</b><small style="color:' + R.color + '">' + R.label + '</small></span><span class="dex-n">' + (n ? '\u00d7' + n : '') + '</span></div>';
+  }).join('');
+}
+function refreshMoney(bump) {
+  ui.money.querySelector('b').textContent = money.toLocaleString();
+  if (bump) { ui.money.classList.remove('bump'); void ui.money.offsetWidth; ui.money.classList.add('bump'); }
+}
+function refreshMenuStats() {
+  const ids = Object.keys(CONFIG.pets);
+  $('menu-stats').textContent = '$' + money.toLocaleString() + '  \u00b7  ' + ids.filter((id) => dex[id] > 0).length + '/' + ids.length + ' pets discovered';
+}
+function banner(html, color) {
+  const el = ui.banner;
+  el.innerHTML = html; el.style.setProperty('--c', color || '#ffd34d');
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+}
+function popupAt(text, wp, color) {
+  _w.copy(wp).project(camera);
+  if (_w.z > 1) return;
+  const el = document.createElement('div');
+  el.className = 'pop'; el.textContent = text;
+  el.style.left = ((_w.x * 0.5 + 0.5) * window.innerWidth) + 'px'; el.style.top = ((-_w.y * 0.5 + 0.5) * window.innerHeight) + 'px';
+  if (color) el.style.color = color;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+/* Hatching */
+function hatchSeconds(mult) {                         // smallest egg (1x) = hatch.min, biggest (eggs.maxMult) = hatch.max, linear between
+  const f = clampN((mult - 1) / (CONFIG.eggs.maxMult - 1), 0, 1);
+  return CONFIG.hatch.min + (CONFIG.hatch.max - CONFIG.hatch.min) * f;
+}
+function fmtTime(sec) { const t = Math.max(0, Math.ceil(sec)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
+function pickPet(eggType) {
+  const luck = CONFIG.eggLuck[eggType] != null ? CONFIG.eggLuck[eggType] : 1;
+  const ids = Object.keys(CONFIG.pets);
+  const w = ids.map((id) => CONFIG.pets[id].weight * (CONFIG.pets[id].rarity === 'common' ? 1 : luck));
+  let r = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < ids.length; i++) { r -= w[i]; if (r <= 0) return ids[i]; }
+  return ids[0];
+}
+function invCanTake(id) { return inv.slots.some((sl) => sl && sl.pet === id) || inv.slots.some((sl) => !sl); }
+function addPet(id) {
+  let i = inv.slots.findIndex((sl) => sl && sl.pet === id);
+  if (i >= 0) inv.slots[i].count++;
+  else { i = inv.slots.findIndex((sl) => !sl); inv.slots[i] = { pet: id, count: 1 }; }
+  if (!inv.slots[inv.sel]) inv.sel = i;               // nothing held: pick up the new pet
+  refreshHotbar(); saveGame();
+}
+function hatchNow(h) {
+  scene.remove(h.mesh); h.el.remove();
+  hatching.splice(hatching.indexOf(h), 1);
+  const id = h.pet, P = CONFIG.pets[id], R = CONFIG.rarities[P.rarity];
+  const first = !(dex[id] > 0);
+  dex[id] = (dex[id] || 0) + 1;
+  addPet(id); buildDex();
+  banner('<small>' + (first ? 'New pet!' : 'Egg hatched!') + '</small><b>' + P.icon + ' ' + P.name + '</b><em>' + R.label + '</em>', R.color);
+  say('Hatched a ' + P.name + '! It is in your hotbar.');
+  log.info('Hatched', id);
+}
+function updateHatching(dt) {
+  for (let i = hatching.length - 1; i >= 0; i--) {
+    const h = hatching[i];
+    h.left = Math.max(0, h.left - dt);
+    if (h.left < 3) { h.wob += dt * 26; h.mesh.rotation.z = Math.sin(h.wob) * 0.2 * (1 - h.left / 3); }   // the egg shakes before it hatches
+    if (h.left <= 0) {
+      if (!h.pet) h.pet = pickPet(h.egg.type);
+      if (invCanTake(h.pet)) hatchNow(h);
+    }
+  }
+}
+function updateEggLabels() {
+  for (const h of hatching) {
+    const el = h.el, m = h.mesh.position;
+    _w.set(m.x, m.y + h.size + 0.45, m.z).project(camera);
+    if (_w.z > 1 || camera.position.distanceTo(m) > 60) { el.style.display = 'none'; continue; }
+    el.style.display = 'block';
+    el.style.transform = 'translate(' + ((_w.x * 0.5 + 0.5) * window.innerWidth).toFixed(1) + 'px,' + ((-_w.y * 0.5 + 0.5) * window.innerHeight).toFixed(1) + 'px) translate(-50%,-100%)';
+    const txt = h.left <= 0 ? 'Hotbar full!' : fmtTime(h.left);
+    if (txt !== h.txt) { h.txt = txt; h.t.textContent = txt; el.classList.toggle('soon', h.left <= 3); }
+    h.bar.style.width = ((1 - h.left / h.total) * 100).toFixed(1) + '%';
+  }
+}
+
+/* Pet models */
+function setupPets(gltfs) {
+  for (const id of Object.keys(CONFIG.pets)) {
+    const g = gltfs[id];
+    const m = SkeletonUtils.clone(g.scene);
+    const box = bindPoseBox(m), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+    petTpl[id] = { gltf: g, scale: CONFIG.pets[id].height / size.y, ox: -c.x, oy: -box.min.y, oz: -c.z };
+    log.info('Pet ready:', id, 'height', size.y.toFixed(3), 'anims', g.animations.map((a) => a.name).join(','));
+  }
+}
+function petPlay(p, n) {
+  if (p.anim === n || !p.actions[n]) return;
+  const nx = p.actions[n], pv = p.actions[p.anim];
+  nx.reset().play();
+  if (pv) pv.crossFadeTo(nx, 0.2, false);
+  p.anim = n;
+}
+function spawnPet(id, pt) {
+  const T = petTpl[id];
+  const model = SkeletonUtils.clone(T.gltf.scene);
+  model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  model.position.set(T.ox, T.oy, T.oz);
+  const inner = new THREE.Group(); inner.scale.setScalar(T.scale); inner.add(model);
+  const root = new THREE.Group(); root.add(inner); root.position.copy(pt); scene.add(root);
+  const mixer = new THREE.AnimationMixer(model), actions = {};
+  for (const clip of T.gltf.animations) actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
+  const p = { id, root, mixer, actions, anim: '', pos: pt.clone(), yaw: Math.random() * Math.PI * 2, target: null, wait: 0.5 + Math.random() * 3 };
+  root.rotation.y = p.yaw;
+  petPlay(p, 'idle'); mixer.update(Math.random() * 2);
+  petsInPen.push(p);
+  if (petsInPen.length > CONFIG.petPenMax) { const old = petsInPen.shift(); scene.remove(old.root); }
+}
+function placePet(pt) {                                 // put the pet you are holding in the pen: it wanders there and pays out
+  const sl = inv.slots[inv.sel];
+  if (!sl) return;
+  const P = CONFIG.pets[sl.pet];
+  spawnPet(sl.pet, pt);
+  sl.count--; if (sl.count <= 0) inv.slots[inv.sel] = null;
+  money += P.value;
+  refreshHotbar(); refreshMoney(true); saveGame();
+  popupAt('+$' + P.value, new THREE.Vector3(pt.x, pt.y + 1.2, pt.z), '#ffd34d');
+  say('Placed ' + P.name + '  +$' + P.value);
+}
+function updatePets(dt) {
+  const b = playerPen ? playerPen.box : null;
+  for (const p of petsInPen) {
+    let anim = 'idle';
+    if (p.target) {
+      const dx = p.target.x - p.pos.x, dz = p.target.z - p.pos.z, d = Math.hypot(dx, dz);
+      if (d < 0.15) { p.target = null; p.wait = 2 + Math.random() * 4; }
+      else {
+        const st = Math.min(CONFIG.petSpeed * dt, d);
+        p.pos.x += dx / d * st; p.pos.z += dz / d * st;
+        p.yaw = angleLerp(p.yaw, Math.atan2(dx, dz), 8 * dt);
+        anim = 'walk';
+      }
+    } else {
+      p.wait -= dt;
+      if (p.wait <= 0 && b) {
+        const a = Math.random() * Math.PI * 2, r = 1 + Math.random() * 2;
+        p.target = { x: clampN(p.pos.x + Math.cos(a) * r, b.min.x + 1, b.max.x - 1), z: clampN(p.pos.z + Math.sin(a) * r, b.min.z + 1, b.max.z - 1) };
+      }
+    }
+    petPlay(p, anim);
+    p.root.position.copy(p.pos);
+    p.root.rotation.y = p.yaw;
+    p.mixer.update(dt);
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Main loop                                                           */
 /* ------------------------------------------------------------------ */
 const clock = new THREE.Clock();
@@ -1296,7 +1721,10 @@ function tick() {
   updateChickens(dt);
   updateCarry();
   updateCamera();
-  updateAct();
+  updateAim();
+  updateHatching(dt);
+  updatePets(dt);
+  updateEggLabels();
   updateTutorial();
   updateTutorialArrow();
   updatePowerBar();
