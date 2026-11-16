@@ -122,6 +122,33 @@
              border-radius: 16px; font: 700 17px var(--font); color: #3a2a00; background: linear-gradient(#ffe27a, #ffbf2e); box-shadow: 0 4px 0 #b8860b, 0 8px 16px rgba(0,0,0,.4);
              cursor: pointer; pointer-events: auto; }
   #dex-btn:hover { filter: brightness(1.06); } #dex-btn:active { transform: translateY(calc(-50% + 2px)); box-shadow: 0 1px 0 #b8860b; }
+  #shop-btn { position: fixed; left: 12px; top: calc(50% + 64px); z-index: 4; padding: 10px 14px; border: 3px solid #fff; border-radius: 16px; font: 700 17px var(--font); color: #0c3a12;
+              background: linear-gradient(#9af59e, #3fc15a); box-shadow: 0 4px 0 #1f7a35, 0 8px 16px rgba(0,0,0,.4); cursor: pointer; pointer-events: auto; }
+  #shop-btn:hover { filter: brightness(1.06); } #shop-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1f7a35; } #shop-btn small { font: 700 12px var(--font); opacity: .65; }
+  #dex .dex-tabs { display: flex; gap: 6px; } #dex .dex-tab { border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff; border-radius: 12px; font: 700 16px var(--font); padding: 5px 12px; cursor: pointer; }
+  #dex .dex-tab.on { background: var(--gold); color: #3a2a00; border-color: #fff; }
+  #dex .up-list { display: flex; flex-direction: column; gap: 10px; }
+  #dex .up-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.1); }
+  #dex .up-ic { font-size: 40px; width: 56px; text-align: center; }
+  #dex .up-t { display: flex; flex-direction: column; line-height: 1.25; margin-right: auto; } #dex .up-t b { font: 700 18px var(--font); } #dex .up-t small { font: 600 12px var(--font); opacity: .7; letter-spacing: .05em; }
+  #dex .up-t em { font: 500 14px var(--font); font-style: normal; opacity: .9; } #dex .up-t i { font: 600 14px var(--font); font-style: normal; color: #9af59e; }
+  #dex .up-buy { min-width: 96px; border: 3px solid #fff; border-radius: 14px; padding: 6px 10px; font: 700 14px/1.2 var(--font); color: #0c3a12; background: linear-gradient(#9af59e, #3fc15a); box-shadow: 0 3px 0 #1f7a35; cursor: pointer; text-align: center; }
+  #dex .up-buy b { font-size: 17px; } #dex .up-buy.no { filter: grayscale(.85) brightness(.75); cursor: not-allowed; } #dex .up-buy.max { background: rgba(255,255,255,.15); color: #fff; box-shadow: none; border-color: rgba(255,255,255,.3); cursor: default; }
+  body.touch #shop-btn { left: calc(8px + env(safe-area-inset-left)); top: calc(56% + 44px); padding: 6px 10px; font-size: 14px; border-width: 2px; } body.touch #shop-btn small { display: none; }
+  #auth { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; background: rgba(8,12,28,.82); backdrop-filter: blur(4px); color: #fff; }
+  #auth .auth-card { width: min(380px, 92vw); padding: 22px 22px 16px; border-radius: 22px; background: rgba(18,22,40,.96); border: 2px solid var(--edge); box-shadow: 0 20px 60px rgba(0,0,0,.55); text-align: center; }
+  #auth .auth-logo { font-size: 46px; line-height: 1; } #auth h2 { margin: 6px 0 4px; font: 700 28px var(--font); color: var(--gold); letter-spacing: .03em; }
+  #auth #auth-msg { margin: 4px 0 12px; font: 500 15px/1.35 var(--font); opacity: .92; min-height: 1.3em; } #auth #auth-msg.bad { color: #ff9a9a; opacity: 1; }
+  #auth input { display: block; width: 100%; box-sizing: border-box; margin: 7px 0; padding: 12px 14px; border-radius: 12px; border: 2px solid rgba(255,255,255,.22); background: rgba(255,255,255,.08); color: #fff; font: 500 16px var(--font); outline: none; }
+  #auth input:focus { border-color: var(--gold); }
+  #auth .auth-row { display: flex; gap: 8px; margin: 8px 0; }
+  #auth button { flex: 1; padding: 11px 14px; border: 3px solid #fff; border-radius: 14px; font: 700 17px var(--font); cursor: pointer; color: #3a2a00; background: linear-gradient(#ffe27a, #ffbf2e); box-shadow: 0 3px 0 #b8860b; }
+  #auth button.sec { color: #fff; background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.35); box-shadow: none; }
+  #auth button.google { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; margin-top: 4px; color: #3c4043; background: #fff; border-color: #fff; box-shadow: 0 3px 0 #bbb; }
+  #auth button.guest { width: 100%; margin-top: 12px; font-size: 15px; color: #fff; background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.3); box-shadow: none; }
+  #auth button.link { display: inline-block; flex: none; width: auto; border: 0; background: none; box-shadow: none; color: rgba(255,255,255,.6); font: 500 13px var(--font); text-decoration: underline; padding: 6px; margin-top: 4px; }
+  #auth button:disabled { opacity: .55; cursor: default; }
+  #acct { margin-top: 8px; font: 500 13px var(--font); opacity: .85; }
   #dex-btn small { font: 700 12px var(--font); opacity: .65; } #dex-btn .cnt { font: 700 13px var(--font); padding: 1px 7px; border-radius: 999px; background: rgba(58,42,0,.18); }
   #dex { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 7; background: rgba(8,12,28,.62); backdrop-filter: blur(4px); color: #fff; }
   #dex.open { display: flex; }
@@ -247,9 +274,23 @@
 </div>
 <div id="money"><span class="coin">$</span><b>0</b><small></small></div>
 <button type="button" id="dex-btn">Index</button>
+<button type="button" id="shop-btn">Upgrades <small>[U]</small></button>
 <div id="dex"></div>
 <div id="hotbar"></div>
 <div id="banner"></div>
+<div id="auth"><div class="auth-card">
+  <div class="auth-logo">&#129370;</div>
+  <h2>Throw An Egg</h2>
+  <p id="auth-msg">Checking sign-in...</p>
+  <div id="auth-forms" hidden>
+    <input id="auth-email" type="email" placeholder="Email" autocomplete="email">
+    <input id="auth-pass" type="password" placeholder="Password (6+ characters)" autocomplete="current-password">
+    <div class="auth-row"><button type="button" id="auth-in">Sign in</button><button type="button" id="auth-up" class="sec">Sign up</button></div>
+    <button type="button" id="auth-google" class="google"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.5 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Continue with Google</button>
+    <button type="button" id="auth-reset" class="link">Forgot password?</button>
+  </div>
+  <button type="button" id="auth-guest" class="guest" hidden>Play as guest (progress is not saved)</button>
+</div></div>
 <div id="overlay"><div id="menu">
   <div id="menu-logo">&#129370;</div>
   <h1 id="menu-title">Throw An Egg</h1>
@@ -264,11 +305,15 @@
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
       <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-8</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s, bunny and ladybug $25/s at 1x, more for bigger eggs).</li>
       <li>In your pen, <b>click the Pull-Up Bar</b> to gain <b>Strength</b> (throws go farther) and <b>click the Treadmill</b> to gain <b>Speed</b>. You hop on automatically and keep training on your own; <b>click again</b> to stop.</li>
+      <li>Click a pet standing in your pen to <b>take it back</b> into your hotbar. Your pen holds 5 pets to start.</li>
+      <li><b>Sign in</b> (email or Google) and your money, pets, pen, upgrades and training are saved. <b>Guests are not saved.</b></li>
+      <li>Open <b>Upgrades</b> (button on the left, or press <b>U</b>) to upgrade the Pull-Up Bar, the Treadmill, and your pen (+1 pet slot each).</li>
       <li>Open the <b>Index</b> button (or press <b>I</b>) to see every pet.</li>
     </ol>
-    <div style="margin-top:8px;opacity:.85"><b>WASD</b> move &middot; <b>Shift</b> run &middot; <b>Space</b> jump &middot; <b>Mouse</b> look &middot; <b>R</b> respawn &middot; <b>I</b> index &middot; <b>Esc</b> pause</div>
+    <div style="margin-top:8px;opacity:.85"><b>WASD</b> move &middot; <b>Shift</b> run &middot; <b>Space</b> jump &middot; <b>Mouse</b> look &middot; <b>R</b> respawn &middot; <b>I</b> index &middot; <b>U</b> upgrades &middot; <b>Esc</b> pause</div>
   </div>
   <div id="menu-stats"></div>
+  <div id="acct"><span id="acct-text"></span><button type="button" id="acct-btn" class="link"></button></div>
   <button type="button" id="reset-btn" class="link">Reset progress</button>
 </div></div>
 
@@ -289,7 +334,7 @@ const CONFIG = {
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
   models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb' },
-    gym: { treadmill: 'Treadmill.glb', bar: 'PullUp_Bar.glb' },
+    gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb'] },   // index = upgrade level
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb' } },
   eggs: { baseHeight: 0.8, maxMult: 10, respawn: 6,   // 1x egg = baseHeight metres tall; size never exceeds maxMult
     sizeTiers: [ { w: 72, min: 1, max: 2 }, { w: 21, min: 2, max: 4 }, { w: 5.5, min: 4, max: 6 }, { w: 1.2, min: 6, max: 8 }, { w: 0.3, min: 8, max: 10 } ],   // big eggs are MUCH rarer now (10x was 1 in 100, now 1 in ~330)
@@ -309,9 +354,10 @@ const CONFIG = {
     zone: /^Throw[ _]Zone/i,
     valley: /^Cluck[ _]Valley$/i, sands: /^Scorching[ _]Sands$/i, valleyEgg: /^Cluck[ _]Valley[ _]Egg(_\d+)?$/i, sandsEgg: /^Scorching[ _]Sands[ _]Egg(_\d+)?$/i,
     fence: /^Fence_?Pen(\d+)/i, spawnPen: /Pen(\d+)/i,
+    gymBar: /^PullUp_?Bar_?Pen(\d+)/i, gymTread: /^Treadmill_?Pen(\d+)/i,   // marker cubes in the map: the machine for pen N stands where its marker is
     barrier: [/^Fence_?Pen/i, /^Wall/i],          // always solid at every height and from every side: never stepped on, never walked through
-    nonSolid: [/^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg(_\d+)?$/i, /^Chicken/i],
-    hidden: [/^Player[ _]Spawn/i, /Egg(_\d+)?$/i, /^Chicken/i],
+    nonSolid: [/^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg(_\d+)?$/i, /^Chicken/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
+    hidden: [/^Player[ _]Spawn/i, /Egg(_\d+)?$/i, /^Chicken/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
   },
   // speed = the player's speed stat (walk speed). Starts at 10; run = speed * runMult (10 -> 16). Override with ?speed=N
   // speedUnit: metres per second per point of speed (player AND chickens), so "10" reads big but moves at a comfortable 5 m/s.
@@ -324,10 +370,20 @@ const CONFIG = {
   throwing: { powerScale: 0.7, elevationDeg: 35, gravity: 9.8, cooldown: 1.2, maxLanded: 40, maxFlightTime: 12 },
   egg: { size: 0.45 },
   // Gym in your pen. Click the Pull-Up Bar (strength) or the Treadmill (speed) to start auto-training; click again to stop. reach = how close you must stand (metres from the machine's edge).
-  // Auto-training: you are teleported onto the machine and locked in place. A rep is counted first after barRepFirst / treadRepFirst seconds, then every barRepEvery / treadRepEvery seconds (bar: one pull-up per 2s Training loop; treadmill: every 0.5s).
+  // Auto-training: you are teleported onto the machine and locked in place; reps are counted by the timings of your machine's upgrade level (see gymTiers).
   // gripAlign: where the Training clip's raised arms sit on the bar (0 = lowest point of the pull, 1 = highest, 0.5 = middle).
-  // strength: every point adds throwBonusPerStrength to the launch speed (0.01 = +1%). speed: every rep adds speedPerRep to your speed stat.
-  gym: { reach: 2.2, barRepFirst: 1.0, barRepEvery: 2.0, treadRepFirst: 0.5, treadRepEvery: 0.5, gripAlign: 0.5, strengthPerRep: 1, throwBonusPerStrength: 0.01, speedPerRep: 0.25, barHeight: 2.7, treadmillLength: 2.9, wallInset: 3.5, spread: 4.5 },
+  // strength: every point adds throwBonusPerStrength to the launch speed (0.01 = +1%).
+  // Gym upgrades (bought in the Upgrades panel, button on the left or press U). Index = level: level 1 is the base machine, then Upgrade 2 and Upgrade 3 (each has its own model).
+  // cost = price of reaching that level. gain = Strength (bar) / Speed (treadmill) you get every `every` seconds (one rep). first = when the first rep of a session counts.
+  // On the bar one pull-up is the 2s Training clip (barClipLength); with every < 2 the clip plays faster so a pull-up still lands on every rep.
+  // Pen upgrades: you start with pen.base pet slots, every upgrade adds one. Price = firstCost * growth^(upgrades bought so far), up to pen.max upgrades.
+  pen: { base: 5, firstCost: 10000, growth: 3, max: 10 },
+  petPickupReach: 6,   // how close you must be (metres) to click a pet in your pen and take it back
+  gymTiers: {
+    bar:       [{ cost: 0, gain: 1,    every: 2,   first: 1    }, { cost: 1000000,  gain: 5,  every: 1,   first: 0.5 }, { cost: 15000000, gain: 20, every: 1,   first: 0.5 }],
+    treadmill: [{ cost: 0, gain: 0.25, every: 0.5, first: 0.5  }, { cost: 850000,   gain: 15, every: 0.5, first: 0.5 }, { cost: 10000000, gain: 80, every: 0.5, first: 0.5 }],
+  },
+  gym: { reach: 2.2, gripAlign: 0.5, barClipLength: 2.0, throwBonusPerStrength: 0.01, barHeight: 2.7, treadmillLength: 2.9, wallInset: 3.5, spread: 4.5 },
   // Areas are islands ordered from nearest to furthest (the order below). Humans can never enter an area (only thrown eggs, and thieves with a stolen egg, are allowed in),
   // and you can only go to the island your egg landed on and the ones before it; anything further sends you back out.
   // Per-area rules. speed = recommended player speed (shown at the top of the screen), chase = how fast that area's chicken runs
@@ -335,7 +391,7 @@ const CONFIG = {
   // chaseAnywhere:true = its guard follows a thief out of the area too, and only your own pen is safe), ptsMult = score multiplier for eggs stolen there. Set chicken:false / eggs:false to switch a part off.
   areas: {
     valley: { label: 'Cluck Valley',    speed: 5,  chase: 5, ptsMult: 1, enemy: 'chicken', chicken: true, eggs: true },
-    sands:  { label: 'Scorching Sands', speed: 1000, chase: 1250, ptsMult: 2, enemy: 'scorpion', chaseAnywhere: true, chicken: true, eggs: true },
+    sands:  { label: 'Scorching Sands', speed: 750, chase: 1000, ptsMult: 2, enemy: 'scorpion', chaseAnywhere: true, chicken: true, eggs: true },
   },
   // Hatching: an egg placed in your pen hatches after hatch.min (smallest egg) .. hatch.max (biggest egg, eggs.maxMult) seconds.
   hatch: { min: 10, max: 30 },
@@ -536,6 +592,7 @@ let areas = [];                               // [{ id, label, speed, chase, pts
 const penBoxes = {};                          // pen number -> Box3 (from the Fence_PenN meshes)
 let playerSpawnIdx = null, playerPen = null;  // the spawn you first spawned on = your pen, for the rest of the session
 let penSlots = [], penSlotCursor = 0;
+const gymMarkers = { bar: {}, treadmill: {} };   // pen number -> centre of its PullUp_BarPenN / TreadmillPenN marker cube in the map
 const penEggs = [], placed = {};              // meshes standing in your pen / counts per type
 let carry = null;                             // { egg, item, area, status: 'stolen' | 'safe', held }
 const chickens = [];
@@ -550,14 +607,18 @@ async function init() {
     if (e.total) dom.overlayText.textContent = 'Loading ' + url + ' ' + Math.round(e.loaded / e.total * 100) + '%';
   });
 
+  initAccounts();                                       // sign-in screen; runs while the models load
   const names = Object.keys(CONFIG.models.eggs);
-  const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, bunnyGltf, ladyGltf, treadGltf, barGltf, ...typeGltfs] = await Promise.all([
+  const GM = CONFIG.models.gym;
+  const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, bunnyGltf, ladyGltf, ...restGltfs] = await Promise.all([
     load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.chicken), load(CONFIG.models.scorpion),
     load(CONFIG.models.pets.bunny), load(CONFIG.models.pets.ladybug),
-    load(CONFIG.models.gym.treadmill), load(CONFIG.models.gym.bar),
+    ...GM.treadmill.map((f) => load(f)), ...GM.bar.map((f) => load(f)),
     ...names.map((n) => load(CONFIG.models.eggs[n])),
   ]);
 
+  const treadGltfs = restGltfs.slice(0, GM.treadmill.length), barGltfs = restGltfs.slice(GM.treadmill.length, GM.treadmill.length + GM.bar.length);
+  const typeGltfs = restGltfs.slice(GM.treadmill.length + GM.bar.length);
   setupMap(mapGltf.scene);
   setupPlayer(playerGltf);
   eggTpl.normal = bakeEgg(typeGltfs[names.indexOf('normal')].scene);
@@ -573,8 +634,8 @@ async function init() {
   buildAreas();
   setupChickens({ chicken: chickGltf, scorpion: scorpGltf });
   setupPets({ chicken: chickGltf, bunny: bunnyGltf, ladybug: ladyGltf });
-  setupGym({ treadmill: treadGltf, bar: barGltf });
-  loadSave(); buildHotbar(); buildDex(); refreshHotbar(); refreshMoney(false);
+  setupGym({ treadmill: treadGltfs, bar: barGltfs });
+  buildHotbar(); buildDex(); refreshHotbar(); refreshMoney(false);
   setupEggSpawns();
   buildAreasBar();
 
@@ -619,6 +680,9 @@ function setupMap(root) {
     else if (CONFIG.match.valley.test(o.name)) valleyBox = box();
     else if (CONFIG.match.sands.test(o.name)) sandsBox = box();
     else if (/^Chicken/i.test(o.name)) chickenStart = box().getCenter(new THREE.Vector3());
+    const gb = CONFIG.match.gymBar.exec(o.name), gt = CONFIG.match.gymTread.exec(o.name);
+    if (gb) gymMarkers.bar[gb[1]] = box().getCenter(new THREE.Vector3());
+    if (gt) gymMarkers.treadmill[gt[1]] = box().getCenter(new THREE.Vector3());
   });
 
   spawnPoints = spawnObjs.map((o) => {
@@ -754,9 +818,8 @@ function startPlay() {
 ui.play.addEventListener('click', startPlay);
 $('help-btn').addEventListener('click', () => { const h = $('menu-help'); h.hidden = !h.hidden; });
 $('reset-btn').addEventListener('click', () => {
-  if (!confirm('Erase your money, pets, pet index and training?')) return;
-  money = 0; for (const k of Object.keys(dex)) delete dex[k]; inv.slots.fill(null); inv.sel = 0; train.strength = 0; train.speed = 0; speedStat = CONFIG.player.speed;
-  for (const pp of petsInPen) scene.remove(pp.root); petsInPen.length = 0;
+  if (!confirm('Erase your money, pets, pet index, upgrades and training?')) return;
+  resetState();
   saveGame(); buildDex(); refreshHotbar(); refreshMoney(false); refreshMenuStats();
 });
 document.addEventListener('pointerlockchange', () => {
@@ -841,10 +904,13 @@ document.addEventListener('mousedown', (e) => {
   if (worldClick(0, 0)) return;                                    // otherwise the click goes where the crosshair points: steal that egg / place in the pen
   tryThrow();
 });
+const typing = (e) => !!(e.target && e.target.closest && e.target.closest('#auth'));   // typing in the sign-in form: no game keys
 window.addEventListener('keydown', (e) => {
+  if (typing(e)) return;
   if (e.code === 'Space') e.preventDefault();
   if (e.repeat) return;
-  if (e.code === 'KeyI') { setDex(!dexOpen); return; }
+  if (e.code === 'KeyI') { openPanel('index'); return; }
+  if (e.code === 'KeyU') { openPanel('shop'); return; }
   if (dexOpen) { if (e.code === 'Escape') setDex(false); return; }   // the index is a pause-style panel: no game keys while it is open
   keys[e.code] = true;
   if (e.code === 'Space') {
@@ -855,7 +921,7 @@ window.addEventListener('keydown', (e) => {
   const dg = /^Digit([1-9])$/.exec(e.code);
   if (dg && +dg[1] <= CONFIG.hotbarSlots) selectSlot(+dg[1] - 1);
 });
-window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+window.addEventListener('keyup', (e) => { if (typing(e)) return; keys[e.code] = false; });
 window.addEventListener('wheel', (e) => {
   if (!ready || dexOpen || dom.overlay.style.display !== 'none') return;
   selectSlot(inv.sel + (e.deltaY > 0 ? 1 : -1));
@@ -1280,6 +1346,7 @@ function assignPen(sp) {
   }
   penSlots.sort(() => Math.random() - 0.5);
   placeGym(sp);
+  spawnSavedPets();
   dom.pen.textContent = 'Your pen: Pen ' + playerPen.num + ' (the spawn you started on)';
   log.info('Your pen: Pen', playerPen.num, 'slots:', penSlots.length);
 }
@@ -1411,6 +1478,7 @@ function worldClick(nx, ny) {
   if (gym.session) { stopGym(); return true; }
   const ray = rayAt(nx, ny);
   if (canTrain() && gymItems.length) { const g = pickGym(ray); if (g && gymReachable(g)) { startGym(g); return true; } }
+  if (form === 'human' && !carry && petsInPen.length && nearPen()) { const pp = pickPenPet(ray); if (pp) { takePet(pp); return true; } }
   const eggs = reachEggs();
   if (eggs.length) { const it = pickSteal(ray, eggs); if (it) { steal(it); return true; } }
   if (canPlaceNow()) {
@@ -1436,19 +1504,22 @@ function updateAim() {
   const verb = IS_TOUCH ? 'Tap' : 'Click';
   if (eggs.length) hint = verb + ' the egg to steal it';
   else if (place) hint = verb + ' a spot in your pen to place the egg';
-  else if (petPlace) { const P = CONFIG.pets[heldPet()]; hint = verb + ' a spot in your pen to place your ' + P.name + '  ($' + P.income + '/s at 1x)'; }
+  else if (petPlace) { const P = CONFIG.pets[heldPet()]; hint = petsInPen.length >= penCapacity() ? 'Pen full (' + petsInPen.length + '/' + penCapacity() + ') - press U to upgrade' : verb + ' a spot in your pen to place your ' + P.name + '  ($' + P.income + '/s at 1x)  [' + petsInPen.length + '/' + penCapacity() + ']'; }
   let gAim = null;
   if (live && !eggs.length && canTrain() && gymItems.length) {
     if (IS_TOUCH) { if (!hint) gAim = nearestGym(); }
     else { const g = pickGym(rayAt(0, 0)); if (g && gymReachable(g)) gAim = g; }
   }
   if (gAim) hint = verb + ' the ' + gAim.name + ' to train ' + gAim.stat;
+  let petAim = null;
+  if (live && !eggs.length && !gAim && !IS_TOUCH && form === 'human' && !carry && petsInPen.length && nearPen()) petAim = pickPenPet(rayAt(0, 0));
+  if (petAim) hint = verb + ' the ' + CONFIG.pets[petAim.id].name + ' to pick it up';
   if (gym.session) hint = verb + ' to stop training';
   if (!IS_TOUCH && hint) {
     const ray = rayAt(0, 0);
     const it = eggs.length ? pickSteal(ray, eggs) : null;
-    const pt = !eggs.length && !gAim && (place || petPlace) ? pickPlace(ray) : null;
-    if (it) { aim.kind = 'steal'; aim.item = it; } else if (gAim) { aim.kind = 'train'; } else if (pt) { aim.kind = 'place'; aim.point = pt; }
+    const pt = !eggs.length && !gAim && !petAim && (place || petPlace) ? pickPlace(ray) : null;
+    if (it) { aim.kind = 'steal'; aim.item = it; } else if (gAim) { aim.kind = 'train'; } else if (petAim) { aim.kind = 'take'; } else if (pt) { aim.kind = 'place'; aim.point = pt; }
   }
   if (!placeMarker) {
     placeMarker = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.75, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.9, depthTest: false }));
@@ -1626,9 +1697,9 @@ function updateChickens(dt) { for (const ch of chickens) updateChicken(ch, dt); 
 /* ------------------------------------------------------------------ */
 /* Pets, hotbar, pet index, money, hatching                            */
 /* ------------------------------------------------------------------ */
-const SAVE_KEY = 'tae_save_v1';
 const inv = { slots: Array(CONFIG.hotbarSlots).fill(null), sel: 0 };   // slot = { pet, count } or null
 let money = 0;
+const up = { bar: 0, treadmill: 0, pen: 0 };         // upgrades bought: bar / treadmill level index (0 = base machine), extra pen slots
 const train = { strength: 0, speed: 0 };               // gym progress: strength = throw power, speed = added to your speed stat
 const dex = {};                                       // pet id -> how many you have hatched (0 / missing = not discovered yet)
 const hatching = [];                                  // eggs standing in your pen, counting down
@@ -1636,25 +1707,180 @@ const petsInPen = [];                                 // hatched pets you placed
 const petTpl = {};
 const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-function loadSave() {
-  try {
-    const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-    if (!d) return;
-    money = Math.max(0, +d.money || 0);
-    if (d.train) { train.strength = Math.max(0, +d.train.strength || 0); train.speed = Math.max(0, +d.train.speed || 0); speedStat = CONFIG.player.speed + train.speed; }
-    for (const id of Object.keys(CONFIG.pets)) if (d.dex && d.dex[id] > 0) dex[id] = d.dex[id] | 0;
-    (d.slots || []).slice(0, CONFIG.hotbarSlots).forEach((sl, i) => {
-      if (!sl || !CONFIG.pets[sl.pet] || !(sl.count > 0)) return;
-      const n = sl.count | 0, sizes = Array.isArray(sl.sizes) ? sl.sizes.map((v) => clampN(+v || 1, 1, CONFIG.eggs.maxMult)).slice(0, n) : [];
-      while (sizes.length < n) sizes.push(1);
-      inv.slots[i] = { pet: sl.pet, count: n, sizes };
-    });
-  } catch (e) { log.warn('Could not read the save', e); }
+
+/* ------------------------------------------------------------------ */
+/* Accounts + cloud save (Firebase). Guests play normally but NOTHING is saved. */
+/* ------------------------------------------------------------------ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyC2X-LHFfBda7WIk1Ew6K8-03i1aDbI1Oo",
+  authDomain: "throw-an-egg.firebaseapp.com",
+  databaseURL: "https://throw-an-egg-default-rtdb.firebaseio.com",
+  projectId: "throw-an-egg",
+  storageBucket: "throw-an-egg.firebasestorage.app",
+  messagingSenderId: "566892111319",
+  appId: "1:566892111319:web:bf6d4744ebe4de48779792",
+  measurementId: "G-P2DCD3X3V8",
+};
+const FIREBASE_VER = '10.14.1';
+const acct = { fb: null, user: null, guest: false, loaded: false, status: 'loading' };   // loaded = this account's cloud data has been read, so saving is safe
+let pendingPets = [];                                  // saved pets waiting for the pen / models to exist: { id, mult, u, v }
+const authEl = $('auth');
+
+function snapshot() {                                  // everything that is saved, as plain data
+  const b = playerPen ? playerPen.box : null;
+  const pets = b ? petsInPen.map((p) => ({ id: p.id, mult: p.mult, u: clampN((p.pos.x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((p.pos.z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) })) : pendingPets;
+  return { v: 2, money, dex, slots: inv.slots, train, up, pets };
 }
-function saveGame() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ money, dex, slots: inv.slots, train })); } catch (e) { /* storage unavailable */ }
+function resetState() {                                // back to a brand new game (in memory)
+  stopGym();
+  money = 0; for (const k of Object.keys(dex)) delete dex[k];
+  inv.slots.fill(null); inv.sel = 0;
+  train.strength = 0; train.speed = 0; speedStat = CONFIG.player.speed;
+  up.bar = 0; up.treadmill = 0; up.pen = 0;
+  for (const g of gymItems) setGymTier(g, 0);
+  for (const pp of petsInPen) scene.remove(pp.root);
+  petsInPen.length = 0; pendingPets = [];
+}
+function applySave(d) {                                // replace the current game with saved data
+  resetState();
+  money = Math.max(0, +d.money || 0);
+  if (d.train) { train.strength = Math.max(0, +d.train.strength || 0); train.speed = Math.max(0, +d.train.speed || 0); speedStat = CONFIG.player.speed + train.speed; }
+  if (d.up) { up.bar = clampN(d.up.bar | 0, 0, CONFIG.gymTiers.bar.length - 1); up.treadmill = clampN(d.up.treadmill | 0, 0, CONFIG.gymTiers.treadmill.length - 1); up.pen = clampN(d.up.pen | 0, 0, CONFIG.pen.max); }
+  for (const id of Object.keys(CONFIG.pets)) if (d.dex && d.dex[id] > 0) dex[id] = d.dex[id] | 0;
+  const slots = Array.isArray(d.slots) ? d.slots : Object.values(d.slots || {});
+  slots.slice(0, CONFIG.hotbarSlots).forEach((sl, i) => {
+    if (!sl || !CONFIG.pets[sl.pet] || !(sl.count > 0)) return;
+    const n = sl.count | 0, sizes = Array.isArray(sl.sizes) ? sl.sizes.map((v) => clampN(+v || 1, 1, CONFIG.eggs.maxMult)).slice(0, n) : [];
+    while (sizes.length < n) sizes.push(1);
+    inv.slots[i] = { pet: sl.pet, count: n, sizes };
+  });
+  pendingPets = (Array.isArray(d.pets) ? d.pets : []).filter((q) => q && CONFIG.pets[q.id]).slice(0, penCapacity())
+    .map((q) => ({ id: q.id, mult: clampN(+q.mult || 1, 1, CONFIG.eggs.maxMult), u: clampN(+q.u || 0, 0, 1), v: clampN(+q.v || 0, 0, 1) }));
+  for (const g of gymItems) setGymTier(g, up[g.kind]);
+  spawnSavedPets();
+  refreshHotbar(); buildDex(); refreshMoney(false); refreshMenuStats();
+}
+function spawnSavedPets() {                            // put the saved pets back into the pen (called when both the pen and the pet models exist)
+  if (!playerPen || !pendingPets.length) return;
+  const b = playerPen.box, keep = [];
+  for (const sv of pendingPets) {
+    if (!petTpl[sv.id]) { keep.push(sv); continue; }
+    if (petsInPen.length >= penCapacity()) break;
+    const x = THREE.MathUtils.lerp(b.min.x + 1, b.max.x - 1, sv.u), z = THREE.MathUtils.lerp(b.min.z + 1, b.max.z - 1, sv.v);
+    const h = castRayIn(walkSolids, new THREE.Vector3(x, playerPen.y + 3, z), DOWN, 20);
+    spawnPet(sv.id, new THREE.Vector3(x, h ? h.point.y : playerPen.y, z), sv.mult);
+  }
+  pendingPets = keep;
+  refreshMoney(false);
 }
 
+let saveTimer = null, saveDirty = false;
+function saveGame() {                                  // guests: nothing happens. Signed in: written to the cloud shortly after (many calls = one write)
+  if (!acct.user || !acct.loaded) return;
+  saveDirty = true;
+  if (!saveTimer) saveTimer = setTimeout(flushSave, 2500);
+}
+async function flushSave() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (!saveDirty || !acct.user || !acct.loaded || !acct.fb) return;
+  saveDirty = false;
+  try {
+    const { D, db } = acct.fb;
+    await D.set(D.ref(db, 'users/' + acct.user.uid), { data: JSON.stringify(snapshot()), updated: D.serverTimestamp() });
+  } catch (e) { saveDirty = true; log.warn('Cloud save failed (will retry)', e); }
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushSave(); });
+window.addEventListener('pagehide', () => { flushSave(); });
+
+async function loadCloud() {
+  const { D, db } = acct.fb;
+  const snap = await D.get(D.ref(db, 'users/' + acct.user.uid));
+  if (snap.exists() && snap.val() && snap.val().data) { applySave(JSON.parse(snap.val().data)); log.info('Cloud save loaded'); }
+  else log.info('New account: keeping the current progress as its first save');   // guest progress carries over into a new account
+  acct.loaded = true;
+  saveDirty = true; flushSave();
+}
+function authShow(text, formsOn, bad, guestOn = true) {
+  authEl.style.display = 'flex';
+  $('auth-msg').textContent = text || ''; $('auth-msg').classList.toggle('bad', !!bad);
+  $('auth-forms').hidden = !formsOn; $('auth-guest').hidden = !guestOn;
+}
+const authHide = () => { authEl.style.display = 'none'; };
+function authError(e) {
+  const m = {
+    'auth/invalid-email': 'That email address does not look right.', 'auth/missing-email': 'Type your email first.', 'auth/missing-password': 'Type your password.',
+    'auth/email-already-in-use': 'That email already has an account - use Sign in.', 'auth/weak-password': 'The password needs at least 6 characters.',
+    'auth/invalid-credential': 'Wrong email or password.', 'auth/wrong-password': 'Wrong email or password.', 'auth/user-not-found': 'Wrong email or password.',
+    'auth/too-many-requests': 'Too many tries - wait a bit and try again.', 'auth/network-request-failed': 'No connection - check your internet.',
+    'auth/operation-not-allowed': 'This sign-in method is not turned on yet (Firebase console > Authentication > Sign-in method).',
+    'auth/unauthorized-domain': 'This website address is not allowed yet (Firebase console > Authentication > Settings > Authorized domains).',
+    'auth/popup-closed-by-user': '', 'auth/cancelled-popup-request': '',
+  };
+  return e && e.code in m ? m[e.code] : ((e && e.message) || 'Something went wrong.');
+}
+function refreshAcct() {
+  const t = $('acct-text'), b = $('acct-btn');
+  if (!t) return;
+  if (acct.user) { t.textContent = 'Signed in as ' + (acct.user.email || acct.user.displayName || 'player') + (acct.loaded ? ' \u00b7 progress saves automatically' : ' \u00b7 SAVE UNAVAILABLE'); b.textContent = 'Sign out'; }
+  else { t.textContent = acct.status === 'unavailable' ? 'Guest \u00b7 sign-in is unavailable right now' : 'Guest \u00b7 progress is NOT saved'; b.textContent = 'Sign in / Sign up'; }
+}
+async function initAccounts() {
+  authShow('Checking sign-in...', false, false, false);
+  const guestTimer = setTimeout(() => { if (acct.status === 'loading') authShow('Sign-in is taking a while...', false, false, true); }, 8000);
+  let A, D, auth;
+  try {
+    const base = 'https://www.gstatic.com/firebasejs/' + FIREBASE_VER + '/';
+    const [appM, authM, dbM] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-database.js')]);
+    const app = appM.initializeApp(FIREBASE_CONFIG);
+    A = authM; D = dbM; auth = A.getAuth(app);
+    acct.fb = { A, D, auth, db: D.getDatabase(app) };
+  } catch (e) {
+    clearTimeout(guestTimer);
+    log.warn('Firebase could not be loaded', e);
+    acct.status = 'unavailable'; refreshAcct();
+    authShow('Sign-in is unavailable (no connection?). You can still play as a guest, but nothing will be saved.', false, true, true);
+    return;
+  }
+  const email = () => $('auth-email').value.trim(), pass = () => $('auth-pass').value;
+  const run = async (fn) => {
+    authEl.querySelectorAll('button').forEach((x) => { x.disabled = true; });
+    try { await fn(); } catch (e) { const t = authError(e); if (t) { $('auth-msg').textContent = t; $('auth-msg').classList.add('bad'); } }
+    finally { authEl.querySelectorAll('button').forEach((x) => { x.disabled = false; }); }
+  };
+  $('auth-in').addEventListener('click', () => run(() => A.signInWithEmailAndPassword(auth, email(), pass())));
+  $('auth-up').addEventListener('click', () => run(() => A.createUserWithEmailAndPassword(auth, email(), pass())));
+  $('auth-google').addEventListener('click', () => run(async () => {
+    const prov = new A.GoogleAuthProvider();
+    try { await A.signInWithPopup(auth, prov); }
+    catch (e) { if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') await A.signInWithRedirect(auth, prov); else throw e; }
+  }));
+  $('auth-reset').addEventListener('click', () => run(async () => {
+    if (!email()) { $('auth-msg').textContent = 'Type your email above first.'; $('auth-msg').classList.add('bad'); return; }
+    await A.sendPasswordResetEmail(auth, email());
+    $('auth-msg').textContent = 'Password reset email sent - check your inbox.'; $('auth-msg').classList.remove('bad');
+  }));
+  for (const id of ['auth-email', 'auth-pass']) $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') $('auth-in').click(); });
+  $('auth-guest').addEventListener('click', () => { acct.guest = true; authHide(); refreshAcct(); });
+  A.onAuthStateChanged(auth, async (user) => {
+    clearTimeout(guestTimer);
+    acct.user = user; acct.loaded = false; acct.status = 'ready';
+    if (user) {
+      acct.guest = false;
+      authShow('Loading your save...', false, false, false);
+      try { await loadCloud(); authHide(); }
+      catch (e) {
+        log.warn('Could not load the cloud save', e);
+        authShow('Could not load your save (' + ((e && e.code) || (e && e.message) || 'error') + '). Check the database rules. Nothing will be saved this session.', false, true, true);
+        $('auth-guest').textContent = 'Continue without saving';
+      }
+    } else if (!acct.guest) authShow('Sign in to save your progress, or play as a guest.', true, false, true);
+    refreshAcct();
+  });
+  $('acct-btn').addEventListener('click', async () => {
+    if (acct.user) { await flushSave(); await A.signOut(auth); location.reload(); }
+    else { $('auth-guest').textContent = 'Back to the game (guest)'; authShow('Sign in to save your progress.', true, false, true); }
+  });
+}
 function buildHotbar() {
   ui.hotbar.innerHTML = ''; ui.slotEls = [];
   for (let i = 0; i < CONFIG.hotbarSlots; i++) {
@@ -1678,15 +1904,57 @@ function refreshHotbar() {
 function selectSlot(i) { const n = CONFIG.hotbarSlots; inv.sel = ((i % n) + n) % n; refreshHotbar(); }
 function heldPet() { const sl = inv.slots[inv.sel]; return sl ? sl.pet : null; }
 
+let dexTab = 'index';                                   // the panel has two tabs: 'index' (pets) and 'shop' (upgrades)
+const fmtBig = (n) => (n >= 1e9 ? +(n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? +(n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? +(n / 1e3).toFixed(1) + 'K' : String(n));
+const fmtTier = (k, t) => '+' + +t.gain.toFixed(2) + ' ' + GYM_INFO[k].stat + ' every ' + t.every + 's';
+function shopRows() {
+  const rows = [];
+  for (const k of ['bar', 'treadmill']) {
+    const T = CONFIG.gymTiers[k], lv = up[k], nx = T[lv + 1];
+    rows.push({ id: k, icon: k === 'bar' ? '\u{1F3CB}' : '\u{1F3C3}', title: GYM_INFO[k].name, level: 'Level ' + (lv + 1) + ' / ' + T.length,
+      now: 'Now: ' + fmtTier(k, T[lv]), next: nx ? 'Upgrade ' + (lv + 2) + ': ' + fmtTier(k, nx) : null, cost: nx ? nx.cost : null });
+  }
+  const pc = penUpgradeCost();
+  rows.push({ id: 'pen', icon: '\u{1F3E0}', title: 'Pen Slots', level: penCapacity() + ' slots (' + up.pen + '/' + CONFIG.pen.max + ' upgrades)', now: 'Now: ' + petsInPen.length + ' / ' + penCapacity() + ' pets placed',
+    next: pc !== null ? 'Upgrade: ' + (penCapacity() + 1) + ' slots' : null, cost: pc });
+  return rows;
+}
+function buyUpgrade(id) {
+  const cost = id === 'pen' ? penUpgradeCost() : (CONFIG.gymTiers[id][up[id] + 1] || {}).cost;
+  if (cost === undefined || cost === null) return;
+  if (money < cost) { say('Not enough money - you need $' + fmtBig(cost), 3); return; }
+  stopGym();
+  money -= cost; up[id]++;
+  if (id !== 'pen') for (const g of gymItems) if (g.kind === id) setGymTier(g, up[id]);
+  refreshMoney(true); saveGame(); buildDex();
+  const label = id === 'pen' ? 'Pen: ' + penCapacity() + ' slots' : GYM_INFO[id].name + ' level ' + (up[id] + 1);
+  banner('<small>Upgraded!</small><b>' + label + '</b>', '#6be585');
+  log.info('Bought upgrade', id, 'for', cost);
+}
 function buildDex() {
-  const ids = Object.keys(CONFIG.pets), found = ids.filter((id) => dex[id] > 0).length;
+  const ids = Object.keys(CONFIG.pets), found = ids.filter((id) => dex[id] > 0).length, shop = dexTab === 'shop';
   ui.dexBtn.innerHTML = 'Index <span class="cnt">' + found + '/' + ids.length + '</span><small>[I]</small>';
-  ui.dex.innerHTML = '<div class="dex-panel"><div class="dex-h"><span class="dex-title">Pet Index</span><b>' + found + '/' + ids.length + ' discovered</b><button type="button" class="dex-x">Close</button></div>' +
-    '<div class="dex-grid">' + ids.map((id) => {
+  const head = '<div class="dex-h"><span class="dex-tabs"><button type="button" class="dex-tab' + (shop ? '' : ' on') + '" data-tab="index">Pet Index</button><button type="button" class="dex-tab' + (shop ? ' on' : '') + '" data-tab="shop">Upgrades</button></span>' +
+    '<b>' + (shop ? '<span class="shop-money">$' + Math.floor(money).toLocaleString() + '</span>' : found + '/' + ids.length + ' discovered') + '</b><button type="button" class="dex-x">Close</button></div>';
+  let body, foot;
+  if (shop) {
+    body = '<div class="up-list">' + shopRows().map((r) => '<div class="up-row"><span class="up-ic">' + r.icon + '</span><span class="up-t"><b>' + r.title + '</b><small>' + r.level + '</small><em>' + r.now + '</em><i>' + (r.next || 'Maxed out!') + '</i></span>' +
+      (r.cost !== null ? '<button type="button" class="up-buy' + (money >= r.cost ? '' : ' no') + '" data-id="' + r.id + '" data-cost="' + r.cost + '">Buy<br><b>$' + fmtBig(r.cost) + '</b></button>' : '<span class="up-buy max">MAX</span>') + '</div>').join('') + '</div>';
+    foot = IS_TOUCH ? 'Tap outside to close' : 'Press U or Esc to close';
+  } else {
+    body = '<div class="dex-grid">' + ids.map((id) => {
       const P = CONFIG.pets[id], R = CONFIG.rarities[P.rarity], n = dex[id] || 0;
       return '<div class="dex-row' + (n ? '' : ' locked') + '"><span class="dex-ic">' + petIcon(id) + '</span><span class="dex-t"><b>' + (n ? P.name : '???') +
         '</b><small style="color:' + R.color + '">' + R.label + '</small></span><span class="dex-n">' + (n ? 'Hatched \u00d7' + n : 'Not found yet') + '</span></div>';
-    }).join('') + '</div><div class="dex-foot">' + (IS_TOUCH ? 'Tap outside to close' : 'Press I or Esc to close') + '</div></div>';
+    }).join('') + '</div>';
+    foot = IS_TOUCH ? 'Tap outside to close' : 'Press I or Esc to close';
+  }
+  ui.dex.innerHTML = '<div class="dex-panel">' + head + body + '<div class="dex-foot">' + foot + '</div></div>';
+}
+function openPanel(tab) {                                // I = pet index, U = upgrades; the same key (or button) closes it again
+  if (dexOpen && dexTab === tab) { setDex(false); return; }
+  dexTab = tab;
+  if (dexOpen) buildDex(); else setDex(true);
 }
 let dexOpen = false;
 function setDex(open) {
@@ -1703,8 +1971,15 @@ function setDex(open) {
     setTimeout(() => { if (!dexOpen && ready && document.pointerLockElement !== renderer.domElement && dom.overlay.style.display === 'none') showMenu(); }, 400);
   }
 }
-ui.dexBtn.addEventListener('click', () => setDex(!dexOpen));
-if (IS_TOUCH) ui.dexBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); setDex(!dexOpen); }, { passive: false });
+ui.dexBtn.addEventListener('click', () => openPanel('index'));
+if (IS_TOUCH) ui.dexBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openPanel('index'); }, { passive: false });
+const shopBtn = $('shop-btn');
+shopBtn.addEventListener('click', () => openPanel('shop'));
+if (IS_TOUCH) shopBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openPanel('shop'); }, { passive: false });
+ui.dex.addEventListener('click', (e) => {
+  const t = e.target.closest('.dex-tab'); if (t) { dexTab = t.dataset.tab; buildDex(); return; }
+  const b = e.target.closest('.up-buy'); if (b && b.dataset.id) buyUpgrade(b.dataset.id);
+});
 const dexClose = (e) => { if (e.target === ui.dex || e.target.closest('.dex-x')) { e.preventDefault(); setDex(false); } };
 ui.dex.addEventListener('click', dexClose);
 if (IS_TOUCH) ui.dex.addEventListener('touchstart', (e) => { e.stopPropagation(); if (e.target === ui.dex || e.target.closest('.dex-x')) { e.preventDefault(); setDex(false); } }, { passive: false });
@@ -1756,11 +2031,16 @@ function updateIncome(dt) {                             // every pet standing in
 }
 function refreshMoney(bump) {
   ui.money.querySelector('b').textContent = Math.floor(money).toLocaleString();
+  if (dexOpen && dexTab === 'shop') {                    // keep the Buy buttons and the balance in the open Upgrades panel up to date
+    ui.dex.querySelectorAll('.up-buy[data-cost]').forEach((bt) => bt.classList.toggle('no', money < +bt.dataset.cost));
+    const sm = ui.dex.querySelector('.shop-money'); if (sm) sm.textContent = '$' + Math.floor(money).toLocaleString();
+  }
   const r = incomePerSec(), inc = ui.money.querySelector('small');
   if (inc) inc.textContent = r > 0 ? '+$' + fmtMoney(r) + '/s' : '';
   if (bump) { ui.money.classList.remove('bump'); void ui.money.offsetWidth; ui.money.classList.add('bump'); }
 }
 function refreshMenuStats() {
+  refreshAcct();
   const ids = Object.keys(CONFIG.pets);
   $('menu-stats').textContent = '$' + Math.floor(money).toLocaleString() + '  \u00b7  ' + ids.filter((id) => dex[id] > 0).length + '/' + ids.length + ' pets discovered';
 }
@@ -1920,18 +2200,40 @@ function spawnPet(id, pt, mult) {
   p.root.rotation.y = p.yaw;
   petPlay(p, 'idle'); p.mixer.update(Math.random() * 2);
   petsInPen.push(p);
-  if (petsInPen.length > CONFIG.petPenMax) { const old = petsInPen.shift(); scene.remove(old.root); }
 }
 function placePet(pt) {                                 // put the pet you are holding in the pen: it wanders there and pays out
   const sl = inv.slots[inv.sel];
   if (!sl) return;
+  if (petsInPen.length >= penCapacity()) { say('Your pen is full (' + petsInPen.length + '/' + penCapacity() + ')! Press U for a Pen upgrade, or click a pet to take it back.', 4); return; }
   const P = CONFIG.pets[sl.pet];
   const mult = sl.sizes && sl.sizes.length ? sl.sizes.pop() : 1;
   spawnPet(sl.pet, pt, mult);
   sl.count--; if (sl.count <= 0) inv.slots[inv.sel] = null;
   refreshHotbar(); refreshMoney(false); saveGame();
   popupAt('+$' + fmtMoney(P.income * mult) + '/s', new THREE.Vector3(pt.x, pt.y + 1.2 * petSizeFactor(mult), pt.z), '#ffd34d');
-  say('Placed ' + P.name + ' (' + mult.toFixed(1) + 'x)  earns $' + fmtMoney(P.income * mult) + '/s');
+  say('Placed ' + P.name + ' (' + mult.toFixed(1) + 'x)  earns $' + fmtMoney(P.income * mult) + '/s   [' + petsInPen.length + '/' + penCapacity() + ' pen slots]');
+}
+const penCapacity = () => CONFIG.pen.base + up.pen;
+const penUpgradeCost = () => (up.pen >= CONFIG.pen.max ? null : Math.round(CONFIG.pen.firstCost * Math.pow(CONFIG.pen.growth, up.pen)));
+const _petSph = new THREE.Sphere(), _petPt = new THREE.Vector3();
+function pickPenPet(ray) {                               // the pet in your pen that the ray points at (and that is close enough)
+  let best = null, bd = Infinity;
+  for (const p of petsInPen) {
+    if (Math.hypot(p.pos.x - pos.x, p.pos.z - pos.z) > CONFIG.petPickupReach) continue;
+    const h = CONFIG.pets[p.id].height * petSizeFactor(p.mult);
+    _petSph.center.set(p.pos.x, p.pos.y + h * 0.5, p.pos.z); _petSph.radius = Math.max(0.5, h * 0.6);
+    const pt = ray.intersectSphere(_petSph, _petPt);
+    if (pt) { const d = pt.distanceTo(ray.origin); if (d < bd) { bd = d; best = p; } }
+  }
+  return best;
+}
+function takePet(p) {                                    // click a pet in your pen: it goes back into your hotbar (and stops earning)
+  if (!invCanTake(p.id)) { say('Hotbar full - free a slot first!', 3); return; }
+  petsInPen.splice(petsInPen.indexOf(p), 1);
+  scene.remove(p.root);
+  addPet(p.id, p.mult);
+  refreshMoney(false);
+  say('Picked up ' + CONFIG.pets[p.id].name + ' (' + p.mult.toFixed(1) + 'x). It is in your hotbar again.   [' + petsInPen.length + '/' + penCapacity() + ' pen slots]', 3);
 }
 function updatePets(dt) {
   const b = playerPen ? playerPen.box : null;
@@ -1975,55 +2277,79 @@ function gymAnchor(kind, m) {
     const bar = parts.filter((p) => p.b.max.y > top - 1e-3 * Math.max(1, top)).sort((a, b) => Math.max(b.size.x, b.size.z) - Math.max(a.size.x, a.size.z))[0];
     return { x: bar.c.x, y: bar.b.max.y, z: bar.c.z };
   }
-  parts.sort((a, b) => b.size.x * b.size.z - a.size.x * a.size.z);
-  const base = parts[0], rest = parts.slice(1);
-  let zLo = base.b.min.z, zHi = base.b.max.z;
-  if (rest.length) {
-    const restC = rest.reduce((a, p) => a + p.c.z, 0) / rest.length;
-    if (restC < base.c.z) zLo = Math.max(...rest.map((p) => p.b.max.z)); else zHi = Math.min(...rest.map((p) => p.b.min.z));
-    if (zHi <= zLo) { zLo = base.b.min.z; zHi = base.b.max.z; }
+  // treadmill: stand in the middle of the free belt = between the console end and the far end, at the model's middle in x, on whatever surface is there
+  const all = new THREE.Box3(); parts.forEach((q) => all.union(q.b));
+  const tall = parts.filter((q) => q.b.max.y > all.min.y + (all.max.y - all.min.y) * 0.3);        // console posts / panel / wall
+  let zLo = all.min.z, zHi = all.max.z;
+  if (tall.length) {
+    const tallZ = tall.reduce((sum, q) => sum + q.c.z, 0) / tall.length;
+    if (tallZ < (all.min.z + all.max.z) / 2) zLo = Math.max(...tall.map((q) => q.b.max.z)); else zHi = Math.min(...tall.map((q) => q.b.min.z));
+    if (zHi <= zLo) { zLo = all.min.z; zHi = all.max.z; }
   }
-  return { x: base.c.x, y: base.b.max.y, z: (zLo + zHi) / 2 };
+  const x = (all.min.x + all.max.x) / 2, z = (zLo + zHi) / 2;
+  const hits = new THREE.Raycaster(new THREE.Vector3(x, all.max.y + 1, z), new THREE.Vector3(0, -1, 0)).intersectObject(m, true);
+  return { x, y: hits.length ? hits[0].point.y : all.min.y, z };
 }
-function setupGym(gltfs) {
+function setupGym(gltfs) {                               // gltfs[kind] = one model per upgrade level
   for (const k of Object.keys(GYM_INFO)) {
-    const m = gltfs[k].scene;
-    m.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
-    const scale = k === 'bar' ? CONFIG.gym.barHeight / size.y : CONFIG.gym.treadmillLength / size.z;
-    gymTpl[k] = { scene: m, scale, ox: -c.x, oy: -box.min.y, oz: -c.z, anchor: gymAnchor(k, m) };
-    log.info('Gym ready:', k, 'source size', size.toArray().map((v) => v.toFixed(2)).join(' x '), 'scale', scale.toFixed(3));
+    gymTpl[k] = gltfs[k].map((gl, lv) => {
+      const m = gl.scene;
+      m.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+      const scale = k === 'bar' ? CONFIG.gym.barHeight / size.y : CONFIG.gym.treadmillLength / size.z;   // every level is scaled to the same height / length
+      log.info('Gym ready:', k, 'level', lv + 1, 'source size', size.toArray().map((v) => v.toFixed(2)).join(' x '), 'scale', scale.toFixed(3));
+      return { scene: m, scale, ox: -c.x, oy: -box.min.y, oz: -c.z, anchor: gymAnchor(k, m) };
+    });
   }
 }
-function makeGym(kind, x, y, z, rotY) {
-  const T = gymTpl[kind], model = T.scene.clone(true);
+function setGymTier(g, tier) {                          // swap a placed machine for the model of another upgrade level (same spot, same direction)
+  const list = gymTpl[g.kind];
+  tier = clampN(tier | 0, 0, list.length - 1);
+  const T = list[tier], model = T.scene.clone(true);
   model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   model.position.set(T.ox, T.oy, T.oz);
   const anchor = new THREE.Object3D(); anchor.position.set(T.anchor.x, T.anchor.y, T.anchor.z); model.add(anchor);
   const inner = new THREE.Group(); inner.scale.setScalar(T.scale); inner.add(model);
-  const root = new THREE.Group(); root.add(inner); root.position.set(x, y, z); root.rotation.y = rotY;
-  scene.add(root);
-  root.updateMatrixWorld(true);
-  const hit = new THREE.Box3().setFromObject(root).expandByScalar(0.25);   // generous click box: the bar frame alone is only a few cm thick
-  return { kind, root, hit, anchor, x, y, z, ...GYM_INFO[kind] };
+  if (g.inner) g.root.remove(g.inner);
+  g.root.add(inner); g.inner = inner; g.anchor = anchor; g.tier = tier;
+  g.root.updateMatrixWorld(true);
+  g.hit = new THREE.Box3().setFromObject(g.root).expandByScalar(0.25);   // generous click box: the bar frame alone is only a few cm thick
 }
-function placeGym(sp) {                                  // both machines go against the wall opposite the gate, so they never block the way in
+function makeGym(kind, x, y, z, rotY) {
+  const root = new THREE.Group(); root.position.set(x, y, z); root.rotation.y = rotY;
+  scene.add(root);
+  const g = { kind, root, inner: null, hit: null, anchor: null, tier: 0, x, y, z, ...GYM_INFO[kind] };
+  setGymTier(g, up[kind]);
+  return g;
+}
+function placeGym(sp) {                                  // the map has a marker cube per pen and machine (PullUp_BarPenN / TreadmillPenN): the machine stands there
   if (!gymTpl.bar || !playerPen) return;
   for (const g of gymItems) scene.remove(g.root);
   gymItems.length = 0;
   const b = playerPen.box, c = playerPen.center, G = CONFIG.gym;
-  const vx = sp.center.x - c.x, vz = sp.center.z - c.z;
-  const alongX = Math.abs(vx) >= Math.abs(vz), sgn = Math.sign(alongX ? vx : vz) || 1;
-  const hx = (b.max.x - b.min.x) / 2, hz = (b.max.z - b.min.z) / 2;
-  const far = alongX ? { x: c.x - sgn * (hx - G.wallInset), z: c.z } : { x: c.x, z: c.z - sgn * (hz - G.wallInset) };
-  const perp = alongX ? { x: 0, z: 1 } : { x: 1, z: 0 };
-  const toCenter = alongX ? { x: sgn, z: 0 } : { x: 0, z: sgn };            // from the far wall towards the gate
-  const floor = (x, z) => { const h = castRayIn(walkSolids, new THREE.Vector3(x, playerPen.y + 3, z), DOWN, 20); return h ? h.point.y : playerPen.y; };
-  const bx = far.x + perp.x * G.spread, bz = far.z + perp.z * G.spread, tx = far.x - perp.x * G.spread, tz = far.z - perp.z * G.spread;
-  gymItems.push(makeGym('bar', bx, floor(bx, bz), bz, Math.atan2(toCenter.x, toCenter.z)));                 // faces the pen
-  gymItems.push(makeGym('treadmill', tx, floor(tx, tz), tz, Math.atan2(toCenter.x, toCenter.z)));          // console end by the wall: you run towards the wall
+  const mb = gymMarkers.bar[playerPen.num], mt = gymMarkers.treadmill[playerPen.num];
+  if (mb && mt) {
+    for (const [kind, m] of [['bar', mb], ['treadmill', mt]]) {
+      const dx = c.x - m.x, dz = c.z - m.z, ax = Math.abs(dx) >= Math.abs(dz);
+      const rot = Math.atan2(ax ? Math.sign(dx) : 0, ax ? 0 : Math.sign(dz));            // front faces the pen, along the nearest axis
+      const h = castRayIn(walkSolids, new THREE.Vector3(m.x, m.y + 3, m.z), DOWN, 20);
+      gymItems.push(makeGym(kind, m.x, h ? h.point.y : m.y - 0.5, m.z, rot));
+    }
+    log.info('Gym placed at the map markers of Pen', playerPen.num);
+  } else {                                               // old maps without markers: both machines against the wall opposite the gate
+    const vx = sp.center.x - c.x, vz = sp.center.z - c.z;
+    const alongX = Math.abs(vx) >= Math.abs(vz), sgn = Math.sign(alongX ? vx : vz) || 1;
+    const hx = (b.max.x - b.min.x) / 2, hz = (b.max.z - b.min.z) / 2;
+    const far = alongX ? { x: c.x - sgn * (hx - G.wallInset), z: c.z } : { x: c.x, z: c.z - sgn * (hz - G.wallInset) };
+    const perp = alongX ? { x: 0, z: 1 } : { x: 1, z: 0 };
+    const toCenter = alongX ? { x: sgn, z: 0 } : { x: 0, z: sgn };
+    const floor = (x, z) => { const h = castRayIn(walkSolids, new THREE.Vector3(x, playerPen.y + 3, z), DOWN, 20); return h ? h.point.y : playerPen.y; };
+    const bx = far.x + perp.x * G.spread, bz = far.z + perp.z * G.spread, tx = far.x - perp.x * G.spread, tz = far.z - perp.z * G.spread;
+    gymItems.push(makeGym('bar', bx, floor(bx, bz), bz, Math.atan2(toCenter.x, toCenter.z)));
+    gymItems.push(makeGym('treadmill', tx, floor(tx, tz), tz, Math.atan2(toCenter.x, toCenter.z)));
+    log.info('No gym markers in the map: gym placed against the far wall of Pen', playerPen.num);
+  }
   penSlots = penSlots.filter((s) => gymItems.every((g) => Math.hypot(s.x - g.x, s.z - g.z) > 4));
-  log.info('Gym placed in Pen', playerPen.num);
 }
 const canTrain = () => ready && form === 'human' && !carry && dom.overlay.style.display === 'none';
 const gymDist = (g) => Math.hypot(Math.max(g.hit.min.x - pos.x, 0, pos.x - g.hit.max.x), Math.max(g.hit.min.z - pos.z, 0, pos.z - g.hit.max.z));   // metres from you to the machine's edge
@@ -2049,7 +2375,8 @@ function startGym(g) {                                  // click a machine: tele
   else pos.y = p.y;                                                                                      // feet on the middle of the belt
   vy = 0; grounded = true;
   facing = g.root.rotation.y + Math.PI;                 // face the bar / the console end of the treadmill (towards the wall)
-  gym.session = { g, t: 0, next: g.kind === 'bar' ? G.barRepFirst : G.treadRepFirst };
+  const T = CONFIG.gymTiers[g.kind][up[g.kind]];
+  gym.session = { g, t: 0, next: T.first, every: T.every };
   popupAt('Training - click to stop', new THREE.Vector3(pos.x, pos.y + 2.4, pos.z), '#ffffff');
   log.info('Gym session started:', g.kind);
 }
@@ -2057,19 +2384,21 @@ function stopGym() {
   if (!gym.session) return;
   log.info('Gym session stopped:', gym.session.g.kind);
   gym.session = null;
+  if (actions.training) actions.training.timeScale = 1;
   vy = 0; grounded = false;                             // physics takes over again (you drop to the floor if you were hanging)
 }
 function gymRep(g) {
-  const G = CONFIG.gym;
+  const T = CONFIG.gymTiers[g.kind][up[g.kind]];         // an upgraded machine gives more per rep
   let txt;
-  if (g.kind === 'bar') { train.strength += G.strengthPerRep; txt = '+' + G.strengthPerRep + ' Strength'; }
-  else { train.speed += G.speedPerRep; speedStat = CONFIG.player.speed + train.speed; txt = '+' + G.speedPerRep + ' Speed'; }
+  if (g.kind === 'bar') { train.strength += T.gain; txt = '+' + +T.gain.toFixed(2) + ' Strength'; }
+  else { train.speed += T.gain; speedStat = CONFIG.player.speed + train.speed; txt = '+' + +T.gain.toFixed(2) + ' Speed'; }
   popupAt(txt, new THREE.Vector3(pos.x, pos.y + 2.2, pos.z), '#7dff9a');
   saveGame();
 }
 function updateGymPlayer(dt) {                          // player side of a session: frozen in place, Training (bar) or Walk (treadmill) clip
   vy = 0; grounded = true;
   playAnim(gym.session.g.kind === 'bar' ? 'training' : 'walk');
+  if (gym.session.g.kind === 'bar' && actions.training) actions.training.timeScale = CONFIG.gym.barClipLength / gym.session.every;   // faster upgrades pull up faster
   playerRoot.position.copy(pos);
   playerRoot.rotation.y = facing;
   mixer.update(dt);
@@ -2080,7 +2409,7 @@ function updateTraining(dt) {                           // rep counter for the r
   if (!s) return;
   if (!canTrain()) { stopGym(); return; }               // menu opened, egg picked up, form changed...
   s.t += dt;
-  while (s.t >= s.next) { s.next += s.g.kind === 'bar' ? CONFIG.gym.barRepEvery : CONFIG.gym.treadRepEvery; gymRep(s.g); }
+  while (s.t >= s.next) { s.next += s.every; gymRep(s.g); }
 }
 
 /* ------------------------------------------------------------------ */
