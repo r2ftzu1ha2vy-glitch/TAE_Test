@@ -303,7 +303,7 @@
       <li>Walk into the yellow <b>Throw Zone</b> and throw an egg with <b>Space</b> / <b>Click</b> (touch: <b>Throw</b>).</li>
       <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken (or the scorpion in the Sands) catches you!</li>
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
-      <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-8</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s, bunny and ladybug $25/s at 1x, more for bigger eggs).</li>
+      <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-9</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s up to snake $50/s and scorpion $75/s at 1x, more for bigger eggs).</li>
       <li>In your pen, <b>click the Pull-Up Bar</b> to gain <b>Strength</b> (throws go farther) and <b>click the Treadmill</b> to gain <b>Speed</b>. You hop on automatically and keep training on your own; <b>click again</b> to stop.</li>
       <li>Click a pet standing in your pen to <b>take it back</b> into your hotbar. Your pen holds 5 pets to start.</li>
       <li><b>Sign in</b> (email or Google) and your money, pets, pen, upgrades and training are saved. <b>Guests are not saved.</b></li>
@@ -333,12 +333,15 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb' },
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb' },
     gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb'] },   // index = upgrade level
-    eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb' } },
+    eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb' } },
   eggs: { baseHeight: 0.8, maxMult: 10, respawn: 6,   // 1x egg = baseHeight metres tall; size never exceeds maxMult
     sizeTiers: [ { w: 72, min: 1, max: 2 }, { w: 21, min: 2, max: 4 }, { w: 5.5, min: 4, max: 6 }, { w: 1.2, min: 6, max: 8 }, { w: 0.3, min: 8, max: 10 } ],   // big eggs are MUCH rarer now (10x was 1 in 100, now 1 in ~330)
-    types: { normal: { w: 45, pts: 10 }, brown: { w: 28, pts: 20 }, cracked: { w: 12, pts: 5 }, golden: { w: 10, pts: 100 }, rainbow: { w: 5, pts: 250 } } },
+    // areas = where the egg type can spawn (omit = everywhere). Cactus / Bone eggs only grow in the Scorching Sands.
+    types: { normal: { w: 45, pts: 10, areas: ['valley'] }, brown: { w: 28, pts: 20, areas: ['valley'] }, cracked: { w: 12, pts: 5, areas: ['valley'] },
+             golden: { w: 10, pts: 100 }, rainbow: { w: 5, pts: 250 },
+             cactus: { w: 55, pts: 40, areas: ['sands'] }, bone: { w: 30, pts: 80, areas: ['sands'] } } },
   // height 1.6 = the size the chicken actually appeared at before (the old bounding-box bug scaled it up from the configured 1.0).
   // margin = keep-out distance from area edges while wandering; chaseMargin = same while chasing; alert = seconds it freezes before it runs.
   chicken: { height: 1.6, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: 0 },
@@ -396,14 +399,24 @@ const CONFIG = {
   // Hatching: an egg placed in your pen hatches after hatch.min (smallest egg) .. hatch.max (biggest egg, eggs.maxMult) seconds.
   hatch: { min: 10, max: 30 },
   // Pets. weight = chance when an egg hatches (chicken 70 : bunny 15 : ladybug 15), income = money per second while it stands in your pen (at a 1x egg; multiplied by the egg size it hatched from), height = placed size in metres.
+  // area = which area's eggs can hatch it (valley / sands). weight = chance within that area's pool. lucky = affected by egg luck (default: every rarity except common).
+  // fit:'max' = size the model by its longest side instead of its height (the snake is long and flat). yawOffset = PI for models that face -Z.
   pets: {
-    chicken: { name: 'Chicken', rarity: 'common',   weight: 70, income: 10, height: 0.9, icon: '\u{1F414}' },
-    bunny:   { name: 'Bunny',   rarity: 'uncommon', weight: 15, income: 25, height: 1.0, icon: '\u{1F430}' },
-    ladybug: { name: 'Ladybug', rarity: 'uncommon', weight: 15, income: 25, height: 0.5, icon: '\u{1F41E}' },
+    chicken:   { name: 'Chicken',   area: 'valley', rarity: 'common',   weight: 50, income: 10, height: 0.9, icon: '\u{1F414}' },
+    hamster:   { name: 'Hamster',   area: 'valley', rarity: 'common',   weight: 25, income: 12, height: 0.6, icon: '\u{1F439}' },
+    squirrel:  { name: 'Squirrel',  area: 'valley', rarity: 'common',   weight: 25, income: 15, height: 0.8, icon: '\u{1F43F}' },
+    bunny:     { name: 'Bunny',     area: 'valley', rarity: 'uncommon', weight: 15, income: 25, height: 1.0, icon: '\u{1F430}' },
+    ladybug:   { name: 'Ladybug',   area: 'valley', rarity: 'uncommon', weight: 15, income: 25, height: 0.5, icon: '\u{1F41E}' },
+    butterfly: { name: 'Butterfly', area: 'valley', rarity: 'uncommon', weight: 10, income: 30, height: 0.5, icon: '\u{1F98B}' },
+    toucan:    { name: 'Toucan',    area: 'valley', rarity: 'rare',     weight: 6,  income: 35, height: 0.8, icon: '\u{1F426}' },
+    crab:      { name: 'Crab',      area: 'valley', rarity: 'rare',     weight: 6,  income: 38, height: 0.5, icon: '\u{1F980}' },
+    starfish:  { name: 'Starfish',  area: 'valley', rarity: 'rare',     weight: 6,  income: 40, height: 0.45, icon: '\u2B50' },
+    snake:     { name: 'Snake',     area: 'sands',  rarity: 'rare',     weight: 65, income: 50, height: 0.9, icon: '\u{1F40D}', lucky: false, fit: 'max', yawOffset: Math.PI },
+    scorpion:  { name: 'Scorpion',  area: 'sands',  rarity: 'epic',     weight: 35, income: 75, height: 0.7, icon: '\u{1F982}', lucky: true,  yawOffset: Math.PI },
   },
-  rarities: { common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' } },
-  eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
-  hotbarSlots: 8, petPenMax: 30, petSpeed: 0.8,
+  rarities: { common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' }, rare: { label: 'Rare', color: '#5aa9ff' }, epic: { label: 'Epic', color: '#c77dff' } },
+  eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3, cactus: 1, bone: 2 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
+  hotbarSlots: 9, petPenMax: 30, petSpeed: 0.8,
   petSizeGain: 0.25,   // pet size = base height * (1 + (eggMult - 1) * petSizeGain): a 1x egg gives a normal pet, a 10x egg gives a pet 3.25x taller
   // range = how close you must be to an egg's edge to see Steal. carry* = size/height of the egg held over your head.
   steal: { penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
@@ -610,13 +623,16 @@ async function init() {
   initAccounts();                                       // sign-in screen; runs while the models load
   const names = Object.keys(CONFIG.models.eggs);
   const GM = CONFIG.models.gym;
-  const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, bunnyGltf, ladyGltf, ...restGltfs] = await Promise.all([
+  const petIds = Object.keys(CONFIG.models.pets);
+  const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, ...restGltfs0] = await Promise.all([
     load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.chicken), load(CONFIG.models.scorpion),
-    load(CONFIG.models.pets.bunny), load(CONFIG.models.pets.ladybug),
+    ...petIds.map((id) => load(CONFIG.models.pets[id])),
     ...GM.treadmill.map((f) => load(f)), ...GM.bar.map((f) => load(f)),
     ...names.map((n) => load(CONFIG.models.eggs[n])),
   ]);
 
+  const petGltfs = {}; petIds.forEach((id, i) => { petGltfs[id] = restGltfs0[i]; });
+  const restGltfs = restGltfs0.slice(petIds.length);
   const treadGltfs = restGltfs.slice(0, GM.treadmill.length), barGltfs = restGltfs.slice(GM.treadmill.length, GM.treadmill.length + GM.bar.length);
   const typeGltfs = restGltfs.slice(GM.treadmill.length + GM.bar.length);
   setupMap(mapGltf.scene);
@@ -633,7 +649,7 @@ async function init() {
   scene.add(playerEggMesh);
   buildAreas();
   setupChickens({ chicken: chickGltf, scorpion: scorpGltf });
-  setupPets({ chicken: chickGltf, bunny: bunnyGltf, ladybug: ladyGltf });
+  setupPets({ chicken: chickGltf, scorpion: scorpGltf, ...petGltfs });
   setupGym({ treadmill: treadGltfs, bar: barGltfs });
   buildHotbar(); buildDex(); refreshHotbar(); refreshMoney(false);
   setupEggSpawns();
@@ -1247,14 +1263,16 @@ function groundAt(x, y, z) {
   const h = castRay(new THREE.Vector3(x, y, z), DOWN, 400);
   return h ? h.point.y : null;
 }
-function pickType() {
+function pickType(area) {                              // only egg types allowed in this area (types without `areas` grow everywhere)
   const t = CONFIG.eggs.types;
-  let r = Math.random() * Object.values(t).reduce((a, v) => a + v.w, 0);
-  for (const k of Object.keys(t)) { r -= t[k].w; if (r <= 0) return k; }
-  return 'normal';
+  const keys = Object.keys(t).filter((k) => !t[k].areas || !area || t[k].areas.includes(area));
+  if (!keys.length) return 'normal';
+  let r = Math.random() * keys.reduce((a, k) => a + t[k].w, 0);
+  for (const k of keys) { r -= t[k].w; if (r <= 0) return k; }
+  return keys[keys.length - 1];
 }
 function spawnEgg(item) {
-  const E = CONFIG.eggs, type = pickType();
+  const E = CONFIG.eggs, type = pickType(item.area);
   let tr = Math.random() * E.sizeTiers.reduce((a, t) => a + t.w, 0), tier = E.sizeTiers[0];
   for (const t of E.sizeTiers) { tr -= t.w; tier = t; if (tr <= 0) break; }
   const mult = Math.min(E.maxMult, tier.min + Math.random() * (tier.max - tier.min));
@@ -2004,7 +2022,7 @@ function renderPetIcons() {
         const T = petTpl[id], model = SkeletonUtils.clone(T.gltf.scene);
         model.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
         model.position.set(T.ox, T.oy, T.oz);
-        const inner = new THREE.Group(); inner.scale.setScalar(T.scale); inner.add(model);
+        const inner = new THREE.Group(); inner.scale.setScalar(T.scale); inner.rotation.y = T.yaw; inner.add(model);
         const root = new THREE.Group(); root.add(inner); sc.add(root);
         const clip = T.gltf.animations.find((c) => /idle/i.test(c.name)) || T.gltf.animations[0];
         if (clip) { const mx = new THREE.AnimationMixer(model); mx.clipAction(clip).play(); mx.update(0.05); }
@@ -2066,10 +2084,12 @@ function hatchSeconds(mult) {                         // smallest egg (1x) = hat
   return CONFIG.hatch.min + (CONFIG.hatch.max - CONFIG.hatch.min) * f;
 }
 function fmtTime(sec) { const t = Math.max(0, Math.ceil(sec)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
-function pickPet(eggType) {
+function pickPet(eggType, area) {                      // the pet comes from the pool of the area the egg was stolen from
   const luck = CONFIG.eggLuck[eggType] != null ? CONFIG.eggLuck[eggType] : 1;
-  const ids = Object.keys(CONFIG.pets);
-  const w = ids.map((id) => CONFIG.pets[id].weight * (CONFIG.pets[id].rarity === 'common' ? 1 : luck));
+  let ids = Object.keys(CONFIG.pets).filter((id) => !area || CONFIG.pets[id].area === area);
+  if (!ids.length) ids = Object.keys(CONFIG.pets);
+  const lucky = (id) => (CONFIG.pets[id].lucky !== undefined ? CONFIG.pets[id].lucky : CONFIG.pets[id].rarity !== 'common');
+  const w = ids.map((id) => CONFIG.pets[id].weight * (lucky(id) ? luck : 1));
   let r = Math.random() * w.reduce((a, b) => a + b, 0);
   for (let i = 0; i < ids.length; i++) { r -= w[i]; if (r <= 0) return ids[i]; }
   return ids[0];
@@ -2146,7 +2166,7 @@ function updateHatching(dt) {
     h.left = Math.max(0, h.left - dt);
     if (h.left < 3) { h.wob += dt * 26; h.mesh.rotation.z = Math.sin(h.wob) * 0.2 * (1 - h.left / 3); }   // the egg shakes before it hatches
     if (h.left <= 0) {
-      if (!h.pet) h.pet = pickPet(h.egg.type);
+      if (!h.pet) h.pet = pickPet(h.egg.type, h.egg.area);
       if (invCanTake(h.pet)) startHatch(h);
     }
   }
@@ -2170,7 +2190,8 @@ function setupPets(gltfs) {
     const g = gltfs[id];
     const m = SkeletonUtils.clone(g.scene);
     const box = bindPoseBox(m), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
-    petTpl[id] = { gltf: g, scale: CONFIG.pets[id].height / size.y, ox: -c.x, oy: -box.min.y, oz: -c.z };
+    const P = CONFIG.pets[id], ref = P.fit === 'max' ? Math.max(size.x, size.y, size.z) : size.y;   // long flat models (snake) are sized by their longest side
+    petTpl[id] = { gltf: g, scale: P.height / ref, yaw: P.yawOffset || 0, ox: -c.x, oy: -box.min.y, oz: -c.z };
     log.info('Pet ready:', id, 'height', size.y.toFixed(3), 'anims', g.animations.map((a) => a.name).join(','));
   }
   renderPetIcons();
@@ -2187,10 +2208,13 @@ function makePetModel(id, mult) {                       // a pet scaled by how b
   const model = SkeletonUtils.clone(T.gltf.scene);
   model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
   model.position.set(T.ox, T.oy, T.oz);
-  const inner = new THREE.Group(); inner.scale.setScalar(T.scale * petSizeFactor(mult)); inner.add(model);
+  const inner = new THREE.Group(); inner.scale.setScalar(T.scale * petSizeFactor(mult)); inner.rotation.y = T.yaw; inner.add(model);
   const root = new THREE.Group(); root.add(inner);
   const mixer = new THREE.AnimationMixer(model), actions = {};
   for (const clip of T.gltf.animations) actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
+  const clips = T.gltf.animations;
+  if (clips.length && !actions.walk) actions.walk = actions[clips[0].name.toLowerCase()];   // single-clip models (snake): that clip is the walk
+  if (clips.length && !actions.idle) { const a = mixer.clipAction(clips[0].clone()); a.timeScale = 0.25; actions.idle = a; }          // no idle clip: the same clip, slowed right down
   return { root, mixer, actions, anim: '' };
 }
 function spawnPet(id, pt, mult) {
