@@ -53,6 +53,10 @@
   #speedfx { position: fixed; inset: -20%; pointer-events: none; z-index: 1; opacity: 0; will-change: transform, opacity;
              background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0) 0deg 2.2deg, rgba(255,255,255,.55) 2.5deg 2.8deg, rgba(255,255,255,0) 3.1deg 7deg, rgba(255,255,255,.35) 7.3deg 7.45deg, rgba(255,255,255,0) 7.7deg 13deg);
              -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 38%, #000 78%); mask-image: radial-gradient(circle at 50% 50%, transparent 38%, #000 78%); }
+  #net { position: fixed; top: 10px; right: 12px; z-index: 2; display: none; pointer-events: none; padding: 5px 12px; border-radius: 14px; color: #fff; font: 700 14px var(--font);
+         background: var(--panel); border: 2px solid var(--edge); text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+  #net.on { display: block; } #net small { font-weight: 600; opacity: .75; } #net.off { color: #ffb4b4; }
+  body.touch #net { top: calc(8px + env(safe-area-inset-top)); right: calc(8px + env(safe-area-inset-right)); font-size: 12px; padding: 3px 9px; }
   #speed { position: fixed; left: 14px; bottom: 14px; display: flex; align-items: center; gap: 10px; color: #fff; pointer-events: none;
            text-shadow: 0 1px 3px rgba(0,0,0,.8); }
   #speed svg { width: 64px; height: 64px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
@@ -237,6 +241,7 @@
   <symbol id="ico-bolt" viewBox="0 0 24 24"><path d="M13.5 2 4 13.5h6.2L9 22l10-12.2h-6.4z"/></symbol>
 </svg>
 <div id="speedfx"></div>
+<div id="net"></div>
 <div id="hud">
   <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>Space</b> jump &nbsp; <b>I</b> pet index &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
   Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br></span>
@@ -305,6 +310,7 @@
   <div id="menu-help" hidden>
     <b>Goal:</b> collect pets and earn money.
     <ol>
+      <li>Everyone plays on the same <b>server</b> (top right) - one pen each. When all pens are taken, a new server opens for the next player.</li>
       <li>Walk into the yellow <b>Throw Zone</b> and throw an egg with <b>Space</b> / <b>Click</b> (touch: <b>Throw</b>).</li>
       <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken (or the scorpion in the Sands) catches you!</li>
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
@@ -355,7 +361,10 @@ const CONFIG = {
   eggForm: { walk: 4, run: 6.5, radius: 0.3, stepHeight: 0.25, jump: 6, probeHeights: [0.2, 0.5], cameraDistance: 4, cameraHeight: 0.8 },
   // Uniform scale applied to the whole map. Source map is ~253 x 304 m; 0.5 -> ~126 x 152 m (was 0.4).
   // Override with ?mapscale=0.3 (smaller) or ?mapscale=0.6 (bigger).
-  mapScale: params.has('mapscale') ? parseFloat(params.get('mapscale')) : 0.5,
+  mapScale: params.has('mapscale') ? parseFloat(params.get('mapscale')) : 0.65,
+  // Player size: 1 = the original 1.7 m player. Everything about the body scales with it (model, collision, step height, jump height, camera, reach)
+  // but walking / running speed in metres per second does NOT, so a bigger player simply feels slower. Override with ?pscale=1.5
+  playerScale: params.has('pscale') ? parseFloat(params.get('pscale')) : 1.3,
   // GLTFLoader turns spaces in node names into underscores, so both are matched.
   match: {
     spawn: /^Player[ _]Spawn/i,
@@ -432,6 +441,14 @@ const CONFIG = {
   steal: { penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
 };
 
+{ // scale the body-size settings by playerScale (speeds are deliberately left alone) and keep the throw reach in step with the map size
+  const S = CONFIG.playerScale, P = CONFIG.player;
+  P.height *= S; P.radius *= S; P.stepHeight *= S; P.jump *= Math.sqrt(S); P.probeHeights = P.probeHeights.map((h) => h * S);   // jump: velocity ~ sqrt(S) with the same gravity = jump height ~ S
+  CONFIG.camera.distance *= S; CONFIG.camera.height *= S;
+  CONFIG.steal.range *= S; CONFIG.steal.reach *= S; CONFIG.gym.reach *= S;
+  // the islands sit further out on a bigger map: throw range goes with v^2, so launch speed follows sqrt(mapScale / the 0.4 the map was balanced at)
+  CONFIG.throwing.powerScale *= Math.sqrt(CONFIG.mapScale / 0.4);
+}
 const log = {
   info: (...a) => console.log('[TAE]', ...a),
   warn: (...a) => console.warn('[TAE]', ...a),
@@ -664,6 +681,8 @@ async function init() {
   buildHotbar(); buildDex(); refreshHotbar(); refreshMoney(false);
   setupEggSpawns();
   buildAreasBar();
+  dom.overlayText.textContent = 'Joining a server...';
+  await netStart();
 
   respawn();
   ready = true;
@@ -739,7 +758,9 @@ function setupMap(root) {
   spawnPoints.forEach((s, i) => log.debug('spawn', i, s.name, s.center.toArray().map((v) => +v.toFixed(2))));
 }
 
+let playerGltfRef = null;
 function setupPlayer(gltf) {
+  playerGltfRef = gltf;
   const model = gltf.scene;
   model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
   const box = new THREE.Box3().setFromObject(model);
@@ -748,6 +769,7 @@ function setupPlayer(gltf) {
   model.traverse((o) => { if (o.isMesh && /Leg/i.test(o.name)) legMeshes.push(o); });
   playerRoot = new THREE.Group();
   playerRoot.add(model);
+  playerRoot.scale.setScalar(CONFIG.playerScale);          // everything on the player (held egg included) scales with it
   scene.add(playerRoot);
 
   mixer = new THREE.AnimationMixer(model);
@@ -795,7 +817,9 @@ function respawn() {
   if (carry && carry.status === 'stolen') dropCarry('You respawned - the stolen egg went back.');
   // The spawn you land on first decides your pen. Every later respawn (R, falling, etc.) returns you to that same pen.
   if (playerSpawnIdx === null) {
-    if (CONFIG.forceSpawn !== null && spawnPoints[CONFIG.forceSpawn]) playerSpawnIdx = CONFIG.forceSpawn;
+    if (NET.on && NET.pen) { const i = spawnPoints.findIndex((sp) => sp.pen === NET.pen); if (i >= 0) playerSpawnIdx = i; }   // multiplayer: the server hands out the pen
+    if (playerSpawnIdx !== null) { /* pen given by the server */ }
+    else if (CONFIG.forceSpawn !== null && spawnPoints[CONFIG.forceSpawn]) playerSpawnIdx = CONFIG.forceSpawn;
     else playerSpawnIdx = Math.floor(Math.random() * spawnPoints.length);
     assignPen(spawnPoints[playerSpawnIdx]);
   }
@@ -1065,7 +1089,7 @@ function updatePlayer(dt) {
     playerRoot.updateMatrixWorld(true);
     let low = Infinity;
     for (const m of legMeshes) { _bb.setFromObject(m); low = Math.min(low, _bb.min.y); }
-    const target = carry ? feetExtra - (low - pos.y) : 0;
+    const target = carry ? feetExtra - (low - pos.y) / CONFIG.playerScale : 0;   // feetExtra is in model units, `low` is in world units
     feetExtra += (target - feetExtra) * Math.min(1, 15 * dt);
     playerModel.position.y = modelBaseY + feetExtra;
   }
@@ -1075,6 +1099,193 @@ function updatePlayer(dt) {
 /* Camera                                                              */
 /* ------------------------------------------------------------------ */
 const _t = new THREE.Vector3(), _off = new THREE.Vector3();
+/* ------------------------------------------------------------------ */
+/* Multiplayer: everyone joins the same server (room) until all pens are taken, then a new server opens.  */
+/* The server (server.js) hands out the pen and owns the eggs; everything else runs on your machine.      */
+/* No server reachable (python http.server, file hosting, ?solo=1) = the game plays solo exactly as before. */
+/* ------------------------------------------------------------------ */
+const NET = { on: false, ws: null, id: null, room: null, pen: null, cap: 0, count: 0, tried: false, sendAcc: 0, petAcc: 0, petSig: '' };
+const remotes = new Map();                              // player id -> { root, model, mixer, acts, anim, tag, eggMesh, held, heldKey, pets: [] ... }
+const NET_URL = params.get('server') || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+const netEl = document.getElementById('net');
+const netAllowed = () => params.get('solo') !== '1' && (!!params.get('server') || /^https?:$/.test(location.protocol));
+function netSend(o) { if (NET.on && NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o)); }
+function netName() {
+  const u = acct.user;
+  const n = u && (u.displayName || (u.email || '').split('@')[0]);
+  return (n || 'Guest' + (1000 + Math.floor(Math.random() * 9000))).slice(0, 16);
+}
+function netHud() {
+  if (!netEl) return;
+  if (NET.on) { netEl.className = 'on'; netEl.innerHTML = 'Server ' + NET.room + ' <small>\u00b7 ' + NET.count + '/' + NET.cap + ' players</small>'; }
+  else if (NET.tried) { netEl.className = 'on off'; netEl.textContent = 'Solo (no server)'; }
+  else netEl.className = '';
+}
+function netJoin(timeoutMs) {
+  return new Promise((resolve) => {
+    const pens = spawnPoints.map((sp) => sp.pen).filter(Boolean);
+    if (!netAllowed() || !pens.length || typeof WebSocket === 'undefined') return resolve(false);
+    let done = false, ws = null, tm = null;
+    const finish = (ok) => { if (done) return; done = true; clearTimeout(tm); if (!ok && ws) { try { ws.close(); } catch (e) { /* already closed */ } } resolve(ok); };
+    tm = setTimeout(() => { log.warn('Server did not answer: playing solo'); finish(false); }, timeoutMs);
+    try { ws = new WebSocket(NET_URL); } catch (e) { return finish(false); }
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', name: netName(), pens, spawns: eggItems.map((i) => i.area),
+      eggs: { types: CONFIG.eggs.types, sizeTiers: CONFIG.eggs.sizeTiers, maxMult: CONFIG.eggs.maxMult, respawn: CONFIG.eggs.respawn } }));
+    ws.onmessage = (ev) => {
+      let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.t === 'welcome') { if (!m.pen) return finish(false); netWelcome(ws, m); finish(true); }
+      else if (NET.ws === ws) netMessage(m);
+    };
+    ws.onerror = () => finish(false);
+    ws.onclose = () => { if (!done) finish(false); else if (NET.ws === ws) netLost(); };
+  });
+}
+async function netStart() { await netJoin(3000); NET.tried = true; netHud(); }
+function netWelcome(ws, m) {
+  Object.assign(NET, { on: true, ws, id: m.id, room: m.room, pen: m.pen, cap: m.cap, count: (m.players || []).length + 1 });
+  eggItems.forEach((_, i) => netSetEgg(i, m.eggs[i]));
+  for (const o of m.players || []) netAddRemote(o);
+  log.info('Joined server', m.room, 'pen', m.pen, 'players', NET.count + '/' + NET.cap);
+}
+function netLost() {
+  NET.on = false; NET.ws = null;
+  for (const id of [...remotes.keys()]) netRemoveRemote(id);
+  for (const it of eggItems) if (!it.egg) { it.pending = false; it.timer = 0; }           // solo again: local spawners take over
+  netHud(); say('Lost connection to the server - playing solo.', 5);
+  log.warn('Disconnected from the server');
+}
+function netSetEgg(i, egg) {                            // the server says what stands on spawner i (null = nothing: someone holds it / it is regrowing)
+  const it = eggItems[i];
+  if (!it) return;
+  if (!egg) { if (it.egg) { scene.remove(it.egg.mesh); it.egg = null; } it.pending = true; return; }
+  if (it.egg && it.egg.type === egg.type && it.egg.mult === egg.mult) { it.pending = false; return; }
+  if (it.egg) scene.remove(it.egg.mesh);
+  it.egg = null; it.pending = false;
+  spawnEgg(it, egg);
+}
+function netMessage(m) {
+  switch (m.t) {
+    case 'join': NET.count = m.count; netAddRemote(m); netHud(); say(m.name + ' joined (Pen ' + m.pen + ')', 3); break;
+    case 'leave': { const r = remotes.get(m.id); if (r) say(r.name + ' left', 3); netRemoveRemote(m.id); NET.count = m.count; netHud(); break; }
+    case 'state': { const r = remotes.get(m.id); if (r) netRemoteState(r, m.s, false); break; }
+    case 'pets': { const r = remotes.get(m.id); if (r) netRemotePets(r, m.list); break; }
+    case 'egg': netSetEgg(m.i, m.egg); break;
+    case 'denied':                                      // somebody else took that egg a moment before you
+      if (carry && carry.status === 'stolen' && eggItems.indexOf(carry.item) === m.i) {
+        playerRoot.remove(carry.held); carry.item.pending = false; carry = null;
+        say('Someone grabbed that egg first!', 3);
+      }
+      netSetEgg(m.i, m.egg);
+      break;
+    default: break;
+  }
+}
+
+/* other players: the player model with a name tag, their stolen egg over the head, and the pets in their pen */
+function nameTag(text) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(10,14,30,.72)'; g.beginPath(); if (g.roundRect) g.roundRect(4, 6, 248, 52, 18); else g.rect(4, 6, 248, 52); g.fill();
+  g.font = '700 34px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
+  g.fillText(text, 128, 33, 232);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  sp.scale.set(1.6, 0.4, 1); sp.position.y = CONFIG.player.height + 0.55;
+  return sp;
+}
+function netAddRemote(o) {
+  if (!playerGltfRef || !playerEgg || remotes.has(o.id)) return;
+  const model = SkeletonUtils.clone(playerGltfRef.scene);
+  model.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.frustumCulled = false; } });
+  model.position.y = modelBaseY;                          // the local model may be eased down while it holds an egg: start the copy from the plain pose
+  const avatar = new THREE.Group(); avatar.scale.setScalar(CONFIG.playerScale); avatar.add(model);
+  const root = new THREE.Group(); root.add(avatar);
+  const tag = nameTag(o.name || 'Player'); root.add(tag);
+  const eggMesh = playerEgg.make(); eggMesh.scale.setScalar(CONFIG.eggs.baseHeight); eggMesh.visible = false; root.add(eggMesh);
+  scene.add(root);
+  const mixer = new THREE.AnimationMixer(model), acts = {};
+  for (const clip of playerGltfRef.animations) acts[clip.name.toLowerCase()] = mixer.clipAction(clip);
+  if (acts.jump) { acts.jump.setLoop(THREE.LoopOnce, 1); acts.jump.clampWhenFinished = true; }
+  const r = { id: o.id, name: o.name || 'Player', pen: o.pen, root, avatar, model, mixer, acts, anim: '', tag, eggMesh, held: null, heldKey: '', form: 'human',
+              tx: 0, ty: 0, tz: 0, tf: 0, facing: 0, init: false, pets: [] };
+  remotes.set(o.id, r);
+  if (o.s) netRemoteState(r, o.s, true);
+  if (o.pets && o.pets.length) netRemotePets(r, o.pets);
+}
+function netRemoveRemote(id) {
+  const r = remotes.get(id);
+  if (!r) return;
+  scene.remove(r.root);
+  r.root.traverse((m) => { if (m.isSprite && m.material) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } });
+  netClearPets(r);
+  remotes.delete(id);
+}
+function netRemoteState(r, s, snap) {
+  r.tx = s.x; r.ty = s.y; r.tz = s.z; r.tf = s.f; r.form = s.form;
+  if (!r.init || snap) { r.root.position.set(s.x, s.y, s.z); r.facing = s.f; r.init = true; }
+  const human = s.form === 'human';
+  r.avatar.visible = human; r.eggMesh.visible = !human;
+  r.tag.position.y = (human ? CONFIG.player.height : CONFIG.eggs.baseHeight + 0.2) + 0.55;
+  const key = s.carry && eggTpl[s.carry.type] ? s.carry.type + ':' + s.carry.mult : '';
+  if (key !== r.heldKey) {
+    if (r.held) { r.avatar.remove(r.held); r.held = null; }
+    if (key) { r.held = eggTpl[s.carry.type].make(); r.held.scale.setScalar(carryHeight({ mult: s.carry.mult })); r.held.position.set(0, CONFIG.steal.carryBase, 0); r.avatar.add(r.held); }
+    r.heldKey = key;
+  }
+  const want = human ? (r.acts[s.anim] ? s.anim : 'idle') : '';
+  if (want && want !== r.anim && r.acts[want]) {
+    const next = r.acts[want], prev = r.acts[r.anim];
+    next.reset().play(); if (prev) prev.crossFadeTo(next, 0.15, false);
+    r.anim = want;
+  }
+}
+function netClearPets(r) { for (const p of r.pets) scene.remove(p.root); r.pets = []; }
+function netRemotePets(r, list) {
+  netClearPets(r);
+  const b = penBoxes[r.pen], sp = spawnPoints.find((q) => q.pen === r.pen);
+  if (!b || !sp) return;
+  for (const q of list) {
+    if (!petTpl[q.id]) continue;
+    const x = b.min.x + 1 + q.u * Math.max(1, b.max.x - b.min.x - 2), z = b.min.z + 1 + q.v * Math.max(1, b.max.z - b.min.z - 2);
+    const h = castRayIn(walkSolids, new THREE.Vector3(x, sp.center.y + 3, z), DOWN, 20);
+    const m = makePetModel(q.id, q.mult), pt = new THREE.Vector3(x, h ? h.point.y : sp.center.y, z);
+    m.root.position.copy(pt); scene.add(m.root);
+    const p = Object.assign(m, { id: q.id, mult: q.mult, pos: pt, yaw: Math.random() * Math.PI * 2, target: null, wait: 0.5 + Math.random() * 3 });
+    petPlay(p, 'idle'); p.mixer.update(Math.random() * 2);
+    r.pets.push(p);
+  }
+}
+function netMyPets() {
+  const b = playerPen && playerPen.box;
+  if (!b) return [];
+  return petsInPen.map((p) => ({ id: p.id, mult: p.mult, u: clampN((p.pos.x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((p.pos.z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) }));
+}
+function netTick(dt) {
+  if (!NET.on) return;
+  NET.sendAcc += dt; NET.petAcc += dt;
+  if (NET.sendAcc >= 0.1 && ready) {
+    NET.sendAcc = 0;
+    const fl = form === 'flying' && flight;
+    netSend({ t: 'state', x: fl ? flight.c.x : pos.x, y: fl ? flight.c.y - CONFIG.eggs.baseHeight * 0.5 : pos.y, z: fl ? flight.c.z : pos.z, f: facing, form, anim: currentAnim || 'idle',
+              carry: carry ? { type: carry.egg.type, mult: carry.egg.mult } : null });
+  }
+  if (NET.petAcc >= 0.5) {                              // tell the others when the pets in your pen change (placed / taken back / hatched)
+    NET.petAcc = 0;
+    const sig = petsInPen.map((p) => p.id + ':' + p.mult).join(',');
+    if (sig !== NET.petSig) { NET.petSig = sig; netSend({ t: 'pets', list: netMyPets() }); }
+  }
+  for (const r of remotes.values()) {
+    const k = Math.min(1, 12 * dt), P = r.root.position;
+    if (Math.hypot(r.tx - P.x, r.tz - P.z) > 25) P.set(r.tx, r.ty, r.tz);              // teleported (respawn): do not slide across the map
+    else { P.x += (r.tx - P.x) * k; P.y += (r.ty - P.y) * k; P.z += (r.tz - P.z) * k; }
+    r.facing = angleLerp(r.facing, r.tf, Math.min(1, 10 * dt));
+    r.root.rotation.y = r.facing;
+    r.mixer.update(dt);
+    const b = penBoxes[r.pen];
+    for (const p of r.pets) stepPet(p, b, dt);
+  }
+}
+
 function effSpeed(v) {                                  // speed stat -> speed used for real movement (see CONFIG.speedCurve)
   const K = CONFIG.speedCurve.knee;
   return v <= K ? v : K * Math.pow(v / K, CONFIG.speedCurve.power);
@@ -1307,11 +1518,16 @@ function pickType(area) {                              // only egg types allowed
   for (const k of keys) { r -= t[k].w; if (r <= 0) return k; }
   return keys[keys.length - 1];
 }
-function spawnEgg(item) {
-  const E = CONFIG.eggs, type = pickType(item.area);
-  let tr = Math.random() * E.sizeTiers.reduce((a, t) => a + t.w, 0), tier = E.sizeTiers[0];
-  for (const t of E.sizeTiers) { tr -= t.w; tier = t; if (tr <= 0) break; }
-  const mult = Math.min(E.maxMult, tier.min + Math.random() * (tier.max - tier.min));
+function spawnEgg(item, forced) {                      // forced = { type, mult } chosen by the server (multiplayer); otherwise random
+  const E = CONFIG.eggs;
+  let type, mult;
+  if (forced && eggTpl[forced.type]) { type = forced.type; mult = forced.mult; }
+  else {
+    type = pickType(item.area);
+    let tr = Math.random() * E.sizeTiers.reduce((a, t) => a + t.w, 0), tier = E.sizeTiers[0];
+    for (const t of E.sizeTiers) { tr -= t.w; tier = t; if (tr <= 0) break; }
+    mult = Math.min(E.maxMult, tier.min + Math.random() * (tier.max - tier.min));
+  }
   const tpl = eggTpl[type];
   const mesh = tpl.make();
   mesh.scale.setScalar(E.baseHeight * mult);
@@ -1332,6 +1548,7 @@ function setupEggSpawns() {
   log.info('Egg spawners:', eggItems.length, '(' + eggItems.filter((i) => i.area === 'valley').length + ' Cluck Valley, ' + eggItems.filter((i) => i.area === 'sands').length + ' Scorching Sands)');
 }
 function updateEggItems(dt) {
+  if (NET.on) return;                                  // multiplayer: the server decides when eggs (re)spawn
   // Eggs are no longer collected by touching them: you Steal them. A stolen egg's spawner waits (pending) until
   // the thief escapes (then it respawns after a delay) or is caught (then the egg is put back).
   for (const it of eggItems) {
@@ -1440,6 +1657,7 @@ function steal(it) {
   playerRoot.add(carry.held);
   state.mode = 'idle';
   say('Stolen! RUN - the ' + (area && area.enemy || 'chicken') + ' is after you!' + (area && area.chaseAnywhere ? ' It will not stop - get to your pen!' : ''), 4);
+  netSend({ t: 'steal', i: eggItems.indexOf(it) });
   log.info('Stole', e.type, e.mult.toFixed(2) + 'x from', it.area);
 }
 function dropCarry(msg) {                                   // the stolen egg goes back where it came from
@@ -1447,6 +1665,7 @@ function dropCarry(msg) {                                   // the stolen egg go
   if (carry.status === 'stolen' && !carry.item.egg) {
     const e = carry.egg, it = carry.item;
     scene.add(e.mesh); it.egg = e;
+    netSend({ t: 'return', i: eggItems.indexOf(it) });
   }
   carry.item.pending = false;
   playerRoot.remove(carry.held);
@@ -1462,6 +1681,7 @@ function updateCarry() {
   if (carry.status === 'stolen' && form === 'human' && (chased ? inOwnPen() : !areaAt(pos.x, pos.z))) {   // out of Cluck Valley AND Scorching Sands (or, if chased, inside your pen) = escaped
     carry.status = 'safe';
     carry.item.pending = false; carry.item.timer = CONFIG.eggs.respawn;
+    netSend({ t: 'escaped', i: eggItems.indexOf(carry.item) });
     say(chased ? 'You made it to your pen! Click a spot to place the egg.' : 'You escaped! The egg is in your inventory. Take it to Pen ' + (playerPen ? playerPen.num : '?') + '.', 5);
     log.info('Escaped with the egg');
   }
@@ -2297,7 +2517,10 @@ function takePet(p) {                                    // click a pet in your 
 }
 function updatePets(dt) {
   const b = playerPen ? playerPen.box : null;
-  for (const p of petsInPen) {
+  for (const p of petsInPen) stepPet(p, b, dt);
+}
+function stepPet(p, b, dt) {                           // one pet wandering about its pen (own pets and other players' pets)
+  {
     let anim = 'idle';
     if (p.target) {
       const dx = p.target.x - p.pos.x, dz = p.target.z - p.pos.z, d = Math.hypot(dx, dz);
@@ -2431,7 +2654,7 @@ function startGym(g) {                                  // click a machine: tele
   g.root.updateMatrixWorld(true);
   const p = g.anchor.getWorldPosition(new THREE.Vector3());
   pos.x = p.x; pos.z = p.z;
-  if (g.kind === 'bar') pos.y = p.y - (armTopLo + (armTopHi - armTopLo) * G.gripAlign) - modelBaseY;   // arms reach the top of the bar, body hangs below it
+  if (g.kind === 'bar') pos.y = p.y - CONFIG.playerScale * (armTopLo + (armTopHi - armTopLo) * G.gripAlign + modelBaseY);   // arms reach the top of the bar, body hangs below it
   else pos.y = p.y;                                                                                      // feet on the middle of the belt
   vy = 0; grounded = true;
   facing = g.root.rotation.y + Math.PI;                 // face the bar / the console end of the treadmill (towards the wall)
@@ -2497,6 +2720,7 @@ function tick() {
   updateAim();
   updateHatching(dt);
   updatePets(dt);
+  netTick(dt);
   updateIncome(dt);
   updateFlyers(dt);
   updateEggLabels();
