@@ -353,9 +353,9 @@ const CONFIG = {
   // The Scorching Sands enemy. Same settings as the chicken. The scorpion model faces -Z, hence yawOffset = PI.
   scorpion: { height: 1.5, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: Math.PI },
   eggForm: { walk: 4, run: 6.5, radius: 0.3, stepHeight: 0.25, jump: 6, probeHeights: [0.2, 0.5], cameraDistance: 4, cameraHeight: 0.8 },
-  // Uniform scale applied to the whole map. Source map is ~253 x 304 m; 0.4 -> ~101 x 122 m.
+  // Uniform scale applied to the whole map. Source map is ~253 x 304 m; 0.5 -> ~126 x 152 m (was 0.4).
   // Override with ?mapscale=0.3 (smaller) or ?mapscale=0.6 (bigger).
-  mapScale: params.has('mapscale') ? parseFloat(params.get('mapscale')) : 0.4,
+  mapScale: params.has('mapscale') ? parseFloat(params.get('mapscale')) : 0.5,
   // GLTFLoader turns spaces in node names into underscores, so both are matched.
   match: {
     spawn: /^Player[ _]Spawn/i,
