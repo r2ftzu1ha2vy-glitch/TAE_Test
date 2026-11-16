@@ -82,6 +82,7 @@
   .tbtn:active { background: rgba(255,211,77,.7); color: #3a2a00; }
   #t-throw { right: calc(118px + env(safe-area-inset-right)); bottom: calc(60px + env(safe-area-inset-bottom)); width: 88px; height: 88px; display: none;
              background: #ffd34d; color: #3a2a00; font-size: 17px; animation: actpulse 1s ease-in-out infinite; }
+  #t-drop { right: calc(14px + env(safe-area-inset-right)); bottom: calc(150px + env(safe-area-inset-bottom)); width: 64px; height: 64px; display: none; font-size: 15px; background: rgba(120,30,30,.75); }
   #t-respawn { right: calc(12px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width: 44px; height: 44px; font-size: 22px; }
   body.touch #hud { top: calc(62px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); font-size: 11px; line-height: 1.4; max-width: 46vw; }
   body.touch #hud .kb, body:not(.touch) #hud .tc { display: none; }
@@ -297,7 +298,7 @@
 <div id="speedfx"></div>
 <div id="net"></div>
 <div id="hud">
-  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>I</b> pet index &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
+  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>I</b> pet index &nbsp; <b>G</b> drop egg &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
   Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br></span>
   <span class="tc"><b>Left</b> stick move &nbsp; <b>Right</b> side drag to look<br>
   In the yellow <b>Throw Zone</b> tap <b>Throw</b> to stop the power bar<br></span>
@@ -333,6 +334,7 @@
   <div id="joyzone"></div><div id="lookzone"></div>
   <div id="joy"><div id="joy-knob"></div></div>
   <button class="tbtn" id="t-throw" type="button">Throw</button>
+  <button class="tbtn" id="t-drop" type="button">Drop</button>
   <button class="tbtn" id="t-respawn" type="button" aria-label="Respawn">&#8634;</button>
 </div>
 <div id="chat">
@@ -372,6 +374,7 @@
       <li>Everyone plays on the same <b>server</b> (top right) - one pen each. When all pens are taken, a new server opens for the next player.</li>
       <li>Walk into the yellow <b>Throw Zone</b> and throw an egg with <b>Space</b> / <b>Click</b> (touch: <b>Throw</b>). You can only throw forward, towards the islands.</li>
       <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken (or the scorpion in the Sands) catches you!</li>
+      <li>Changed your mind? Press <b>G</b> (or the <b>Drop</b> button on a phone) to drop the egg you are carrying. A stolen egg goes back where it came from; one you already escaped with is lost, so it asks you to press twice.</li>
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
       <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-9</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s up to snake $50/s and scorpion $75/s at 1x, more for bigger eggs).</li>
       <li>In your pen, <b>click the Pull-Up Bar</b> to gain <b>Strength</b> (throws go farther) and <b>click the Treadmill</b> to gain <b>Speed</b>. You hop on automatically and keep training on your own; <b>click again</b> to stop.</li>
@@ -534,8 +537,8 @@ function showOverlay(html) { dom.overlayText.innerHTML = html; dom.overlay.style
 function fatal(err) {
   log.error(err);
   showOverlay('Load failed<small>' + String(err && err.message || err) +
-    '<br><br>Run the game server (browsers block GLB loading from file://):<br>' +
-    '<code>node server.js</code> then open http://localhost:8000</small>');
+    '<br><br>Browsers block GLB loading from file://. Open the hosted page (GitHub Pages) or run<br>' +
+    '<code>python3 -m http.server 8000</code> (or <code>node server.js</code>) and open http://localhost:8000</small>');
   dom.overlay.style.cursor = 'default';
 }
 
@@ -992,6 +995,7 @@ if (IS_TOUCH) {
   const press = (id, fn) => $(id).addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); fn(); }, { passive: false });
   press('t-throw', () => tryThrow());
   press('t-respawn', () => respawn());
+  press('t-drop', () => dropEgg());
   document.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 document.addEventListener('mousemove', (e) => {
@@ -1023,6 +1027,7 @@ window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'Space' && state.mode === 'charging') tryThrow();
   if (e.code === 'KeyR') respawn();
+  if (e.code === 'KeyG' || e.code === 'KeyQ') dropEgg();
   const dg = /^Digit([1-9])$/.exec(e.code);
   if (dg && +dg[1] <= CONFIG.hotbarSlots) selectSlot(+dg[1] - 1);
 });
@@ -1167,7 +1172,7 @@ function chatAdd(name, text, system, mine) {
 }
 function chatOpen() {
   if (chat.open || !ready || dom.overlay.style.display !== 'none' || dexOpen) return;
-  if (!NET.on) { say('Chat needs the multiplayer server (node server.js).', 4); return; }
+  if (!NET.on) { say(STATIC_HOST ? 'Chat needs a multiplayer server (this static site plays solo).' : 'Chat needs the multiplayer server (node server.js).', 4); return; }
   chat.open = true;
   chat.el.classList.add('open');
   for (const k in keys) keys[k] = false;
@@ -1204,12 +1209,20 @@ document.addEventListener('touchstart', (e) => { if (chat.open && !(e.target.clo
 /* The server (server.js) hands out the pen and owns the eggs; everything else runs on your machine.      */
 /* No server reachable (python http.server, file hosting, ?solo=1) = the game plays solo exactly as before. */
 /* ------------------------------------------------------------------ */
-const NET = { on: false, ws: null, id: null, room: null, pen: null, cap: 0, count: 0, tried: false, sendAcc: 0, petAcc: 0, petSig: '' };
+const NET = { on: false, ws: null, fb: null, id: null, room: null, pen: null, cap: 0, count: 0, tried: false, sendAcc: 0, petAcc: 0, petSig: '' };
 const remotes = new Map();                              // player id -> { root, model, mixer, acts, anim, tag, eggMesh, held, heldKey, pets: [] ... }
-const NET_URL = params.get('server') || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+/* Static hosting (GitHub Pages, Netlify, S3, python http.server...) has no WebSocket endpoint, so it plays solo without waiting for a timeout.
+   To get multiplayer on a static host, run server.js somewhere and either set TAE_SERVER below or open the page with ?server=wss://your-host/ws */
+const TAE_SERVER = '';                                  // e.g. 'wss://my-egg-server.example.com/ws'
+const STATIC_HOST = /(^|\.)(github\.io|githubusercontent\.com|pages\.dev|netlify\.app|vercel\.app|gitlab\.io|surge\.sh)$/i.test(location.hostname);
+const NET_URL = params.get('server') || TAE_SERVER || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
 const netEl = document.getElementById('net');
-const netAllowed = () => params.get('solo') !== '1' && (!!params.get('server') || /^https?:$/.test(location.protocol));
-function netSend(o) { if (NET.on && NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o)); }
+const netAllowed = () => params.get('solo') !== '1' && (!!params.get('server') || !!TAE_SERVER || (!STATIC_HOST && /^https?:$/.test(location.protocol)));
+function netSend(o) {
+  if (!NET.on) return;
+  if (NET.fb) fbSend(o);                                 // Firebase transport
+  else if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o));   // WebSocket transport (server.js)
+}
 function netName() {
   const u = acct.user;
   const n = u && (u.displayName || (u.email || '').split('@')[0]);
@@ -1220,7 +1233,7 @@ function netHud() {
   document.body.classList.toggle('net', NET.on);
   if (!NET.on) chatClose();
   if (NET.on) { netEl.className = 'on'; netEl.innerHTML = 'Server ' + NET.room + ' <small>\u00b7 ' + NET.count + '/' + NET.cap + ' players</small>'; }
-  else if (NET.tried) { netEl.className = 'on off'; netEl.textContent = 'Solo (no server)'; }
+  else if (NET.tried) { netEl.className = 'on off'; netEl.textContent = params.get('solo') === '1' ? 'Solo mode' : 'Solo (multiplayer unavailable)'; }
   else netEl.className = '';
 }
 function netJoin(timeoutMs) {
@@ -1242,7 +1255,202 @@ function netJoin(timeoutMs) {
     ws.onclose = () => { if (!done) finish(false); else if (NET.ws === ws) netLost(); };
   });
 }
-async function netStart() { await netJoin(3000); NET.tried = true; netHud(); }
+async function netStart() {
+  let ok = false;
+  if (netAllowed()) ok = await netJoin(3000);            // 1) your own WebSocket server (server.js / ?server= / TAE_SERVER), if there is one
+  if (!ok && fbAllowed()) ok = await fbJoin(10000);      // 2) otherwise Firebase Realtime Database acts as the server (works on GitHub Pages)
+  NET.tried = true; netHud();
+}
+/* ------------------------------------------------------------------ */
+/* Firebase transport: Realtime Database as the game server.           */
+/*                                                                     */
+/* Layout (all under rooms/r<N>, N = 1.. : a new room opens once every pen in the previous one is taken):          */
+/*   pens/<pen>     = playerId        claimed with a transaction, so two players can never get the same pen        */
+/*   players/<id>   = { name, pen }   removed automatically when you disconnect (onDisconnect)                     */
+/*   states/<id>    = position / animation / carried egg, ~10x a second, only while it changes                     */
+/*   pets/<id>      = the pets standing in that player's pen                                                      */
+/*   eggs/<i>       = { k:'egg', type, mult }  |  { k:'held', by, type, mult }  |  { k:'regrow', at }              */
+/*                    every change is a transaction (steal = egg -> held, escape = held -> regrow, ...). Any      */
+/*                    client respawns eggs that are due, also transactionally, so there is no host to lose.       */
+/*   chat/<push>    = { id, name, text, ts }   old lines are trimmed by the player with the lowest pen             */
+/*                                                                                                                 */
+/* Database rules (Firebase console > Realtime Database > Rules): keep your existing "users" rule and add:        */
+/*   "rooms": { "$room": { ".read": true, ".write": true,                                                         */
+/*       "chat": { "$m": { ".validate": "newData.child('text').isString() && newData.child('text').val().length <= 120" } } } }   */
+/* ------------------------------------------------------------------ */
+const FB_MAX_ROOMS = 40;
+const FB = { D: null, db: null, id: null, room: 0, pen: null, base: '', off: 0, players: new Map(), states: new Map(), pets: new Map(), known: new Set(),
+             eggs: [], eggSig: [], spawning: new Set(), unsubs: [], timers: [], held: null, heldDisc: null, lastState: '', joinedAt: 0, lastClean: 0, lostT: 0, pagehide: false };
+const fbAllowed = () => params.get('solo') !== '1' && /^https?:$/.test(location.protocol);
+const fbNow = () => Date.now() + FB.off;                 // server clock: egg regrow times must agree between players
+const fbRef = (p) => FB.D.ref(FB.db, FB.base + '/' + p);
+const fbArr = (v) => (v ? (Array.isArray(v) ? v.filter(Boolean) : Object.values(v)) : []);
+const fbEggSig = (e) => (e ? [e.k, e.type || '', e.mult || '', e.by || '', e.at || ''].join(':') : '');
+const fbRound = (n) => Math.round(n * 100) / 100;
+
+async function fbJoin(timeoutMs) {
+  if (!fbAllowed()) return false;
+  const pens = spawnPoints.map((sp) => sp.pen).filter(Boolean);
+  if (!pens.length || !eggItems.length) return false;
+  let aborted = false;
+  const check = () => { if (aborted) throw new Error('aborted'); };
+  const work = (async () => {
+    const f = await fbReady; check();
+    if (!f) return false;
+    const D = f.D, db = f.db;
+    Object.assign(FB, { D, db, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), pen: null, room: 0, base: '', held: null, heldDisc: null, lastState: '' });
+    await new Promise((res) => {                          // server clock offset (also keeps updating)
+      FB.unsubs.push(D.onValue(D.ref(db, '.info/serverTimeOffset'), (s) => { FB.off = s.val() || 0; res(); }));
+    });
+    check();
+    for (let n = 1; n <= FB_MAX_ROOMS && !FB.pen; n++) {   // first room with a free pen
+      const base = 'rooms/r' + n;
+      const taken = (await D.get(D.ref(db, base + '/pens'))).val() || {}; check();
+      for (const p of pens.filter((x) => !taken[x])) {
+        const res = await D.runTransaction(D.ref(db, base + '/pens/' + p), (cur) => (cur === null ? FB.id : undefined)); check();
+        if (res.committed) { FB.base = base; FB.room = n; FB.pen = p; break; }
+      }
+    }
+    if (!FB.pen) { log.warn('Every pen on every server is taken'); return false; }
+    for (const p of ['pens/' + FB.pen, 'players/' + FB.id, 'states/' + FB.id, 'pets/' + FB.id]) await D.onDisconnect(fbRef(p)).remove();
+    check();
+    await D.set(fbRef('players/' + FB.id), { name: netName(), pen: FB.pen }); check();
+    FB.joinedAt = fbNow();
+    const [ps, ss, pts, es] = await Promise.all(['players', 'states', 'pets', 'eggs'].map((k) => D.get(fbRef(k)))); check();
+    const P = ps.val() || {}, S = ss.val() || {}, T = pts.val() || {}, E = es.val() || {};
+    FB.players = new Map(Object.entries(P)); FB.known = new Set(Object.keys(P));
+    FB.states = new Map(Object.entries(S)); FB.pets = new Map(Object.entries(T));
+    eggItems.forEach((_, i) => { FB.eggs[i] = E[i] || null; FB.eggSig[i] = fbEggSig(E[i]); });
+    NET.fb = FB;
+    netWelcome(null, { t: 'welcome', id: FB.id, room: FB.room, pen: FB.pen, cap: pens.length,
+      players: Object.keys(P).filter((k) => k !== FB.id).map((k) => ({ id: k, name: P[k].name, pen: P[k].pen, s: S[k], pets: fbArr(T[k]) })),
+      eggs: eggItems.map((_, i) => (E[i] && E[i].k === 'egg' ? { type: E[i].type, mult: E[i].mult } : null)) });
+    fbListen();
+    FB.timers.push(setInterval(fbTick, 1000)); fbTick();
+    if (!FB.pagehide) { FB.pagehide = true; window.addEventListener('pagehide', () => { if (NET.fb) fbCleanup(); }); }
+    return true;
+  })();
+  const timeout = new Promise((res) => setTimeout(() => { aborted = true; res(false); }, timeoutMs));
+  let ok = false;
+  try { ok = await Promise.race([work, timeout]); } catch (e) { if (e.message !== 'aborted') log.warn('Firebase multiplayer failed (are the Realtime Database rules for "rooms" set?)', e); }
+  work.catch(() => {});
+  if (!ok) { aborted = true; NET.fb = null; fbCleanup(); log.warn('Firebase multiplayer unavailable: playing solo'); }
+  return ok;
+}
+function fbListen() {
+  const D = FB.D, un = FB.unsubs;
+  un.push(D.onChildAdded(fbRef('players'), (s) => {
+    const id = s.key, v = s.val() || {}; FB.players.set(id, v);
+    if (id === FB.id || FB.known.has(id)) return;
+    FB.known.add(id);
+    netMessage({ t: 'join', id, name: v.name, pen: v.pen, count: FB.players.size, s: FB.states.get(id), pets: fbArr(FB.pets.get(id)) });
+  }));
+  un.push(D.onChildRemoved(fbRef('players'), (s) => {
+    const id = s.key; FB.players.delete(id); FB.known.delete(id); FB.states.delete(id); FB.pets.delete(id);
+    if (id !== FB.id) netMessage({ t: 'leave', id, count: FB.players.size });
+  }));
+  const onState = (s) => { if (s.key === FB.id) return; FB.states.set(s.key, s.val()); netMessage({ t: 'state', id: s.key, s: s.val() }); };
+  un.push(D.onChildAdded(fbRef('states'), onState), D.onChildChanged(fbRef('states'), onState));
+  const onPets = (s) => { if (s.key === FB.id) return; FB.pets.set(s.key, s.val()); netMessage({ t: 'pets', id: s.key, list: fbArr(s.val()) }); };
+  un.push(D.onChildAdded(fbRef('pets'), onPets), D.onChildChanged(fbRef('pets'), onPets));
+  un.push(D.onChildRemoved(fbRef('pets'), (s) => { if (s.key !== FB.id) { FB.pets.delete(s.key); netMessage({ t: 'pets', id: s.key, list: [] }); } }));
+  un.push(D.onValue(fbRef('eggs'), (s) => {
+    const v = s.val() || {};
+    for (let i = 0; i < eggItems.length; i++) {
+      const e = v[i] || null, sig = fbEggSig(e);
+      FB.eggs[i] = e;
+      if (sig === FB.eggSig[i]) continue;
+      FB.eggSig[i] = sig;
+      netSetEgg(i, e && e.k === 'egg' ? { type: e.type, mult: e.mult } : null);
+    }
+  }));
+  un.push(D.onChildAdded(D.query(fbRef('chat'), D.limitToLast(20)), (s) => {
+    const v = s.val();
+    if (!v || !(v.ts >= FB.joinedAt - 1000)) return;       // only what is said after you joined
+    netMessage({ t: 'chat', id: v.id, name: v.name, text: v.text });
+  }));
+  un.push(D.onValue(D.ref(FB.db, '.info/connected'), (s) => {   // connection gone for 5 s: the server has already removed you, so go solo
+    clearTimeout(FB.lostT);
+    if (s.val() === false && NET.on && NET.fb === FB) FB.lostT = setTimeout(() => { if (NET.on && NET.fb === FB) netLost(); }, 5000);
+  }));
+}
+function fbTick() {                                       // runs every second on every client; transactions make sure only one spawn wins
+  if (!NET.on || NET.fb !== FB) return;
+  const D = FB.D, now = fbNow();
+  for (let i = 0; i < eggItems.length; i++) {
+    const e = FB.eggs[i];
+    let next = null;
+    if (!e || (e.k === 'regrow' && e.at <= now)) { const r = rollEgg(eggItems[i].area); next = { k: 'egg', type: r.type, mult: fbRound(r.mult) }; }
+    else if (e.k === 'held' && !FB.players.has(e.by)) next = { k: 'egg', type: e.type, mult: e.mult };     // its thief left
+    if (!next || FB.spawning.has(i)) continue;
+    FB.spawning.add(i);
+    D.runTransaction(fbRef('eggs/' + i), (cur) => {
+      const n = fbNow();
+      return (cur == null || (cur.k === 'regrow' && cur.at <= n) || (cur.k === 'held' && !FB.players.has(cur.by))) ? next : undefined;
+    }).catch(() => {}).finally(() => FB.spawning.delete(i));
+  }
+  if (now - FB.lastClean > 60000) {                       // the player with the lowest pen trims old chat lines
+    FB.lastClean = now;
+    let low = null;
+    for (const [id, v] of FB.players) if (low === null || Number(v.pen) < Number(FB.players.get(low).pen)) low = id;
+    if (low === FB.id) D.get(fbRef('chat')).then((snap) => { snap.forEach((c) => { const v = c.val(); if (v && v.ts < now - 180000) D.remove(c.ref); }); }).catch(() => {});
+  }
+}
+function fbSend(o) {
+  const D = FB.D, id = FB.id;
+  switch (o.t) {
+    case 'state': {
+      const st = { x: fbRound(o.x), y: fbRound(o.y), z: fbRound(o.z), f: fbRound(o.f), form: o.form, anim: o.anim };
+      if (o.carry) st.carry = { type: o.carry.type, mult: fbRound(o.carry.mult) };
+      const sig = JSON.stringify(st);
+      if (sig === FB.lastState) break;                    // standing still: nothing to send
+      FB.lastState = sig; D.set(fbRef('states/' + id), st).catch(() => {});
+      break;
+    }
+    case 'pets': { if (o.list && o.list.length) D.set(fbRef('pets/' + id), o.list.map((p) => ({ id: p.id, mult: fbRound(p.mult), u: fbRound(p.u), v: fbRound(p.v) }))).catch(() => {}); else D.remove(fbRef('pets/' + id)).catch(() => {}); break; }
+    case 'chat': D.push(fbRef('chat'), { id, name: netName(), text: String(o.text || '').slice(0, 120), ts: D.serverTimestamp() }).catch(() => {}); break;
+    case 'steal': {
+      const i = o.i, ref = fbRef('eggs/' + i);
+      D.runTransaction(ref, (cur) => (cur && cur.k === 'egg' ? { k: 'held', by: id, type: cur.type, mult: cur.mult } : undefined)).then((res) => {
+        const v = res.snapshot.val();
+        if (res.committed) {                              // if you disconnect while holding it, the egg goes back
+          FB.held = { i, type: v.type, mult: v.mult };
+          FB.heldDisc = D.onDisconnect(ref); FB.heldDisc.set({ k: 'egg', type: v.type, mult: v.mult });
+        } else netMessage({ t: 'denied', i, egg: v && v.k === 'egg' ? { type: v.type, mult: v.mult } : null });
+      }).catch(() => netMessage({ t: 'denied', i, egg: null }));
+      break;
+    }
+    case 'return': case 'escaped': {
+      const back = o.t === 'return', n = fbNow() + CONFIG.eggs.respawn * 1000;
+      if (FB.heldDisc) { FB.heldDisc.cancel().catch(() => {}); FB.heldDisc = null; }
+      FB.held = null;
+      D.runTransaction(fbRef('eggs/' + o.i), (cur) => {
+        if (!cur || cur.k !== 'held' || cur.by !== id) return undefined;
+        return back ? { k: 'egg', type: cur.type, mult: cur.mult } : { k: 'regrow', at: n };
+      }).catch(() => {});
+      break;
+    }
+    default: break;
+  }
+}
+function fbCleanup() {                                    // leave the room: release your pen, your nodes and any egg you hold
+  for (const u of FB.unsubs) { try { u(); } catch (e) { /* already detached */ } }
+  for (const t of FB.timers) clearInterval(t);
+  clearTimeout(FB.lostT);
+  FB.unsubs = []; FB.timers = [];
+  if (FB.D && FB.id && FB.base) {
+    const D = FB.D;
+    try {
+      if (FB.held) D.set(fbRef('eggs/' + FB.held.i), { k: 'egg', type: FB.held.type, mult: FB.held.mult });
+      if (FB.heldDisc) FB.heldDisc.cancel();
+      const paths = ['players/' + FB.id, 'states/' + FB.id, 'pets/' + FB.id];
+      if (FB.pen) paths.push('pens/' + FB.pen);
+      for (const p of paths) { D.onDisconnect(fbRef(p)).cancel(); D.remove(fbRef(p)); }   // cancel the pending onDisconnect so it cannot hit a pen someone else took later
+    } catch (e) { /* offline: the server already removed them */ }
+  }
+  Object.assign(FB, { pen: null, base: '', held: null, heldDisc: null, lastState: '', spawning: new Set() });
+  FB.players.clear(); FB.states.clear(); FB.pets.clear(); FB.known.clear(); FB.eggs = []; FB.eggSig = [];
+}
 function netWelcome(ws, m) {
   Object.assign(NET, { on: true, ws, id: m.id, room: m.room, pen: m.pen, cap: m.cap, count: (m.players || []).length + 1 });
   eggItems.forEach((_, i) => netSetEgg(i, m.eggs[i]));
@@ -1250,6 +1458,7 @@ function netWelcome(ws, m) {
   log.info('Joined server', m.room, 'pen', m.pen, 'players', NET.count + '/' + NET.cap);
 }
 function netLost() {
+  if (NET.fb) { fbCleanup(); NET.fb = null; }
   NET.on = false; NET.ws = null;
   for (const id of [...remotes.keys()]) netRemoveRemote(id);
   for (const it of eggItems) if (!it.egg) { it.pending = false; it.timer = 0; }           // solo again: local spawners take over
@@ -1643,16 +1852,17 @@ function pickType(area) {                              // only egg types allowed
   for (const k of keys) { r -= t[k].w; if (r <= 0) return k; }
   return keys[keys.length - 1];
 }
+function rollEgg(area) {                                // a random egg type + size for an area
+  const E = CONFIG.eggs, type = pickType(area);
+  let tr = Math.random() * E.sizeTiers.reduce((a, t) => a + t.w, 0), tier = E.sizeTiers[0];
+  for (const t of E.sizeTiers) { tr -= t.w; tier = t; if (tr <= 0) break; }
+  return { type, mult: Math.min(E.maxMult, tier.min + Math.random() * (tier.max - tier.min)) };
+}
 function spawnEgg(item, forced) {                      // forced = { type, mult } chosen by the server (multiplayer); otherwise random
   const E = CONFIG.eggs;
   let type, mult;
   if (forced && eggTpl[forced.type]) { type = forced.type; mult = forced.mult; }
-  else {
-    type = pickType(item.area);
-    let tr = Math.random() * E.sizeTiers.reduce((a, t) => a + t.w, 0), tier = E.sizeTiers[0];
-    for (const t of E.sizeTiers) { tr -= t.w; tier = t; if (tr <= 0) break; }
-    mult = Math.min(E.maxMult, tier.min + Math.random() * (tier.max - tier.min));
-  }
+  else ({ type, mult } = rollEgg(item.area));
   const tpl = eggTpl[type];
   const mesh = tpl.make();
   mesh.scale.setScalar(E.baseHeight * mult);
@@ -1797,6 +2007,35 @@ function dropCarry(msg) {                                   // the stolen egg go
   carry = null;
   if (msg) say(msg);
 }
+/* Drop the egg you are carrying (key G / Q, or the Drop button on a phone).
+   - A STOLEN egg goes straight back to where it came from (nothing is lost).
+   - An egg you already escaped with ("safe") is thrown away for good, so that needs a second press within 2.5 s. */
+let dropArmed = 0;
+const fallingEggs = [];
+function dropEgg() {
+  if (!ready || !carry || form !== 'human') return false;
+  if (carry.status === 'stolen') { dropCarry('You dropped the egg - it went back where it came from.'); dropArmed = 0; return true; }
+  const now = performance.now();
+  if (now - dropArmed > 2500) { dropArmed = now; say('Press G again to drop this egg for good (it will be lost).', 2.5); return true; }
+  dropArmed = 0;
+  const e = carry.egg, label = e.type + ' egg ' + e.mult.toFixed(1) + 'x';
+  const m = eggTpl[e.type].make();                         // a copy that falls to the ground and vanishes
+  m.scale.setScalar(carryHeight(e));
+  m.position.set(pos.x, pos.y + CONFIG.steal.carryBase, pos.z);
+  scene.add(m);
+  fallingEggs.push({ m, vy: 1.5, y0: pos.y, t: 0 });
+  dropCarry('Dropped the ' + label + '.');
+  return true;
+}
+function updateFallingEggs(dt) {
+  for (let i = fallingEggs.length - 1; i >= 0; i--) {
+    const f = fallingEggs[i];
+    f.t += dt; f.vy -= 22 * dt;
+    f.m.position.y = Math.max(f.y0, f.m.position.y + f.vy * dt);
+    f.m.rotation.z += dt * 3;
+    if (f.t > 1.2) { scene.remove(f.m); fallingEggs.splice(i, 1); }
+  }
+}
 function updateCarry() {
   if (!carry) { dom.held.textContent = 'Holding: nothing'; return; }
   const e = carry.egg;
@@ -1932,11 +2171,13 @@ function updateAim() {
   dom.cross.classList.toggle('on', !!aim.kind);
 }
 
-let hudSpeed = null, hudThrow = null, hudStr = null;
+let hudSpeed = null, hudThrow = null, hudStr = null, hudDrop = null;
 function updateHud() {
   if (IS_TOUCH) {
     const showThrow = form === 'human' && !carry && state.mode === 'charging';
     if (hudThrow !== showThrow) { hudThrow = showThrow; $('t-throw').style.display = showThrow ? 'flex' : 'none'; }
+    const showDrop = form === 'human' && !!carry;
+    if (hudDrop !== showDrop) { hudDrop = showDrop; $('t-drop').style.display = showDrop ? 'flex' : 'none'; }
   }
   if (hudStr !== train.strength) { hudStr = train.strength; $('str-val').textContent = String(+train.strength.toFixed(1)); $('str-sub').textContent = 'STRENGTH +' + Math.round(train.strength * CONFIG.gym.throwBonusPerStrength * 100) + '%'; }
   if (hudSpeed !== speedStat) { hudSpeed = speedStat; dom.speedVal.textContent = String(+speedStat.toFixed(2)); }
@@ -2121,6 +2362,8 @@ const FIREBASE_CONFIG = {
   measurementId: "G-P2DCD3X3V8",
 };
 const FIREBASE_VER = '10.14.1';
+let fbResolve = null;
+const fbReady = new Promise((r) => { fbResolve = r; });   // resolves with { A, D, auth, db } once Firebase has loaded, or null if it could not
 const acct = { fb: null, user: null, guest: false, loaded: false, status: 'loading' };   // loaded = this account's cloud data has been read, so saving is safe
 let pendingPets = [];                                  // saved pets waiting for the pen / models to exist: { id, mult, u, v }
 const authEl = $('auth');
@@ -2234,9 +2477,11 @@ async function initAccounts() {
     const app = appM.initializeApp(FIREBASE_CONFIG);
     A = authM; D = dbM; auth = A.getAuth(app);
     acct.fb = { A, D, auth, db: D.getDatabase(app) };
+    fbResolve(acct.fb);
   } catch (e) {
     clearTimeout(guestTimer);
     log.warn('Firebase could not be loaded', e);
+    fbResolve(null);
     acct.status = 'unavailable'; refreshAcct();
     authShow('Sign-in is unavailable (no connection?). You can still play as a guest, but nothing will be saved.', false, true, true);
     return;
@@ -2840,6 +3085,7 @@ function tick() {
   updateEggItems(dt);
   updateChickens(dt);
   updateCarry();
+  updateFallingEggs(dt);
   updateSpeedFx(dt);
   updateCamera();
   updateAim();
