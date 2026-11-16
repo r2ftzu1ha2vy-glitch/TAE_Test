@@ -82,6 +82,7 @@
   .tbtn:active { background: rgba(255,211,77,.7); color: #3a2a00; }
   #t-throw { right: calc(118px + env(safe-area-inset-right)); bottom: calc(60px + env(safe-area-inset-bottom)); width: 88px; height: 88px; display: none;
              background: #ffd34d; color: #3a2a00; font-size: 17px; animation: actpulse 1s ease-in-out infinite; }
+  #t-giftpet { right: calc(14px + env(safe-area-inset-right)); bottom: calc(224px + env(safe-area-inset-bottom)); width: 64px; height: 64px; display: none; font-size: 13px; line-height: 1.1; text-align: center; background: rgba(30,90,140,.85); }
   #t-gift { right: calc(14px + env(safe-area-inset-right)); bottom: calc(150px + env(safe-area-inset-bottom)); width: 64px; height: 64px; display: none; font-size: 15px; background: rgba(30,120,70,.8); }
   #t-respawn { right: calc(12px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width: 44px; height: 44px; font-size: 22px; }
   body.touch #hud { top: calc(62px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); font-size: 11px; line-height: 1.4; max-width: 46vw; }
@@ -298,7 +299,7 @@
 <div id="speedfx"></div>
 <div id="net"></div>
 <div id="hud">
-  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>I</b> pet index &nbsp; <b>G</b> gift to a nearby player &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
+  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>I</b> pet index &nbsp; <b>G</b> gift to a nearby player (<b>H</b> = gift your pet) &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
   Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br></span>
   <span class="tc"><b>Left</b> stick move &nbsp; <b>Right</b> side drag to look<br>
   In the yellow <b>Throw Zone</b> tap <b>Throw</b> to stop the power bar<br></span>
@@ -335,6 +336,7 @@
   <div id="joy"><div id="joy-knob"></div></div>
   <button class="tbtn" id="t-throw" type="button">Throw</button>
   <button class="tbtn" id="t-gift" type="button">Gift</button>
+  <button class="tbtn" id="t-giftpet" type="button">Gift pet</button>
   <button class="tbtn" id="t-respawn" type="button" aria-label="Respawn">&#8634;</button>
 </div>
 <div id="chat">
@@ -374,7 +376,7 @@
       <li>Everyone plays on the same <b>server</b> (top right) - one pen each. When all pens are taken, a new server opens for the next player.</li>
       <li>Walk into the yellow <b>Throw Zone</b> and throw an egg with <b>Space</b> / <b>Click</b> (touch: <b>Throw</b>). You can only throw forward, towards the islands.</li>
       <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken (or the scorpion in the Sands) catches you!</li>
-      <li>Next to another player? Press <b>G</b> twice (or the <b>Gift</b> button on a phone) to give them the egg you are carrying (after you escaped with it) or the pet selected in your hotbar. Needs multiplayer.</li>
+      <li>Next to another player? Press <b>G</b> twice (or the <b>Gift</b> button on a phone) to give them the egg you are carrying (after you escaped with it) or, with empty hands, the pet selected in your hotbar. Press <b>H</b> (or <b>Gift pet</b> on a phone) to gift the selected pet even while you carry an egg. Pets standing in your pen: click one to take it back into your hotbar first. Needs multiplayer.</li>
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
       <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-9</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s up to snake $50/s and scorpion $75/s at 1x, more for bigger eggs).</li>
       <li>In your pen, <b>click the Pull-Up Bar</b> to gain <b>Strength</b> (throws go farther) and <b>click the Treadmill</b> to gain <b>Speed</b>. You hop on automatically and keep training on your own; <b>click again</b> to stop.</li>
@@ -998,6 +1000,7 @@ if (IS_TOUCH) {
   press('t-throw', () => tryThrow());
   press('t-respawn', () => respawn());
   press('t-gift', () => giftToPlayer());
+  press('t-giftpet', () => giftToPlayer('pet'));
   document.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 document.addEventListener('mousemove', (e) => {
@@ -1030,6 +1033,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && state.mode === 'charging') tryThrow();
   if (e.code === 'KeyR') respawn();
   if (e.code === 'KeyG' || e.code === 'KeyQ') giftToPlayer();
+  if (e.code === 'KeyH') giftToPlayer('pet');                // gift the selected hotbar pet even while you carry an egg
   const dg = /^Digit([1-9])$/.exec(e.code);
   if (dg && +dg[1] <= CONFIG.hotbarSlots) selectSlot(+dg[1] - 1);
 });
@@ -2044,7 +2048,7 @@ function dropCarry(msg) {                                   // the stolen egg go
 }
 /* Gift (key G / Q, or the Gift button on a phone): hand the egg you are carrying (once you have escaped with it) or the pet selected in your
    hotbar to the nearest other player. Needs multiplayer (Firebase). You press twice within 2.5 s to confirm so nothing is given away by accident. */
-let giftArmed = 0;
+let giftArmed = 0, giftArmedKey = '';
 function giftTarget() {                                  // the nearest other player in reach
   if (!NET.on || !NET.fb) return null;
   let best = null, bd = CONFIG.gift.range;
@@ -2054,24 +2058,27 @@ function giftTarget() {                                  // the nearest other pl
   }
   return best;
 }
-function giftItem() {                                    // what G would hand over: the safe egg you carry, otherwise the selected pet
-  if (carry) return carry.status === 'safe' ? { kind: 'egg', label: carry.egg.type + ' egg ' + carry.egg.mult.toFixed(1) + 'x' } : null;
+function giftItem(want) {                                // want = 'egg' | 'pet' | undefined (G: the safe egg you carry, otherwise the selected pet)
+  const egg = carry && carry.status === 'safe' ? { kind: 'egg', label: carry.egg.type + ' egg ' + carry.egg.mult.toFixed(1) + 'x' } : null;
   const sl = inv.slots[inv.sel];
-  if (!sl) return null;
-  const m = sl.sizes && sl.sizes.length ? sl.sizes[sl.sizes.length - 1] : 1;
-  return { kind: 'pet', label: CONFIG.pets[sl.pet].name + ' ' + m.toFixed(1) + 'x' };
+  const m = sl && sl.sizes && sl.sizes.length ? sl.sizes[sl.sizes.length - 1] : 1;
+  const pet = sl ? { kind: 'pet', label: CONFIG.pets[sl.pet].name + ' ' + m.toFixed(1) + 'x' } : null;
+  if (want === 'egg') return egg;
+  if (want === 'pet') return pet;
+  return carry ? egg : pet;
 }
-function giftToPlayer() {
+function giftToPlayer(want) {
   if (!ready || form !== 'human' || gym.session) return false;
   if (!NET.on || !NET.fb) { say('Gifting needs multiplayer: join a server with another player.', 3.5); return true; }
-  if (carry && carry.status === 'stolen') { say('Escape with the egg first, then you can gift it.', 3); return true; }
-  const item = giftItem();
-  if (!item) { say('Nothing to gift: carry a safe egg or select a pet in your hotbar.', 3); return true; }
+  if (want !== 'pet' && carry && carry.status === 'stolen') { say('Escape with the egg first, then you can gift it. (H gifts the pet selected in your hotbar.)', 3.5); return true; }
+  const item = giftItem(want);
+  if (!item) { say(want === 'pet' ? 'Select a pet in your hotbar first (keys 1-9) to gift it.' : 'Nothing to gift: carry a safe egg or select a pet in your hotbar.', 3); return true; }
   const to = giftTarget();
   if (!to) { say('Stand next to another player to gift your ' + item.label + '.', 3); return true; }
   const now = performance.now();
-  if (now - giftArmed > 2500) { giftArmed = now; say('Press G again to gift your ' + item.label + ' to ' + to.name + '.', 2.5); return true; }
-  giftArmed = 0;
+  const key = item.kind + ':' + item.label + ':' + to.id;
+  if (now - giftArmed > 2500 || giftArmedKey !== key) { giftArmed = now; giftArmedKey = key; say('Press ' + (item.kind === 'pet' && carry ? 'H' : 'G') + ' again to gift your ' + item.label + ' to ' + to.name + '.', 2.5); return true; }
+  giftArmed = 0; giftArmedKey = '';
   let payload;
   if (item.kind === 'egg') {                              // it leaves your hands first, so it can never be in two places
     const e = carry.egg;
@@ -2226,7 +2233,7 @@ function updateAim() {
   let petAim = null;
   if (live && !eggs.length && !gAim && !IS_TOUCH && form === 'human' && !carry && petsInPen.length && nearPen()) petAim = pickPenPet(rayAt(0, 0));
   if (petAim) hint = verb + ' the ' + CONFIG.pets[petAim.id].name + ' to pick it up';
-  if (!hint && live && form === 'human') { const gi = giftItem(), gt = gi && giftTarget(); if (gt) hint = (IS_TOUCH ? 'Tap Gift' : 'Press G') + ' to gift your ' + gi.label + ' to ' + gt.name; }
+  if (!hint && live && form === 'human') { const gi = giftItem(), gt = gi && giftTarget(); if (gt) { hint = (IS_TOUCH ? 'Tap Gift' : 'Press G') + ' to gift your ' + gi.label + ' to ' + gt.name; const gp = carry && giftItem('pet'); if (gp) hint += (IS_TOUCH ? '  /  Gift pet: ' : '  /  H: ') + gp.label; } }
   if (gym.session) hint = verb + ' to stop training';
   if (!IS_TOUCH && hint) {
     const ray = rayAt(0, 0);
@@ -2246,13 +2253,15 @@ function updateAim() {
   dom.cross.classList.toggle('on', !!aim.kind);
 }
 
-let hudSpeed = null, hudThrow = null, hudStr = null, hudGift = null;
+let hudSpeed = null, hudThrow = null, hudStr = null, hudGift = null, hudGiftPet = null;
 function updateHud() {
   if (IS_TOUCH) {
     const showThrow = form === 'human' && !carry && state.mode === 'charging';
     if (hudThrow !== showThrow) { hudThrow = showThrow; $('t-throw').style.display = showThrow ? 'flex' : 'none'; }
     const showGift = form === 'human' && !!giftItem() && !!giftTarget();
     if (hudGift !== showGift) { hudGift = showGift; $('t-gift').style.display = showGift ? 'flex' : 'none'; }
+    const showGiftPet = showGift && !!carry && !!giftItem('pet');          // carrying an egg AND holding a pet: the second button gifts the pet
+    if (hudGiftPet !== showGiftPet) { hudGiftPet = showGiftPet; $('t-giftpet').style.display = showGiftPet ? 'flex' : 'none'; }
   }
   if (hudStr !== train.strength) { hudStr = train.strength; $('str-val').textContent = String(+train.strength.toFixed(1)); $('str-sub').textContent = 'STRENGTH +' + Math.round(train.strength * CONFIG.gym.throwBonusPerStrength * 100) + '%'; }
   if (hudSpeed !== speedStat) { hudSpeed = speedStat; dom.speedVal.textContent = String(+speedStat.toFixed(2)); }
