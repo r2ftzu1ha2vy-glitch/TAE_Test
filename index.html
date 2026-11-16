@@ -1416,7 +1416,7 @@ async function netStart() {
 /*       "chat": { "$m": { ".validate": "newData.child('text').isString() && newData.child('text').val().length <= 120" } } } }   */
 /* ------------------------------------------------------------------ */
 const FB_MAX_ROOMS = 40;
-const FB = { D: null, db: null, id: null, room: 0, pen: null, base: '', off: 0, players: new Map(), states: new Map(), pets: new Map(), known: new Set(),
+const FB = { D: null, db: null, id: null, room: 0, pen: null, base: '', off: 0, players: new Map(), states: new Map(), pets: new Map(), known: new Set(), chick: new Map(),
              eggs: [], eggSig: [], inbox: new Map(), sent: new Map(), taking: new Set(), spawning: new Set(), unsubs: [], timers: [], held: null, heldDisc: null, lastState: '', joinedAt: 0, lastClean: 0, lostT: 0, pagehide: false };
 const fbAllowed = () => params.get('solo') !== '1' && /^https?:$/.test(location.protocol);
 const fbNow = () => Date.now() + FB.off;                 // server clock: egg regrow times must agree between players
@@ -1486,6 +1486,8 @@ function fbListen() {
     const id = s.key, v = s.val() || {}; FB.players.set(id, v);
     if (id !== FB.id) netMessage({ t: 'profile', id, name: v.name, color: v.color });
   }));
+  const onChick = (s) => FB.chick.set(s.key, s.val());      // where the guards are (simulated by one player, the others just follow)
+  un.push(D.onChildAdded(fbRef('chickens'), onChick), D.onChildChanged(fbRef('chickens'), onChick));
   un.push(D.onChildAdded(fbRef('gifts/' + FB.id), (s) => { const g = s.val(); if (g) { FB.inbox.set(s.key, g); fbDeliver(); } }));
   un.push(D.onChildRemoved(fbRef('players'), (s) => {
     fbRefund(s.key);                                       // gifts still sitting unopened in the inbox of someone who just left come back to you
@@ -1574,6 +1576,8 @@ function fbSend(o) {
     case 'state': {
       const st = { x: fbRound(o.x), y: fbRound(o.y), z: fbRound(o.z), f: fbRound(o.f), form: o.form, anim: o.anim };
       if (o.carry) st.carry = { type: o.carry.type, mult: fbRound(o.carry.mult) };
+      if (o.ub !== undefined) { st.ub = o.ub; st.ut = o.ut; }
+      if (o.gts) st.gts = fbRound(o.gts);
       const sig = JSON.stringify(st);
       if (sig === FB.lastState) break;                    // standing still: nothing to send
       FB.lastState = sig; D.set(fbRef('states/' + id), st).catch(() => {});
@@ -1584,7 +1588,7 @@ function fbSend(o) {
     case 'chat': D.push(fbRef('chat'), { id, name: netName(), text: String(o.text || '').slice(0, 120), ts: D.serverTimestamp() }).catch(() => {}); break;
     case 'steal': {
       const i = o.i, ref = fbRef('eggs/' + i);
-      D.runTransaction(ref, (cur) => (cur && cur.k === 'egg' ? { k: 'held', by: id, type: cur.type, mult: cur.mult } : undefined)).then((res) => {
+      D.runTransaction(ref, (cur) => (cur && cur.k === 'egg' ? { k: 'held', by: id, type: cur.type, mult: cur.mult, at: fbNow() } : undefined)).then((res) => {
         const v = res.snapshot.val();
         if (res.committed) {                              // if you disconnect while holding it, the egg goes back
           FB.held = { i, type: v.type, mult: v.mult };
@@ -1623,7 +1627,7 @@ function fbCleanup() {                                    // leave the room: rel
   }
   Object.assign(FB, { pen: null, base: '', held: null, heldDisc: null, lastState: '', spawning: new Set() });
   FB.inbox.clear(); FB.sent.clear(); FB.taking.clear();
-  FB.players.clear(); FB.states.clear(); FB.pets.clear(); FB.known.clear(); FB.eggs = []; FB.eggSig = [];
+  FB.players.clear(); FB.states.clear(); FB.pets.clear(); FB.known.clear(); FB.chick.clear(); FB.eggs = []; FB.eggSig = [];
 }
 function netWelcome(ws, m) {
   Object.assign(NET, { on: true, ws, id: m.id, room: m.room, pen: m.pen, cap: m.cap, count: (m.players || []).length + 1 });
@@ -1710,12 +1714,31 @@ function netRemoteProfile(r, name, color) {
   r.root.remove(old); if (old.material.map) old.material.map.dispose(); old.material.dispose();
   r.root.add(tag); r.tag = tag;
 }
+function netRemoteGyms(r, ub, ut) {                      // the other player's Pull-Up Bar and Treadmill stand in their pen (so you can see what they train on)
+  if (!gymTpl.bar || !penBoxes[r.pen]) return;
+  const tiers = { bar: ub, treadmill: ut };
+  if (!r.gyms) {
+    r.gyms = {};
+    const c = penBoxes[r.pen].getCenter(new THREE.Vector3());
+    for (const [kind, marks] of [['bar', gymMarkers.bar], ['treadmill', gymMarkers.treadmill]]) {
+      const m = marks[r.pen];
+      if (!m) continue;
+      const dx = c.x - m.x, dz = c.z - m.z, ax = Math.abs(dx) >= Math.abs(dz);
+      const rot = Math.atan2(ax ? Math.sign(dx) : 0, ax ? 0 : Math.sign(dz));
+      const h = castRayIn(walkSolids, new THREE.Vector3(m.x, m.y + 3, m.z), DOWN, 20);
+      r.gyms[kind] = makeGym(kind, m.x, h ? h.point.y : m.y - 0.5, m.z, rot, tiers[kind]);
+    }
+    return;
+  }
+  for (const kind of Object.keys(r.gyms)) if (r.gyms[kind].tier !== clampN(tiers[kind] | 0, 0, gymTpl[kind].length - 1)) setGymTier(r.gyms[kind], tiers[kind]);
+}
 function netRemoveRemote(id) {
   const r = remotes.get(id);
   if (!r) return;
   scene.remove(r.root);
   r.root.traverse((m) => { if (m.isSprite && m.material) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } });
   r.model.traverse((m) => { if (m.isMesh && m.material) for (const x of Array.isArray(m.material) ? m.material : [m.material]) x.dispose(); });
+  if (r.gyms) for (const g of Object.values(r.gyms)) scene.remove(g.root);
   netClearPets(r);
   remotes.delete(id);
 }
@@ -1731,6 +1754,8 @@ function netRemoteState(r, s, snap) {
     if (key) { r.held = eggTpl[s.carry.type].make(); r.held.scale.setScalar(carryHeight({ mult: s.carry.mult })); r.held.position.set(0, CONFIG.steal.carryBase, 0); r.avatar.add(r.held); }
     r.heldKey = key;
   }
+  if (s.ub !== undefined) netRemoteGyms(r, s.ub | 0, s.ut | 0);
+  if (r.acts.training) r.acts.training.timeScale = s.gts > 0 ? s.gts : 1;      // faster bar upgrades pull up faster
   const want = human ? (r.acts[s.anim] ? s.anim : 'idle') : '';
   if (want && want !== r.anim && r.acts[want]) {
     const next = r.acts[want], prev = r.acts[r.anim];
@@ -1766,7 +1791,8 @@ function netTick(dt) {
     NET.sendAcc = 0;
     const fl = form === 'flying' && flight;
     netSend({ t: 'state', x: fl ? flight.c.x : pos.x, y: fl ? flight.c.y - CONFIG.eggs.baseHeight * 0.5 : pos.y, z: fl ? flight.c.z : pos.z, f: facing, form, anim: currentAnim || 'idle',
-              carry: carry ? { type: carry.egg.type, mult: carry.egg.mult } : null });
+              carry: carry ? { type: carry.egg.type, mult: carry.egg.mult } : null,
+              ub: up.bar, ut: up.treadmill, gts: gym.session && gym.session.g.kind === 'bar' ? CONFIG.gym.barClipLength / gym.session.every : 0 });
   }
   if (NET.petAcc >= 0.5) {                              // tell the others when the pets in your pen change (placed / taken back / hatched)
     NET.petAcc = 0;
@@ -2510,25 +2536,93 @@ function chickenMove(ch, dx, dz, margin) {                   // tries the full m
   }
   return false;
 }
+/* Guards in multiplayer: ONE player's game (the one with the lowest id) simulates them and publishes where they are (rooms/rN/chickens/<area>); everybody
+   else just follows. Each guard chases the thief who stole LAST (among the thieves it can reach), so with two thieves it goes after the newest one. */
+const chickenHost = () => {
+  if (!NET.on || !NET.fb) return true;                   // solo: this game simulates the guards itself
+  let low = FB.id;
+  for (const id of FB.players.keys()) if (id < low) low = id;
+  return low === FB.id;
+};
+function chickenTarget(ch) {                             // { id, x, y, z, mine } of the thief this guard chases right now, or null
+  const A = ch.area;
+  const meOk = !!carry && carry.status === 'stolen' && form === 'human' && (areaAt(pos.x, pos.z) === A || (!!A.chaseAnywhere && carry.area === A.id));   // chaseAnywhere: it follows its thief out of the area
+  if (!NET.on || !NET.fb) return meOk ? { id: null, x: pos.x, y: pos.y, z: pos.z, mine: true } : null;
+  let best = null, bestAt = -1;
+  for (let i = 0; i < eggItems.length; i++) {
+    const e = FB.eggs[i];
+    if (!e || e.k !== 'held') continue;
+    const at = +e.at || 0;
+    if (best && at <= bestAt) continue;                  // an older theft: the newer thief wins
+    let t = null;
+    if (e.by === FB.id) { if (meOk) t = { id: FB.id, x: pos.x, y: pos.y, z: pos.z, mine: true }; }
+    else {
+      const st = FB.states.get(e.by);
+      if (st && st.form === 'human' && (areaAt(st.x, st.z) === A || (!!A.chaseAnywhere && eggItems[i].area === A.id))) t = { id: e.by, x: st.x, y: st.y, z: st.z, mine: false };
+    }
+    if (t) { best = t; bestAt = at; }
+  }
+  return best;
+}
+function chickenPublish(ch, dt, anim, tg) {
+  ch.sendAcc = (ch.sendAcc || 0) + dt;
+  if (ch.sendAcc < 0.1) return;
+  ch.sendAcc = 0;
+  const rec = { x: fbRound(ch.pos.x), y: fbRound(ch.pos.y), z: fbRound(ch.pos.z), yaw: fbRound(ch.yaw), anim, t: tg ? tg.id : null };
+  const sig = JSON.stringify(rec);
+  if (sig === ch.lastSig) return;
+  ch.lastSig = sig;
+  FB.D.set(fbRef('chickens/' + ch.area.id), rec).catch(() => {});
+}
+function chickenFollow(ch, dt) {                         // not the host: show the guard where the host says it is
+  ch.host = false;
+  const A = ch.area, p = ch.pos, r = FB.chick.get(A.id);
+  let anim = 'idle', chasingMe = false;
+  if (r) {
+    const k = Math.min(1, 10 * dt);
+    if (Math.hypot(r.x - p.x, r.z - p.z) > 12) p.set(r.x, r.y, r.z);
+    else { p.x += (r.x - p.x) * k; p.y += (r.y - p.y) * k; p.z += (r.z - p.z) * k; }
+    ch.yaw = angleLerp(ch.yaw, r.yaw, Math.min(1, 12 * dt));
+    anim = ch.actions[r.anim] ? r.anim : 'idle';
+    chasingMe = r.t === FB.id && !!carry && carry.status === 'stolen' && form === 'human';
+  }
+  ch.state = chasingMe ? 'chase' : 'wander';
+  ch.free = chasingMe && !!A.chaseAnywhere;
+  if (chasingMe && Math.hypot(pos.x - p.x, pos.z - p.z) < ch.cfg.catchRadius + 0.6 && Math.abs(pos.y - p.y) < 2.5) {   // a little extra reach: the guard you see is a split second behind the real one
+    dropCarry('The ' + ch.kind + ' caught you! The egg went back and you woke up in your pen.');
+    respawn();
+  }
+  chickenPlay(ch, anim);
+  ch.root.position.copy(p);
+  ch.root.rotation.y = ch.yaw;
+  ch.mixer.update(dt);
+}
 function updateChicken(ch, dt) {
+  if (!chickenHost()) { chickenFollow(ch, dt); return; }
+  if (!ch.host) {                                        // just became the host (the old one left): carry on from where the guard was last seen
+    ch.host = true;
+    const r = FB.chick.get(ch.area.id);
+    if (NET.on && NET.fb && r) { ch.pos.set(r.x, r.y, r.z); ch.yaw = r.yaw; }
+    ch.state = 'wander'; ch.target = null; ch.wait = 1;
+  }
   const C = ch.cfg, p = ch.pos, A = ch.area;
-  // A thief is chased by whichever area's chicken they are currently inside (steal in the Sands and you meet the Valley chicken next).
-  const hunting = !!carry && carry.status === 'stolen' && form === 'human';
-  const chasing = hunting && (areaAt(pos.x, pos.z) === A || (!!A.chaseAnywhere && carry.area === A.id));   // chaseAnywhere: it follows its thief out of the area
+  const tg = chickenTarget(ch), chasing = !!tg;
   ch.free = chasing && !!A.chaseAnywhere;
   if (chasing && ch.state !== 'chase') { ch.state = 'chase'; ch.alert = C.alert; ch.target = null; }
   if (!chasing && ch.state === 'chase') { ch.state = 'wander'; ch.target = null; ch.wait = 1; sendHome(ch); }   // thief escaped: back to wandering in its area
 
   let anim = 'idle';
-  if (ch.state === 'chase') {
-    _cd.set(pos.x - p.x, 0, pos.z - p.z);
+  if (ch.state === 'chase' && tg) {
+    _cd.set(tg.x - p.x, 0, tg.z - p.z);
     const dist = _cd.length();
     if (dist > 1e-4) ch.yaw = angleLerp(ch.yaw, Math.atan2(_cd.x, _cd.z) + C.yawOffset, 10 * dt);
     if (ch.alert > 0) { ch.alert -= dt; if (ch.actions.attack) anim = 'attack'; }   // a short moment of "hey!" before it runs
-    else if (dist < C.catchRadius && Math.abs(pos.y - p.y) < 2.5) {
-      ch.state = 'wander'; ch.target = null; ch.wait = 1.5; ch.free = false; sendHome(ch);
-      dropCarry('The ' + ch.kind + ' caught you! The egg went back and you woke up in your pen.');
-      respawn();                                             // caught = sent back to your pen
+    else if (dist < C.catchRadius && Math.abs(tg.y - p.y) < 2.5) {
+      if (tg.mine) {
+        ch.state = 'wander'; ch.target = null; ch.wait = 1.5; ch.free = false; sendHome(ch);
+        dropCarry('The ' + ch.kind + ' caught you! The egg went back and you woke up in your pen.');
+        respawn();                                           // caught = sent back to your pen
+      }                                                      // someone else's thief: their own game sees the catch and sends them home
     } else if (dist > 1e-4) {
       let left = Math.min(effSpeed(A.chase) * CONFIG.speedUnit * dt, dist);
       const dx = _cd.x / dist, dz = _cd.z / dist;
@@ -2563,6 +2657,7 @@ function updateChicken(ch, dt) {
   ch.root.position.copy(p);
   ch.root.rotation.y = ch.yaw;
   ch.mixer.update(dt);
+  if (NET.on && NET.fb) chickenPublish(ch, dt, anim, tg);
 }
 function updateChickens(dt) { for (const ch of chickens) updateChicken(ch, dt); }
 
@@ -3203,11 +3298,11 @@ function setGymTier(g, tier) {                          // swap a placed machine
   g.root.updateMatrixWorld(true);
   g.hit = new THREE.Box3().setFromObject(g.root).expandByScalar(0.25);   // generous click box: the bar frame alone is only a few cm thick
 }
-function makeGym(kind, x, y, z, rotY) {
+function makeGym(kind, x, y, z, rotY, tier = up[kind]) {
   const root = new THREE.Group(); root.position.set(x, y, z); root.rotation.y = rotY;
   scene.add(root);
   const g = { kind, root, inner: null, hit: null, anchor: null, tier: 0, x, y, z, ...GYM_INFO[kind] };
-  setGymTier(g, up[kind]);
+  setGymTier(g, tier);
   return g;
 }
 function placeGym(sp) {                                  // the map has a marker cube per pen and machine (PullUp_BarPenN / TreadmillPenN): the machine stands there
