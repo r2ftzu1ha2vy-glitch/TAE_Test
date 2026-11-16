@@ -224,6 +224,11 @@
   #profile input[type=text] { display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 2px solid rgba(255,255,255,.22);
                               background: rgba(255,255,255,.08); color: #fff; font: 600 17px var(--font); outline: none; -webkit-user-select: text; user-select: text; }
   #profile input[type=text]:focus { border-color: var(--gold); }
+  #prof-parts { display: flex; flex-wrap: wrap; gap: 6px; }
+  #prof-parts .pt { display: flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 12px; border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); cursor: pointer; font: 700 14px var(--font); }
+  #prof-parts .pt i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); box-sizing: border-box; }
+  #prof-parts .pt.on { background: var(--gold); border-color: #fff; color: #3a2a00; }
+  #prof-reset { margin-left: auto; font-size: 13px; text-decoration: underline; cursor: pointer; opacity: .7; }
   #prof-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
   #prof-swatches .sw { width: 32px; height: 32px; box-sizing: border-box; border-radius: 50%; border: 3px solid rgba(255,255,255,.45); cursor: pointer; transition: transform .1s; }
   #prof-swatches .sw:hover { transform: scale(1.12); }
@@ -389,9 +394,11 @@
   <div id="profile" hidden>
     <label for="prof-name">Username</label>
     <input type="text" id="prof-name" maxlength="16" placeholder="Pick a name (max 16)" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <label>Body part</label>
+    <div id="prof-parts"></div>
     <label>Color</label>
     <div id="prof-swatches"></div>
-    <div id="prof-custom"><input type="color" id="prof-color" value="#ffffff"><span>Custom color</span></div>
+    <div id="prof-custom"><input type="color" id="prof-color" value="#ffffff"><span>Custom color</span><span id="prof-reset" role="button" tabindex="0">Reset colors</span></div>
     <div id="prof-preview"><span id="prof-chip"></span></div>
   </div>
   <button type="button" id="help-btn" class="sec">How To Play</button>
@@ -735,17 +742,29 @@ const PROFILE_KEY = 'tae_profile';
 const PROFILE_COLORS = ['#ffffff', '#ff5a5a', '#ff9f43', '#ffd34d', '#4cd964', '#2ed8c3', '#4aa3ff', '#a06bff', '#ff6bd6', '#b07a4f', '#8a93a6', '#2b2b33'];
 const cleanName = (n) => String(n == null ? '' : n).replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
 const cleanColor = (c) => (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c.toLowerCase() : null);
-const profile = { name: '', color: null };
-try { const sv = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); if (sv) { profile.name = cleanName(sv.name); profile.color = cleanColor(sv.color); } } catch (e) { /* no storage / bad data: defaults */ }
-function applyBodyColor(model, hex) {                    // tint every body part except the face (the face is a texture and keeps its look); legs a little darker
-  const c = new THREE.Color(cleanColor(hex) || '#ffffff');
+const PARTS = [['head', 'Head'], ['torso', 'Torso'], ['arms', 'Arms'], ['legs', 'Legs']];
+function cleanParts(v) {                                  // a single color string (old saves / old clients) paints every part; an object paints each part separately
+  const out = {};
+  for (const [k] of PARTS) out[k] = cleanColor(v && typeof v === 'object' ? v[k] : v);
+  return out;
+}
+const tagColor = (parts) => parts.torso || parts.head || parts.arms || parts.legs || null;   // color of the name-tag outline
+const profile = { name: '', parts: cleanParts(null) };
+try { const sv = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); if (sv) { profile.name = cleanName(sv.name); profile.parts = cleanParts(sv.parts || sv.color); } } catch (e) { /* no storage / bad data: defaults */ }
+function partOf(meshName) {
+  if (/face/i.test(meshName)) return null;                // the face is a texture and keeps its look
+  if (/head/i.test(meshName)) return 'head';
+  if (/torso|body/i.test(meshName)) return 'torso';
+  if (/arm/i.test(meshName)) return 'arms';
+  if (/leg/i.test(meshName)) return 'legs';
+  return null;
+}
+function applyBodyColor(model, parts) {                  // tint each body part with its own color (white = original look)
   model.traverse((o) => {
-    if (!o.isMesh || /face/i.test(o.name)) return;
-    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
-      if (!m || !m.color) continue;
-      m.color.copy(c);
-      if (/leg/i.test(o.name)) m.color.multiplyScalar(0.72);
-    }
+    const part = o.isMesh && partOf(o.name);
+    if (!part) return;
+    const c = new THREE.Color((parts && parts[part]) || '#ffffff');
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m && m.color) m.color.copy(c);
   });
 }
 
@@ -878,7 +897,7 @@ function setupPlayer(gltf) {
   const box = new THREE.Box3().setFromObject(model);
   model.position.y -= box.min.y;           // put feet on origin
   playerModel = model; modelBaseY = model.position.y;
-  applyBodyColor(model, profile.color);
+  applyBodyColor(model, profile.parts);
   model.traverse((o) => { if (o.isMesh && /Leg/i.test(o.name)) legMeshes.push(o); });
   playerRoot = new THREE.Group();
   playerRoot.add(model);
@@ -980,38 +999,63 @@ function startPlay() {
 }
 ui.play.addEventListener('click', () => { commitProfileName(); startPlay(); });
 /* Customize Player: username + color */
-const profUI = { name: $('prof-name'), color: $('prof-color'), chip: $('prof-chip'), box: $('profile'), sw: $('prof-swatches') };
+const profUI = { parts: $('prof-parts'), name: $('prof-name'), color: $('prof-color'), chip: $('prof-chip'), box: $('profile'), sw: $('prof-swatches') };
+let profTarget = 'all';                                   // which part the swatches paint: 'all' or one of head / torso / arms / legs
+const sameParts = () => PARTS.every(([k]) => profile.parts[k] === profile.parts.head);
+function targetColor() { return (profTarget === 'all' ? (sameParts() ? profile.parts.head : profile.parts.torso) : profile.parts[profTarget]) || '#ffffff'; }
 function refreshProfileUI() {
-  const col = profile.color || '#ffffff';
+  const col = targetColor();
   if (document.activeElement !== profUI.name) profUI.name.value = profile.name;
   profUI.color.value = col;
   profUI.chip.textContent = profile.name || 'Your name';
-  profUI.chip.style.borderColor = col;
+  profUI.chip.style.borderColor = tagColor(profile.parts) || '#ffffff';
   for (const el of profUI.sw.children) el.classList.toggle('on', el.dataset.color === col);
+  for (const el of profUI.parts.children) {
+    el.classList.toggle('on', el.dataset.part === profTarget);
+    if (el.dataset.part !== 'all') el.firstChild.style.background = profile.parts[el.dataset.part] || '#ffffff';
+  }
 }
 function setProfile(p, cloud = true) {                  // cloud=false: values came from a save, no need to write them back
-  profile.name = cleanName(p.name); profile.color = cleanColor(p.color);
+  profile.name = cleanName(p.name); profile.parts = cleanParts(p.parts || p.color);
   try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) { /* storage blocked: just not remembered on this device */ }
-  if (playerModel) applyBodyColor(playerModel, profile.color);
+  if (playerModel) applyBodyColor(playerModel, profile.parts);
   refreshProfileUI();
   if (cloud) saveGame();
-  netSend({ t: 'profile', name: netName(), color: profile.color });
+  netSend({ t: 'profile', name: netName(), color: profile.parts });
 }
 function commitProfileName() {
   const n = cleanName(profUI.name.value);
   profUI.name.value = n;
-  if (n !== profile.name) setProfile({ name: n, color: profile.color });
+  if (n !== profile.name) setProfile({ name: n, parts: profile.parts });
+}
+function paintTarget(hex, parts) {                       // returns a copy of the parts with the selected target painted
+  const out = { ...parts };
+  for (const [k] of PARTS) if (profTarget === 'all' || profTarget === k) out[k] = cleanColor(hex);
+  return out;
+}
+for (const [id, label] of [['all', 'All'], ...PARTS]) {
+  const d = document.createElement('div');
+  d.className = 'pt'; d.dataset.part = id; d.setAttribute('role', 'button'); d.tabIndex = 0;
+  d.innerHTML = id === 'all' ? '' : '<i></i>';
+  d.appendChild(document.createTextNode(label));
+  const pick = () => { profTarget = id; refreshProfileUI(); };
+  d.addEventListener('click', pick);
+  d.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+  profUI.parts.appendChild(d);
 }
 for (const c of PROFILE_COLORS) {
   const d = document.createElement('div');
   d.className = 'sw'; d.dataset.color = c; d.style.background = c; d.title = c; d.setAttribute('role', 'button'); d.tabIndex = 0;
-  const pick = () => setProfile({ name: profile.name, color: c });
+  const pick = () => setProfile({ name: profile.name, parts: paintTarget(c, profile.parts) });
   d.addEventListener('click', pick);
   d.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
   profUI.sw.appendChild(d);
 }
-profUI.color.addEventListener('input', () => { profile.color = cleanColor(profUI.color.value); if (playerModel) applyBodyColor(playerModel, profile.color); profUI.chip.style.borderColor = profUI.color.value; });   // live preview while dragging
-profUI.color.addEventListener('change', () => setProfile({ name: profile.name, color: profUI.color.value }));
+profUI.color.addEventListener('input', () => {          // live preview while dragging the picker (saved on release)
+  if (playerModel) applyBodyColor(playerModel, paintTarget(profUI.color.value, profile.parts));
+});
+profUI.color.addEventListener('change', () => setProfile({ name: profile.name, parts: paintTarget(profUI.color.value, profile.parts) }));
+$('prof-reset').addEventListener('click', () => setProfile({ name: profile.name, parts: cleanParts(null) }));
 profUI.name.addEventListener('input', () => { profUI.chip.textContent = cleanName(profUI.name.value) || 'Your name'; });
 profUI.name.addEventListener('change', commitProfileName);
 profUI.name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); commitProfileName(); profUI.name.blur(); } });
@@ -1336,7 +1380,7 @@ function netJoin(timeoutMs) {
     const finish = (ok) => { if (done) return; done = true; clearTimeout(tm); if (!ok && ws) { try { ws.close(); } catch (e) { /* already closed */ } } resolve(ok); };
     tm = setTimeout(() => { log.warn('Server did not answer: playing solo'); finish(false); }, timeoutMs);
     try { ws = new WebSocket(NET_URL); } catch (e) { return finish(false); }
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', name: netName(), color: profile.color, pens, spawns: eggItems.map((i) => i.area),
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', name: netName(), color: profile.parts, pens, spawns: eggItems.map((i) => i.area),
       eggs: { types: CONFIG.eggs.types, sizeTiers: CONFIG.eggs.sizeTiers, maxMult: CONFIG.eggs.maxMult, respawn: CONFIG.eggs.respawn } }));
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
@@ -1407,7 +1451,7 @@ async function fbJoin(timeoutMs) {
     if (!FB.pen) { log.warn('Every pen on every server is taken'); return false; }
     for (const p of ['pens/' + FB.pen, 'players/' + FB.id, 'states/' + FB.id, 'pets/' + FB.id]) await D.onDisconnect(fbRef(p)).remove();
     check();
-    await D.set(fbRef('players/' + FB.id), { name: netName(), pen: FB.pen, color: profile.color || null }); check();
+    await D.set(fbRef('players/' + FB.id), { name: netName(), pen: FB.pen, color: profile.parts }); check();
     FB.joinedAt = fbNow();
     const [ps, ss, pts, es] = await Promise.all(['players', 'states', 'pets', 'eggs'].map((k) => D.get(fbRef(k)))); check();
     const P = ps.val() || {}, S = ss.val() || {}, T = pts.val() || {}, E = es.val() || {};
@@ -1536,7 +1580,7 @@ function fbSend(o) {
       break;
     }
     case 'pets': { if (o.list && o.list.length) D.set(fbRef('pets/' + id), o.list.map((p) => ({ id: p.id, mult: fbRound(p.mult), u: fbRound(p.u), v: fbRound(p.v) }))).catch(() => {}); else D.remove(fbRef('pets/' + id)).catch(() => {}); break; }
-    case 'profile': D.set(fbRef('players/' + id), { name: netName(), pen: FB.pen, color: profile.color || null }).catch(() => {}); break;
+    case 'profile': D.set(fbRef('players/' + id), { name: netName(), pen: FB.pen, color: profile.parts }).catch(() => {}); break;
     case 'chat': D.push(fbRef('chat'), { id, name: netName(), text: String(o.text || '').slice(0, 120), ts: D.serverTimestamp() }).catch(() => {}); break;
     case 'steal': {
       const i = o.i, ref = fbRef('eggs/' + i);
@@ -1641,17 +1685,17 @@ function netAddRemote(o) {
   if (!playerGltfRef || !playerEgg || remotes.has(o.id)) return;
   const model = SkeletonUtils.clone(playerGltfRef.scene);
   model.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.frustumCulled = false; m.material = Array.isArray(m.material) ? m.material.map((x) => x.clone()) : m.material.clone(); } });   // own materials: each player has their own color
-  applyBodyColor(model, o.color);
+  applyBodyColor(model, cleanParts(o.color));
   model.position.y = modelBaseY;                          // the local model may be eased down while it holds an egg: start the copy from the plain pose
   const avatar = new THREE.Group(); avatar.scale.setScalar(CONFIG.playerScale); avatar.add(model);
   const root = new THREE.Group(); root.add(avatar);
-  const tag = nameTag(o.name || 'Player', o.color); root.add(tag);
+  const tag = nameTag(o.name || 'Player', tagColor(cleanParts(o.color))); root.add(tag);
   const eggMesh = playerEgg.make(); eggMesh.scale.setScalar(CONFIG.eggs.baseHeight); eggMesh.visible = false; root.add(eggMesh);
   scene.add(root);
   const mixer = new THREE.AnimationMixer(model), acts = {};
   for (const clip of playerGltfRef.animations) acts[clip.name.toLowerCase()] = mixer.clipAction(clip);
   if (acts.jump) { acts.jump.setLoop(THREE.LoopOnce, 1); acts.jump.clampWhenFinished = true; }
-  const r = { id: o.id, name: o.name || 'Player', color: cleanColor(o.color), pen: o.pen, root, avatar, model, mixer, acts, anim: '', tag, eggMesh, held: null, heldKey: '', form: 'human',
+  const r = { id: o.id, name: o.name || 'Player', color: cleanParts(o.color), pen: o.pen, root, avatar, model, mixer, acts, anim: '', tag, eggMesh, held: null, heldKey: '', form: 'human',
               tx: 0, ty: 0, tz: 0, tf: 0, facing: 0, init: false, pets: [] };
   remotes.set(o.id, r);
   if (o.s) netRemoteState(r, o.s, true);
@@ -1659,9 +1703,9 @@ function netAddRemote(o) {
 }
 function netRemoteProfile(r, name, color) {
   const nm = cleanName(name) || r.name;
-  r.name = nm; r.color = cleanColor(color);
+  r.name = nm; r.color = cleanParts(color);
   applyBodyColor(r.model, r.color);
-  const old = r.tag, tag = nameTag(nm, r.color);
+  const old = r.tag, tag = nameTag(nm, tagColor(r.color));
   tag.position.copy(old.position);
   r.root.remove(old); if (old.material.map) old.material.map.dispose(); old.material.dispose();
   r.root.add(tag); r.tag = tag;
@@ -2559,7 +2603,7 @@ const authEl = $('auth');
 function snapshot() {                                  // everything that is saved, as plain data
   const b = playerPen ? playerPen.box : null;
   const pets = b ? petsInPen.map((p) => ({ id: p.id, mult: p.mult, u: clampN((p.pos.x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((p.pos.z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) })) : pendingPets;
-  return { v: 2, money, dex, slots: inv.slots, train, up, pets, profile: { name: profile.name, color: profile.color } };
+  return { v: 2, money, dex, slots: inv.slots, train, up, pets, profile: { name: profile.name, parts: profile.parts } };
 }
 function resetState() {                                // back to a brand new game (in memory)
   stopGym();
