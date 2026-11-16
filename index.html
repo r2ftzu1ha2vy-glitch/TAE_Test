@@ -216,6 +216,22 @@
   #menu-help[hidden] { display: none; }
   #menu-help b { color: var(--gold); } #menu-help ol { margin: 6px 0 0 18px; padding: 0; }
   #menu-stats { font: 600 14px var(--font); opacity: .8; margin-top: 12px; }
+  /* player customization (username + color) */
+  #profile { text-align: left; margin-top: 12px; padding: 12px 16px 14px; border-radius: 14px; background: rgba(255,255,255,.07); font: 600 14px var(--font); }
+  #profile[hidden] { display: none; }
+  #profile label { display: block; margin: 8px 0 5px; opacity: .85; }
+  #profile label:first-child { margin-top: 0; }
+  #profile input[type=text] { display: block; width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 2px solid rgba(255,255,255,.22);
+                              background: rgba(255,255,255,.08); color: #fff; font: 600 17px var(--font); outline: none; -webkit-user-select: text; user-select: text; }
+  #profile input[type=text]:focus { border-color: var(--gold); }
+  #prof-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+  #prof-swatches .sw { width: 32px; height: 32px; box-sizing: border-box; border-radius: 50%; border: 3px solid rgba(255,255,255,.45); cursor: pointer; transition: transform .1s; }
+  #prof-swatches .sw:hover { transform: scale(1.12); }
+  #prof-swatches .sw.on { border-color: #fff; box-shadow: 0 0 0 3px var(--gold); }
+  #prof-custom { display: flex; align-items: center; gap: 10px; margin-top: 10px; opacity: .9; }
+  #prof-color { width: 46px; height: 32px; padding: 0; border: 2px solid rgba(255,255,255,.5); border-radius: 8px; background: none; cursor: pointer; }
+  #prof-preview { text-align: center; margin-top: 12px; }
+  #prof-chip { display: inline-block; max-width: 100%; box-sizing: border-box; padding: 5px 16px; border-radius: 18px; background: rgba(10,14,30,.72); border: 3px solid #fff; font: 700 19px var(--font); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* touch layout for the new UI */
   body.touch #status { bottom: calc(62px + env(safe-area-inset-bottom)); }
   body.touch #hint { bottom: calc(104px + env(safe-area-inset-bottom)); }
@@ -369,6 +385,15 @@
   <h1 id="menu-title">Throw An Egg</h1>
   <p id="overlay-text">Loading...</p>
   <button type="button" id="play-btn" disabled>Loading...</button>
+  <button type="button" id="prof-btn" class="sec">&#127912; Customize Player</button>
+  <div id="profile" hidden>
+    <label for="prof-name">Username</label>
+    <input type="text" id="prof-name" maxlength="16" placeholder="Pick a name (max 16)" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <label>Color</label>
+    <div id="prof-swatches"></div>
+    <div id="prof-custom"><input type="color" id="prof-color" value="#ffffff"><span>Custom color</span></div>
+    <div id="prof-preview"><span id="prof-chip"></span></div>
+  </div>
   <button type="button" id="help-btn" class="sec">How To Play</button>
   <div id="menu-help" hidden>
     <b>Goal:</b> collect pets and earn money.
@@ -705,6 +730,25 @@ let carry = null;                             // { egg, item, area, status: 'sto
 const chickens = [];
 let playerModel = null, modelBaseY = 0, feetExtra = 0; const legMeshes = [];
 
+/* Player profile: username + body color. Kept in localStorage, saved with the account, and shared with the other players on the server. */
+const PROFILE_KEY = 'tae_profile';
+const PROFILE_COLORS = ['#ffffff', '#ff5a5a', '#ff9f43', '#ffd34d', '#4cd964', '#2ed8c3', '#4aa3ff', '#a06bff', '#ff6bd6', '#b07a4f', '#8a93a6', '#2b2b33'];
+const cleanName = (n) => String(n == null ? '' : n).replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+const cleanColor = (c) => (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c.toLowerCase() : null);
+const profile = { name: '', color: null };
+try { const sv = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); if (sv) { profile.name = cleanName(sv.name); profile.color = cleanColor(sv.color); } } catch (e) { /* no storage / bad data: defaults */ }
+function applyBodyColor(model, hex) {                    // tint every body part except the face (the face is a texture and keeps its look); legs a little darker
+  const c = new THREE.Color(cleanColor(hex) || '#ffffff');
+  model.traverse((o) => {
+    if (!o.isMesh || /face/i.test(o.name)) return;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (!m || !m.color) continue;
+      m.color.copy(c);
+      if (/leg/i.test(o.name)) m.color.multiplyScalar(0.72);
+    }
+  });
+}
+
 /* ------------------------------------------------------------------ */
 /* Loading                                                             */
 /* ------------------------------------------------------------------ */
@@ -834,6 +878,7 @@ function setupPlayer(gltf) {
   const box = new THREE.Box3().setFromObject(model);
   model.position.y -= box.min.y;           // put feet on origin
   playerModel = model; modelBaseY = model.position.y;
+  applyBodyColor(model, profile.color);
   model.traverse((o) => { if (o.isMesh && /Leg/i.test(o.name)) legMeshes.push(o); });
   playerRoot = new THREE.Group();
   playerRoot.add(model);
@@ -933,7 +978,45 @@ function startPlay() {
   }
   renderer.domElement.requestPointerLock();
 }
-ui.play.addEventListener('click', startPlay);
+ui.play.addEventListener('click', () => { commitProfileName(); startPlay(); });
+/* Customize Player: username + color */
+const profUI = { name: $('prof-name'), color: $('prof-color'), chip: $('prof-chip'), box: $('profile'), sw: $('prof-swatches') };
+function refreshProfileUI() {
+  const col = profile.color || '#ffffff';
+  if (document.activeElement !== profUI.name) profUI.name.value = profile.name;
+  profUI.color.value = col;
+  profUI.chip.textContent = profile.name || 'Your name';
+  profUI.chip.style.borderColor = col;
+  for (const el of profUI.sw.children) el.classList.toggle('on', el.dataset.color === col);
+}
+function setProfile(p, cloud = true) {                  // cloud=false: values came from a save, no need to write them back
+  profile.name = cleanName(p.name); profile.color = cleanColor(p.color);
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) { /* storage blocked: just not remembered on this device */ }
+  if (playerModel) applyBodyColor(playerModel, profile.color);
+  refreshProfileUI();
+  if (cloud) saveGame();
+  netSend({ t: 'profile', name: netName(), color: profile.color });
+}
+function commitProfileName() {
+  const n = cleanName(profUI.name.value);
+  profUI.name.value = n;
+  if (n !== profile.name) setProfile({ name: n, color: profile.color });
+}
+for (const c of PROFILE_COLORS) {
+  const d = document.createElement('div');
+  d.className = 'sw'; d.dataset.color = c; d.style.background = c; d.title = c; d.setAttribute('role', 'button'); d.tabIndex = 0;
+  const pick = () => setProfile({ name: profile.name, color: c });
+  d.addEventListener('click', pick);
+  d.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+  profUI.sw.appendChild(d);
+}
+profUI.color.addEventListener('input', () => { profile.color = cleanColor(profUI.color.value); if (playerModel) applyBodyColor(playerModel, profile.color); profUI.chip.style.borderColor = profUI.color.value; });   // live preview while dragging
+profUI.color.addEventListener('change', () => setProfile({ name: profile.name, color: profUI.color.value }));
+profUI.name.addEventListener('input', () => { profUI.chip.textContent = cleanName(profUI.name.value) || 'Your name'; });
+profUI.name.addEventListener('change', commitProfileName);
+profUI.name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); commitProfileName(); profUI.name.blur(); } });
+$('prof-btn').addEventListener('click', () => { profUI.box.hidden = !profUI.box.hidden; refreshProfileUI(); });
+refreshProfileUI();
 $('help-btn').addEventListener('click', () => { const h = $('menu-help'); h.hidden = !h.hidden; });
 $('reset-btn').addEventListener('click', () => {
   if (!confirm('Erase your money, pets, pet index, upgrades and training?')) return;
@@ -1020,7 +1103,7 @@ document.addEventListener('mousedown', (e) => {
   if (worldClick(0, 0)) return;                                    // otherwise the click goes where the crosshair points: steal that egg / place in the pen
   tryThrow();
 });
-const typing = (e) => !!(e.target && e.target.closest && e.target.closest('#auth, #chat'));   // typing in the sign-in form / chat: no game keys
+const typing = (e) => !!(e.target && e.target.closest && e.target.closest('#auth, #chat, #profile'));   // typing in the sign-in form / chat: no game keys
 window.addEventListener('keydown', (e) => {
   if (typing(e)) return;
   if (e.code === 'Space') e.preventDefault();
@@ -1229,10 +1312,13 @@ function netSend(o) {
   if (NET.fb) fbSend(o);                                 // Firebase transport
   else if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o));   // WebSocket transport (server.js)
 }
+let guestName = null;
 function netName() {
+  if (profile.name) return profile.name;                  // the username picked in Customize Player
   const u = acct.user;
   const n = u && (u.displayName || (u.email || '').split('@')[0]);
-  return (n || 'Guest' + (1000 + Math.floor(Math.random() * 9000))).slice(0, 16);
+  if (n) return n.slice(0, 16);
+  return guestName || (guestName = 'Guest' + (1000 + Math.floor(Math.random() * 9000)));
 }
 function netHud() {
   if (!netEl) return;
@@ -1250,7 +1336,7 @@ function netJoin(timeoutMs) {
     const finish = (ok) => { if (done) return; done = true; clearTimeout(tm); if (!ok && ws) { try { ws.close(); } catch (e) { /* already closed */ } } resolve(ok); };
     tm = setTimeout(() => { log.warn('Server did not answer: playing solo'); finish(false); }, timeoutMs);
     try { ws = new WebSocket(NET_URL); } catch (e) { return finish(false); }
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', name: netName(), pens, spawns: eggItems.map((i) => i.area),
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', name: netName(), color: profile.color, pens, spawns: eggItems.map((i) => i.area),
       eggs: { types: CONFIG.eggs.types, sizeTiers: CONFIG.eggs.sizeTiers, maxMult: CONFIG.eggs.maxMult, respawn: CONFIG.eggs.respawn } }));
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
@@ -1321,7 +1407,7 @@ async function fbJoin(timeoutMs) {
     if (!FB.pen) { log.warn('Every pen on every server is taken'); return false; }
     for (const p of ['pens/' + FB.pen, 'players/' + FB.id, 'states/' + FB.id, 'pets/' + FB.id]) await D.onDisconnect(fbRef(p)).remove();
     check();
-    await D.set(fbRef('players/' + FB.id), { name: netName(), pen: FB.pen }); check();
+    await D.set(fbRef('players/' + FB.id), { name: netName(), pen: FB.pen, color: profile.color || null }); check();
     FB.joinedAt = fbNow();
     const [ps, ss, pts, es] = await Promise.all(['players', 'states', 'pets', 'eggs'].map((k) => D.get(fbRef(k)))); check();
     const P = ps.val() || {}, S = ss.val() || {}, T = pts.val() || {}, E = es.val() || {};
@@ -1330,7 +1416,7 @@ async function fbJoin(timeoutMs) {
     eggItems.forEach((_, i) => { FB.eggs[i] = E[i] || null; FB.eggSig[i] = fbEggSig(E[i]); });
     NET.fb = FB;
     netWelcome(null, { t: 'welcome', id: FB.id, room: FB.room, pen: FB.pen, cap: pens.length,
-      players: Object.keys(P).filter((k) => k !== FB.id).map((k) => ({ id: k, name: P[k].name, pen: P[k].pen, s: S[k], pets: fbArr(T[k]) })),
+      players: Object.keys(P).filter((k) => k !== FB.id).map((k) => ({ id: k, name: P[k].name, color: P[k].color, pen: P[k].pen, s: S[k], pets: fbArr(T[k]) })),
       eggs: eggItems.map((_, i) => (E[i] && E[i].k === 'egg' ? { type: E[i].type, mult: E[i].mult } : null)) });
     fbListen();
     FB.timers.push(setInterval(fbTick, 1000)); fbTick();
@@ -1350,7 +1436,11 @@ function fbListen() {
     const id = s.key, v = s.val() || {}; FB.players.set(id, v);
     if (id === FB.id || FB.known.has(id)) return;
     FB.known.add(id);
-    netMessage({ t: 'join', id, name: v.name, pen: v.pen, count: FB.players.size, s: FB.states.get(id), pets: fbArr(FB.pets.get(id)) });
+    netMessage({ t: 'join', id, name: v.name, color: v.color, pen: v.pen, count: FB.players.size, s: FB.states.get(id), pets: fbArr(FB.pets.get(id)) });
+  }));
+  un.push(D.onChildChanged(fbRef('players'), (s) => {      // somebody changed their username / color
+    const id = s.key, v = s.val() || {}; FB.players.set(id, v);
+    if (id !== FB.id) netMessage({ t: 'profile', id, name: v.name, color: v.color });
   }));
   un.push(D.onChildAdded(fbRef('gifts/' + FB.id), (s) => { const g = s.val(); if (g) { FB.inbox.set(s.key, g); fbDeliver(); } }));
   un.push(D.onChildRemoved(fbRef('players'), (s) => {
@@ -1446,6 +1536,7 @@ function fbSend(o) {
       break;
     }
     case 'pets': { if (o.list && o.list.length) D.set(fbRef('pets/' + id), o.list.map((p) => ({ id: p.id, mult: fbRound(p.mult), u: fbRound(p.u), v: fbRound(p.v) }))).catch(() => {}); else D.remove(fbRef('pets/' + id)).catch(() => {}); break; }
+    case 'profile': D.set(fbRef('players/' + id), { name: netName(), pen: FB.pen, color: profile.color || null }).catch(() => {}); break;
     case 'chat': D.push(fbRef('chat'), { id, name: netName(), text: String(o.text || '').slice(0, 120), ts: D.serverTimestamp() }).catch(() => {}); break;
     case 'steal': {
       const i = o.i, ref = fbRef('eggs/' + i);
@@ -1516,6 +1607,7 @@ function netSetEgg(i, egg) {                            // the server says what 
 function netMessage(m) {
   switch (m.t) {
     case 'join': NET.count = m.count; netAddRemote(m); netHud(); say(m.name + ' joined (Pen ' + m.pen + ')', 3); break;
+    case 'profile': { const r = remotes.get(m.id); if (r) netRemoteProfile(r, m.name, m.color); break; }
     case 'leave': { const r = remotes.get(m.id); if (r) say(r.name + ' left', 3); netRemoveRemote(m.id); NET.count = m.count; netHud(); break; }
     case 'state': { const r = remotes.get(m.id); if (r) netRemoteState(r, m.s, false); break; }
     case 'pets': { const r = remotes.get(m.id); if (r) netRemotePets(r, m.list); break; }
@@ -1533,10 +1625,11 @@ function netMessage(m) {
 }
 
 /* other players: the player model with a name tag, their stolen egg over the head, and the pets in their pen */
-function nameTag(text) {
+function nameTag(text, color) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 64;
   const g = c.getContext('2d');
   g.fillStyle = 'rgba(10,14,30,.72)'; g.beginPath(); if (g.roundRect) g.roundRect(4, 6, 248, 52, 18); else g.rect(4, 6, 248, 52); g.fill();
+  if (cleanColor(color)) { g.lineWidth = 5; g.strokeStyle = color; g.stroke(); }      // outline in the player's color
   g.font = '700 34px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
   g.fillText(text, 128, 33, 232);
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
@@ -1547,27 +1640,38 @@ function nameTag(text) {
 function netAddRemote(o) {
   if (!playerGltfRef || !playerEgg || remotes.has(o.id)) return;
   const model = SkeletonUtils.clone(playerGltfRef.scene);
-  model.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.frustumCulled = false; } });
+  model.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.frustumCulled = false; m.material = Array.isArray(m.material) ? m.material.map((x) => x.clone()) : m.material.clone(); } });   // own materials: each player has their own color
+  applyBodyColor(model, o.color);
   model.position.y = modelBaseY;                          // the local model may be eased down while it holds an egg: start the copy from the plain pose
   const avatar = new THREE.Group(); avatar.scale.setScalar(CONFIG.playerScale); avatar.add(model);
   const root = new THREE.Group(); root.add(avatar);
-  const tag = nameTag(o.name || 'Player'); root.add(tag);
+  const tag = nameTag(o.name || 'Player', o.color); root.add(tag);
   const eggMesh = playerEgg.make(); eggMesh.scale.setScalar(CONFIG.eggs.baseHeight); eggMesh.visible = false; root.add(eggMesh);
   scene.add(root);
   const mixer = new THREE.AnimationMixer(model), acts = {};
   for (const clip of playerGltfRef.animations) acts[clip.name.toLowerCase()] = mixer.clipAction(clip);
   if (acts.jump) { acts.jump.setLoop(THREE.LoopOnce, 1); acts.jump.clampWhenFinished = true; }
-  const r = { id: o.id, name: o.name || 'Player', pen: o.pen, root, avatar, model, mixer, acts, anim: '', tag, eggMesh, held: null, heldKey: '', form: 'human',
+  const r = { id: o.id, name: o.name || 'Player', color: cleanColor(o.color), pen: o.pen, root, avatar, model, mixer, acts, anim: '', tag, eggMesh, held: null, heldKey: '', form: 'human',
               tx: 0, ty: 0, tz: 0, tf: 0, facing: 0, init: false, pets: [] };
   remotes.set(o.id, r);
   if (o.s) netRemoteState(r, o.s, true);
   if (o.pets && o.pets.length) netRemotePets(r, o.pets);
+}
+function netRemoteProfile(r, name, color) {
+  const nm = cleanName(name) || r.name;
+  r.name = nm; r.color = cleanColor(color);
+  applyBodyColor(r.model, r.color);
+  const old = r.tag, tag = nameTag(nm, r.color);
+  tag.position.copy(old.position);
+  r.root.remove(old); if (old.material.map) old.material.map.dispose(); old.material.dispose();
+  r.root.add(tag); r.tag = tag;
 }
 function netRemoveRemote(id) {
   const r = remotes.get(id);
   if (!r) return;
   scene.remove(r.root);
   r.root.traverse((m) => { if (m.isSprite && m.material) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } });
+  r.model.traverse((m) => { if (m.isMesh && m.material) for (const x of Array.isArray(m.material) ? m.material : [m.material]) x.dispose(); });
   netClearPets(r);
   remotes.delete(id);
 }
@@ -2455,7 +2559,7 @@ const authEl = $('auth');
 function snapshot() {                                  // everything that is saved, as plain data
   const b = playerPen ? playerPen.box : null;
   const pets = b ? petsInPen.map((p) => ({ id: p.id, mult: p.mult, u: clampN((p.pos.x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((p.pos.z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) })) : pendingPets;
-  return { v: 2, money, dex, slots: inv.slots, train, up, pets };
+  return { v: 2, money, dex, slots: inv.slots, train, up, pets, profile: { name: profile.name, color: profile.color } };
 }
 function resetState() {                                // back to a brand new game (in memory)
   stopGym();
@@ -2469,6 +2573,7 @@ function resetState() {                                // back to a brand new ga
 }
 function applySave(d) {                                // replace the current game with saved data
   resetState();
+  if (d.profile) setProfile(d.profile, false);          // your username + color follow your account
   money = Math.max(0, +d.money || 0);
   if (d.train) { train.strength = Math.max(0, +d.train.strength || 0); train.speed = Math.max(0, +d.train.speed || 0); speedStat = CONFIG.player.speed + train.speed; }
   if (d.up) { up.bar = clampN(d.up.bar | 0, 0, CONFIG.gymTiers.bar.length - 1); up.treadmill = clampN(d.up.treadmill | 0, 0, CONFIG.gymTiers.treadmill.length - 1); up.pen = clampN(d.up.pen | 0, 0, CONFIG.pen.max); }
