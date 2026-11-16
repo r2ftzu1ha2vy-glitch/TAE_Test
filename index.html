@@ -410,7 +410,7 @@
       <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken (or the scorpion in the Sands) catches you!</li>
       <li>Next to another player? Press <b>G</b> twice (or the <b>Gift</b> button on a phone) to give them the egg you are carrying (after you escaped with it) or, with empty hands, the pet selected in your hotbar. Press <b>H</b> (or <b>Gift pet</b> on a phone) to gift the selected pet even while you carry an egg. Pets standing in your pen: click one to take it back into your hotbar first. Needs multiplayer.</li>
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
-      <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-9</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s up to snake $50/s and scorpion $75/s at 1x, more for bigger eggs).</li>
+      <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-9</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s up to snake $50/s, camel $60/s and scorpion $75/s at 1x, more for bigger eggs).</li>
       <li>In your pen, <b>click the Pull-Up Bar</b> to gain <b>Strength</b> (throws go farther) and <b>click the Treadmill</b> to gain <b>Speed</b>. You hop on automatically and keep training on your own; <b>click again</b> to stop.</li>
       <li>Click a pet standing in your pen to <b>take it back</b> into your hotbar. Your pen holds 5 pets to start.</li>
       <li><b>Sign in</b> (email or Google) and your money, pets, pen, upgrades and training are saved. <b>Guests are not saved.</b></li>
@@ -441,15 +441,16 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb' },
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb' },
     gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb'] },   // index = upgrade level
-    eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb' } },
+    eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb' } },
   eggs: { baseHeight: 0.8, maxMult: 10, respawn: 6,   // 1x egg = baseHeight metres tall; size never exceeds maxMult
     sizeTiers: [ { w: 72, min: 1, max: 2 }, { w: 21, min: 2, max: 4 }, { w: 5.5, min: 4, max: 6 }, { w: 1.2, min: 6, max: 8 }, { w: 0.3, min: 8, max: 10 } ],   // big eggs are MUCH rarer now (10x was 1 in 100, now 1 in ~330)
-    // areas = where the egg type can spawn (omit = everywhere). Cactus / Bone eggs only grow in the Scorching Sands.
+    // areas = where the egg type can spawn (omit = everywhere). Cactus / Bone / Sand / Claw / Scorpion eggs only grow in the Scorching Sands.
     types: { normal: { w: 45, pts: 10, areas: ['valley'] }, brown: { w: 28, pts: 20, areas: ['valley'] }, cracked: { w: 12, pts: 5, areas: ['valley'] },
              golden: { w: 10, pts: 100 }, rainbow: { w: 5, pts: 250 },
-             cactus: { w: 55, pts: 40, areas: ['sands'] }, bone: { w: 30, pts: 80, areas: ['sands'] } } },
+             cactus: { w: 55, pts: 40, areas: ['sands'] }, bone: { w: 30, pts: 80, areas: ['sands'] },
+             sand: { w: 45, pts: 50, areas: ['sands'] }, claw: { w: 20, pts: 110, areas: ['sands'] }, scorpion: { w: 10, pts: 160, areas: ['sands'] } } },
   // height 1.6 = the size the chicken actually appeared at before (the old bounding-box bug scaled it up from the configured 1.0).
   // margin = keep-out distance from area edges while wandering; chaseMargin = same while chasing; alert = seconds it freezes before it runs.
   chicken: { height: 1.6, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: 0 },
@@ -528,10 +529,11 @@ const CONFIG = {
     crab:      { name: 'Crab',      area: 'valley', rarity: 'rare',     weight: 6,  income: 38, height: 0.5, icon: '\u{1F980}' },
     starfish:  { name: 'Starfish',  area: 'valley', rarity: 'rare',     weight: 6,  income: 40, height: 0.45, icon: '\u2B50' },
     snake:     { name: 'Snake',     area: 'sands',  rarity: 'rare',     weight: 65, income: 50, height: 0.9, icon: '\u{1F40D}', lucky: false, fit: 'max', yawOffset: Math.PI },
+    camel:     { name: 'Camel',     area: 'sands',  rarity: 'rare',     weight: 45, income: 60, height: 1.3, icon: '\u{1F42B}', lucky: true },
     scorpion:  { name: 'Scorpion',  area: 'sands',  rarity: 'epic',     weight: 35, income: 75, height: 0.7, icon: '\u{1F982}', lucky: true,  yawOffset: Math.PI },
   },
   rarities: { common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' }, rare: { label: 'Rare', color: '#5aa9ff' }, epic: { label: 'Epic', color: '#c77dff' } },
-  eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3, cactus: 1, bone: 2 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
+  eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3, cactus: 1, bone: 2, sand: 1.25, claw: 2, scorpion: 2.5 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
   hotbarSlots: 9, petPenMax: 30, petSpeed: 0.8,
   petMaxMult: 25,      // biggest size a PET can have (the biggest EGG is eggs.maxMult = 10x): a 1x egg hatches a 1x pet, a 10x egg hatches a 25x pet, in between is linear
   gift: { range: 6 },  // metres: how close another player must be to gift them an egg or pet (scaled with the player below)
