@@ -76,12 +76,10 @@
   #lookzone { position: fixed; right: 0; top: 0; bottom: 0; width: 55%; z-index: 2; touch-action: none; }
   #joy { position: fixed; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 3px solid rgba(255,255,255,.55);
          background: rgba(0,0,0,.25); display: none; z-index: 3; pointer-events: none; }
-  #joy.run { border-color: #ffd34d; box-shadow: 0 0 14px #ffd34d; }
   #joy-knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: rgba(255,255,255,.75); }
   .tbtn { position: fixed; z-index: 3; border: 3px solid #fff; border-radius: 50%; color: #fff; font: 800 15px var(--font); background: rgba(0,0,0,.45);
           display: flex; align-items: center; justify-content: center; touch-action: none; }
   .tbtn:active { background: rgba(255,211,77,.7); color: #3a2a00; }
-  #t-jump { right: calc(26px + env(safe-area-inset-right)); bottom: calc(34px + env(safe-area-inset-bottom)); width: 78px; height: 78px; }
   #t-throw { right: calc(118px + env(safe-area-inset-right)); bottom: calc(60px + env(safe-area-inset-bottom)); width: 88px; height: 88px; display: none;
              background: #ffd34d; color: #3a2a00; font-size: 17px; animation: actpulse 1s ease-in-out infinite; }
   #t-respawn { right: calc(12px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width: 44px; height: 44px; font-size: 22px; }
@@ -228,6 +226,62 @@
   body.touch #strength { left: calc(12px + env(safe-area-inset-left)); bottom: calc(76px + env(safe-area-inset-bottom)); padding: 4px 12px 4px 6px; } body.touch #strength svg { width: 34px; height: 34px; } body.touch #strength .val { font-size: 22px; }
   body.touch #banner b { font-size: 32px; }
   body.touch #overlay { font-size: 16px; }
+  /* ================= chat ================= */
+  #chat, #chat-btn { display: none; }
+  body.net #chat { display: block; }
+  #chat { position: fixed; right: 14px; bottom: 14px; width: min(320px, 40vw); z-index: 4; pointer-events: none; font-family: var(--font); color: #fff; }
+  #chat-log { display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; max-height: 34vh; overflow: hidden; }
+  #chat.open #chat-log { overflow-y: auto; pointer-events: auto; background: rgba(10,14,30,.55); border-radius: 12px; padding: 6px 8px; margin-bottom: 6px; -webkit-user-select: text; user-select: text; }
+  #chat .line { align-self: flex-start; max-width: 100%; padding: 3px 10px; border-radius: 12px; background: var(--panel); font: 500 14px/1.3 var(--font); overflow-wrap: anywhere; text-shadow: 0 1px 2px rgba(0,0,0,.7);
+                backdrop-filter: blur(4px); transition: opacity .6s; }
+  #chat .line b { font-weight: 700; margin-right: 5px; }
+  #chat .line.sys { font-style: italic; opacity: .8; background: transparent; padding-left: 2px; }
+  #chat .line.me { border: 1px solid rgba(255,211,77,.55); }
+  #chat .line.fade { opacity: 0; }
+  #chat.open .line.fade { opacity: 1; }
+  #chat.open .line.fade.sys { opacity: .8; }
+  #chat-form { display: none; gap: 6px; pointer-events: auto; }
+  #chat.open #chat-form { display: flex; }
+  #chat-input { flex: 1; min-width: 0; box-sizing: border-box; padding: 9px 12px; border-radius: 12px; border: 2px solid var(--gold); background: rgba(18,22,40,.92); color: #fff; font: 500 16px var(--font); outline: none;
+                -webkit-user-select: text; user-select: text; }
+  #chat-send { flex: none; padding: 8px 14px; border: 2px solid #fff; border-radius: 12px; font: 700 15px var(--font); color: #3a2a00; background: linear-gradient(#ffe27a, #ffbf2e); cursor: pointer; }
+  #chat-hint { display: none; margin-top: 4px; font: 600 12px var(--font); opacity: .75; text-shadow: 0 1px 3px #000; text-align: right; }
+  body:not(.touch) #chat:not(.open) #chat-hint { display: block; }
+  body.touch.net #chat-btn { display: flex; position: fixed; z-index: 4; left: calc(8px + env(safe-area-inset-left)); top: calc(56% + 88px); width: 40px; height: 36px; padding: 0; align-items: center; justify-content: center;
+                             border: 2px solid #fff; border-radius: 14px; font-size: 18px; color: #fff; background: rgba(18,22,40,.7); box-shadow: 0 3px 10px rgba(0,0,0,.4); touch-action: none; }
+  body.touch #chat { left: calc(8px + env(safe-area-inset-left)); right: auto; bottom: auto; top: calc(40px + env(safe-area-inset-top)); width: min(46vw, 300px); }
+  body.touch #chat-log { max-height: 26vh; }
+  body.touch #chat .line { font-size: 12px; padding: 2px 8px; }
+  body.touch #chat.open { left: calc(8px + env(safe-area-inset-left)); right: calc(8px + env(safe-area-inset-right)); top: calc(8px + env(safe-area-inset-top)); width: auto; z-index: 8; }
+  body.touch #chat.open #chat-log { order: 2; margin: 6px 0 0; max-height: 30vh; }
+  body.touch #chat.open { display: flex; flex-direction: column; }
+  body.touch #chat.open .line { font-size: 13px; }
+  /* ================= phones: everything has to fit ================= */
+  body.touch #net { left: calc(8px + env(safe-area-inset-left)); right: auto; max-width: 42vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.touch #hotbar { max-width: calc(100vw - 12px); box-sizing: border-box; }
+  body.touch .slot { width: min(40px, calc((100vw - 64px) / 9)); height: min(40px, calc((100vw - 64px) / 9)); }
+  body.touch #money { max-width: calc(100vw - 230px); }
+  @media (orientation: portrait) {
+    body.touch #areas { top: calc(46px + env(safe-area-inset-top)); }
+    body.touch #speed { left: calc(8px + env(safe-area-inset-left)); bottom: calc(62px + env(safe-area-inset-bottom)); padding: 3px 12px 3px 6px; }
+    body.touch #strength { left: calc(8px + env(safe-area-inset-left)); bottom: calc(112px + env(safe-area-inset-bottom)); padding: 3px 12px 3px 6px; }
+    body.touch #status { bottom: calc(170px + env(safe-area-inset-bottom)); max-width: 90vw; }
+    body.touch #status.tut { max-width: 90vw; font-size: 16px; }
+    body.touch #hint { bottom: calc(238px + env(safe-area-inset-bottom)); max-width: 90vw; }
+    body.touch #dex-btn { top: 46%; } body.touch #shop-btn { top: calc(46% + 44px); } body.touch.net #chat-btn { top: calc(46% + 88px); }
+    body.touch #chat:not(.open) { top: calc(92px + env(safe-area-inset-top)); width: 62vw; }
+    body.touch #t-throw { right: calc(14px + env(safe-area-inset-right)); bottom: calc(70px + env(safe-area-inset-bottom)); }
+    #menu { padding: 18px 16px 14px; } #menu-title { font-size: 34px; }
+  }
+  @media (orientation: landscape) {
+    body.touch #dex-btn { top: calc(26% + env(safe-area-inset-top)); } body.touch #shop-btn { top: calc(26% + 40px + env(safe-area-inset-top)); } body.touch.net #chat-btn { top: calc(26% + 80px + env(safe-area-inset-top)); }
+  }
+  @media (max-height: 480px) {
+    #menu { padding: 12px 18px 10px; } #menu-logo { font-size: 38px; } #menu-title { font-size: 30px; } #overlay-text { margin: 4px 0 8px; }
+    #menu button { padding: 8px 14px; font-size: 18px; } #menu button.sec { font-size: 15px; padding: 6px 12px; }
+    #dex .dex-panel { max-height: 92vh; padding: 10px 14px; } #dex .dex-h { font-size: 20px; margin-bottom: 8px; }
+    #auth .auth-card { padding: 12px 18px 10px; max-height: 94vh; overflow-y: auto; } #auth .auth-logo { display: none; }
+  }
 </style>
 <script type="importmap">
 { "imports": {
@@ -243,9 +297,9 @@
 <div id="speedfx"></div>
 <div id="net"></div>
 <div id="hud">
-  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>Shift</b> run &nbsp; <b>Space</b> jump &nbsp; <b>I</b> pet index &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
+  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>I</b> pet index &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
   Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br></span>
-  <span class="tc"><b>Left</b> stick move (push all the way to run) &nbsp; <b>Right</b> side drag to look<br>
+  <span class="tc"><b>Left</b> stick move &nbsp; <b>Right</b> side drag to look<br>
   In the yellow <b>Throw Zone</b> tap <b>Throw</b> to stop the power bar<br></span>
   Walk up to an egg and click it to steal it. Get out of the area before its guard (the chicken, or the scorpion in the Sands) catches you (it sends you back to your pen), then click a spot in your pen to place it.<br>
   <span id="pen">Your pen: -</span><br><span id="held">Holding: nothing</span><br>
@@ -278,10 +332,15 @@
 <div id="touch">
   <div id="joyzone"></div><div id="lookzone"></div>
   <div id="joy"><div id="joy-knob"></div></div>
-  <button class="tbtn" id="t-jump" type="button">Jump</button>
   <button class="tbtn" id="t-throw" type="button">Throw</button>
   <button class="tbtn" id="t-respawn" type="button" aria-label="Respawn">&#8634;</button>
 </div>
+<div id="chat">
+  <div id="chat-log" aria-live="polite"></div>
+  <form id="chat-form" autocomplete="off"><input id="chat-input" type="text" maxlength="120" placeholder="Say something..." enterkeyhint="send" autocomplete="off" autocapitalize="sentences"><button id="chat-send" type="submit">Send</button></form>
+  <div id="chat-hint">Press <b>Enter</b> to chat</div>
+</div>
+<button type="button" id="chat-btn" aria-label="Chat">&#128172;</button>
 <div id="money"><span class="coin">$</span><b>0</b><small></small></div>
 <button type="button" id="dex-btn">Index</button>
 <button type="button" id="shop-btn">Upgrades <small>[U]</small></button>
@@ -311,7 +370,7 @@
     <b>Goal:</b> collect pets and earn money.
     <ol>
       <li>Everyone plays on the same <b>server</b> (top right) - one pen each. When all pens are taken, a new server opens for the next player.</li>
-      <li>Walk into the yellow <b>Throw Zone</b> and throw an egg with <b>Space</b> / <b>Click</b> (touch: <b>Throw</b>).</li>
+      <li>Walk into the yellow <b>Throw Zone</b> and throw an egg with <b>Space</b> / <b>Click</b> (touch: <b>Throw</b>). You can only throw forward, towards the islands.</li>
       <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken (or the scorpion in the Sands) catches you!</li>
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
       <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-9</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s up to snake $50/s and scorpion $75/s at 1x, more for bigger eggs).</li>
@@ -320,8 +379,9 @@
       <li><b>Sign in</b> (email or Google) and your money, pets, pen, upgrades and training are saved. <b>Guests are not saved.</b></li>
       <li>Open <b>Upgrades</b> (button on the left, or press <b>U</b>) to upgrade the Pull-Up Bar, the Treadmill, and your pen (+1 pet slot each).</li>
       <li>Open the <b>Index</b> button (or press <b>I</b>) to see every pet.</li>
+      <li>Press <b>Enter</b> (touch: the chat button) to <b>chat</b> with the other players on your server.</li>
     </ol>
-    <div style="margin-top:8px;opacity:.85"><b>WASD</b> move &middot; <b>Shift</b> run &middot; <b>Space</b> jump &middot; <b>Mouse</b> look &middot; <b>R</b> respawn &middot; <b>I</b> index &middot; <b>U</b> upgrades &middot; <b>Esc</b> pause</div>
+    <div style="margin-top:8px;opacity:.85"><b>WASD</b> move &middot; <b>Mouse</b> look &middot; <b>Space</b> throw &middot; <b>Enter</b> chat &middot; <b>R</b> respawn &middot; <b>I</b> index &middot; <b>U</b> upgrades &middot; <b>Esc</b> pause</div>
   </div>
   <div id="menu-stats"></div>
   <div id="acct"><span id="acct-text"></span><button type="button" id="acct-btn" class="link"></button></div>
@@ -358,11 +418,11 @@ const CONFIG = {
   chicken: { height: 1.6, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: 0 },
   // The Scorching Sands enemy. Same settings as the chicken. The scorpion model faces -Z, hence yawOffset = PI.
   scorpion: { height: 1.5, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: Math.PI },
-  eggForm: { walk: 4, run: 6.5, radius: 0.3, stepHeight: 0.25, jump: 6, probeHeights: [0.2, 0.5], cameraDistance: 4, cameraHeight: 0.8 },
+  eggForm: { walk: 4, radius: 0.3, stepHeight: 0.25, probeHeights: [0.2, 0.5], cameraDistance: 4, cameraHeight: 0.8 },
   // Uniform scale applied to the whole map. Source map is ~253 x 304 m; 0.5 -> ~126 x 152 m (was 0.4).
   // Override with ?mapscale=0.3 (smaller) or ?mapscale=0.6 (bigger).
   mapScale: params.has('mapscale') ? parseFloat(params.get('mapscale')) : 0.65,
-  // Player size: 1 = the original 1.7 m player. Everything about the body scales with it (model, collision, step height, jump height, camera, reach)
+  // Player size: 1 = the original 1.7 m player. Everything about the body scales with it (model, collision, step height, camera, reach)
   // but walking / running speed in metres per second does NOT, so a bigger player simply feels slower. Override with ?pscale=1.5
   playerScale: params.has('pscale') ? parseFloat(params.get('pscale')) : 1.3,
   // GLTFLoader turns spaces in node names into underscores, so both are matched.
@@ -376,7 +436,7 @@ const CONFIG = {
     nonSolid: [/^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg(_\d+)?$/i, /^Chicken/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
     hidden: [/^Player[ _]Spawn/i, /Egg(_\d+)?$/i, /^Chicken/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
   },
-  // speed = the player's speed stat (walk speed). Starts at 10; run = speed * runMult (10 -> 16). Override with ?speed=N
+  // speed = the player's speed stat (walk speed). Starts at 10. There is no sprint and no jump. Override with ?speed=N
   // speedUnit: metres per second per point of speed (player AND chickens), so "10" reads big but moves at a comfortable 5 m/s.
   // stepHeight 1.0 = you walk straight up anything up to 1 unit tall. probeHeights start just above it so steps are never treated as walls.
   speedUnit: 0.5,
@@ -385,7 +445,7 @@ const CONFIG = {
   speedCurve: { knee: 20, power: 0.4 },
   // Speed feel: the faster your stat, the more the camera sells it while you move: FOV widens, camera pulls back, speed lines, faster leg animation. strength 0 = off.
   speedFx: { strength: 1, fovMax: 24, pullBack: 0.3, lines: 0.8, animBoost: 0.6, statMax: 1000, ease: 4 },
-  player: { speed: params.has('speed') ? parseFloat(params.get('speed')) : 10, runMult: 1.6, radius: 0.35, stepHeight: 1.0, jump: 7.5, gravity: 22, probeHeights: [1.05, 1.45, 1.75], height: 1.7, turnSpeed: 12 },
+  player: { speed: params.has('speed') ? parseFloat(params.get('speed')) : 10, radius: 0.35, stepHeight: 1.0, gravity: 22, probeHeights: [1.05, 1.45, 1.75], height: 1.7, turnSpeed: 12 },
   camera: { distance: 4.5, sens: 0.0025, touchSens: 0.006, minPitch: -0.2, maxPitch: 1.3, height: 1.5 },
   power: { min: 5, max: 20, period: 1.1 },        // period = seconds for one full up-and-down sweep
   // powerScale: the bar still reads 5-20, but the launch speed is power * powerScale (0.7 -> roughly half the old distance at 20).
@@ -405,7 +465,7 @@ const CONFIG = {
     bar:       [{ cost: 0, gain: 1,    every: 2,   first: 1    }, { cost: 1000000,  gain: 5,  every: 1,   first: 0.5 }, { cost: 15000000, gain: 20, every: 1,   first: 0.5 }],
     treadmill: [{ cost: 0, gain: 0.25, every: 0.5, first: 0.5  }, { cost: 850000,   gain: 15, every: 0.5, first: 0.5 }, { cost: 10000000, gain: 80, every: 0.5, first: 0.5 }],
   },
-  gym: { reach: 2.2, gripAlign: 0.5, barClipLength: 2.0, throwBonusPerStrength: 0.01, barHeight: 2.7, treadmillLength: 2.9, wallInset: 3.5, spread: 4.5 },
+  gym: { reach: 2.2, gripAlign: 0.5, barClipLength: 2.0, throwBonusPerStrength: 0.01, barHeight: 3.7, treadmillLength: 4.1, wallInset: 3.5, spread: 4.5 },
   // Areas are islands ordered from nearest to furthest (the order below). Humans can never enter an area (only thrown eggs, and thieves with a stolen egg, are allowed in),
   // and you can only go to the island your egg landed on and the ones before it; anything further sends you back out.
   // Per-area rules. speed = recommended player speed (shown at the top of the screen), chase = how fast that area's chicken runs
@@ -443,7 +503,7 @@ const CONFIG = {
 
 { // scale the body-size settings by playerScale (speeds are deliberately left alone) and keep the throw reach in step with the map size
   const S = CONFIG.playerScale, P = CONFIG.player;
-  P.height *= S; P.radius *= S; P.stepHeight *= S; P.jump *= Math.sqrt(S); P.probeHeights = P.probeHeights.map((h) => h * S);   // jump: velocity ~ sqrt(S) with the same gravity = jump height ~ S
+  P.height *= S; P.radius *= S; P.stepHeight *= S; P.probeHeights = P.probeHeights.map((h) => h * S);
   CONFIG.camera.distance *= S; CONFIG.camera.height *= S;
   CONFIG.steal.range *= S; CONFIG.steal.reach *= S; CONFIG.gym.reach *= S;
   // the islands sit further out on a bigger map: throw range goes with v^2, so launch speed follows sqrt(mapScale / the 0.4 the map was balanced at)
@@ -474,8 +534,8 @@ function showOverlay(html) { dom.overlayText.innerHTML = html; dom.overlay.style
 function fatal(err) {
   log.error(err);
   showOverlay('Load failed<small>' + String(err && err.message || err) +
-    '<br><br>Serve this folder over HTTP (browsers block GLB loading from file://):<br>' +
-    '<code>python3 -m http.server 8000</code> then open http://localhost:8000</small>');
+    '<br><br>Run the game server (browsers block GLB loading from file://):<br>' +
+    '<code>node server.js</code> then open http://localhost:8000</small>');
   dom.overlay.style.cursor = 'default';
 }
 
@@ -675,6 +735,7 @@ async function init() {
   playerEggMesh.visible = false;
   scene.add(playerEggMesh);
   buildAreas();
+  updateThrowFwd();
   setupChickens({ chicken: chickGltf, scorpion: scorpGltf });
   setupPets({ chicken: chickGltf, scorpion: scorpGltf, ...petGltfs });
   setupGym({ treadmill: treadGltfs, bar: barGltfs });
@@ -875,14 +936,10 @@ $('reset-btn').addEventListener('click', () => {
 document.addEventListener('pointerlockchange', () => {
   if (IS_TOUCH) return;
   const locked = document.pointerLockElement === renderer.domElement;
-  if (locked) dom.overlay.style.display = 'none'; else if (ready && !dexOpen) showMenu();
+  if (locked) dom.overlay.style.display = 'none'; else if (ready && !dexOpen && !chat.open) showMenu();
 });
-function jump() {
-  if (gym.session) return;                                // locked onto a machine
-  if (grounded && ready && form !== 'flying') { vy = (form === 'egg' ? CONFIG.eggForm : CONFIG.player).jump; grounded = false; }
-}
-/* Touch controls: left half = floating stick (push to the rim = run), right half = drag to look, buttons for Jump / Throw / Respawn. */
-const touch = { x: 0, y: 0, run: false };
+/* Touch controls: left half = floating stick, right half = drag to look, buttons for Throw / Respawn / Chat. (No sprint, no jump.) */
+const touch = { x: 0, y: 0 };
 if (IS_TOUCH) {
   const joy = $('joy'), knob = $('joy-knob'), R = 55;
   let joyId = null, jx = 0, jy = 0, lookId = null, lx = 0, ly = 0;
@@ -901,12 +958,10 @@ if (IS_TOUCH) {
     if (len > R) { dx = dx / len * R; dy = dy / len * R; }
     knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
     touch.x = dx / R; touch.y = -dy / R;
-    touch.run = Math.hypot(touch.x, touch.y) > 0.85;
-    joy.classList.toggle('run', touch.run);
   }, { passive: false });
   const joyEnd = (e) => {
     if (!find(e.changedTouches, joyId)) return;
-    joyId = null; touch.x = touch.y = 0; touch.run = false; joy.style.display = 'none'; joy.classList.remove('run');
+    joyId = null; touch.x = touch.y = 0; joy.style.display = 'none';
   };
   joyZone.addEventListener('touchend', joyEnd); joyZone.addEventListener('touchcancel', joyEnd);
   lookZone.addEventListener('touchstart', (e) => {
@@ -935,7 +990,6 @@ if (IS_TOUCH) {
   };
   for (const z of [joyZone, lookZone]) { z.addEventListener('touchstart', tapStart, { passive: true }); z.addEventListener('touchend', tapEnd); }
   const press = (id, fn) => $(id).addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); fn(); }, { passive: false });
-  press('t-jump', () => { if (state.mode === 'charging') tryThrow(); else jump(); });
   press('t-throw', () => tryThrow());
   press('t-respawn', () => respawn());
   document.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -948,25 +1002,26 @@ document.addEventListener('mousemove', (e) => {
 });
 document.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
-  if (document.pointerLockElement !== renderer.domElement) return; // this click only grabs the pointer
+  if (document.pointerLockElement !== renderer.domElement) {       // this click only grabs the pointer
+    if (!IS_TOUCH && started && !chat.open && !dexOpen && dom.overlay.style.display === 'none' && !(e.target.closest && e.target.closest('#chat, #chat-btn'))) renderer.domElement.requestPointerLock();
+    return;
+  }
   if (gym.session) { stopGym(); return; }                          // any click while training stops it
   if (state.mode === 'charging' && !carry && form === 'human') { tryThrow(); return; }   // in the Throw Zone a click throws
   if (worldClick(0, 0)) return;                                    // otherwise the click goes where the crosshair points: steal that egg / place in the pen
   tryThrow();
 });
-const typing = (e) => !!(e.target && e.target.closest && e.target.closest('#auth'));   // typing in the sign-in form: no game keys
+const typing = (e) => !!(e.target && e.target.closest && e.target.closest('#auth, #chat'));   // typing in the sign-in form / chat: no game keys
 window.addEventListener('keydown', (e) => {
   if (typing(e)) return;
   if (e.code === 'Space') e.preventDefault();
   if (e.repeat) return;
+  if (e.code === 'Enter' || e.code === 'NumpadEnter') { chatOpen(); return; }
   if (e.code === 'KeyI') { openPanel('index'); return; }
   if (e.code === 'KeyU') { openPanel('shop'); return; }
   if (dexOpen) { if (e.code === 'Escape') setDex(false); return; }   // the index is a pause-style panel: no game keys while it is open
   keys[e.code] = true;
-  if (e.code === 'Space') {
-    if (state.mode === 'charging') tryThrow();
-    else jump();
-  }
+  if (e.code === 'Space' && state.mode === 'charging') tryThrow();
   if (e.code === 'KeyR') respawn();
   const dg = /^Digit([1-9])$/.exec(e.code);
   if (dg && +dg[1] <= CONFIG.hotbarSlots) selectSlot(+dg[1] - 1);
@@ -1020,15 +1075,13 @@ function updatePlayer(dt) {
   const ix = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touch.x;
   const iz = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touch.y;
   _mv.set(0, 0, 0).addScaledVector(_f, iz).addScaledVector(_r, ix);
-  const frozen = form === 'human' && !carry && inZone();   // standing in the Throw Zone: no walking, only look + jump + throw
+  const frozen = form === 'human' && !carry && inZone();   // standing in the Throw Zone: no walking, only look + throw
   const moving = !frozen && _mv.lengthSq() > 0.04;     // small dead zone for the touch stick
   fxTarget = 0;
   if (moving) {
     _mv.normalize();
-    const run = keys.ShiftLeft || keys.ShiftRight || touch.run;
-    fxTarget = run ? 1 : 0.75;
-    const es = effSpeed(speedStat);
-    const speed = eggForm ? (run ? P.run : P.walk) : (run ? es * CONFIG.player.runMult : es) * CONFIG.speedUnit;
+    fxTarget = 0.85;
+    const speed = eggForm ? P.walk : effSpeed(speedStat) * CONFIG.speedUnit;
     const mx = _mv.x * speed * dt, mz = _mv.z * speed * dt;
     const bh = eggForm ? CONFIG.eggs.baseHeight : CONFIG.player.height;
     gatherBarriers();
@@ -1074,7 +1127,6 @@ function updatePlayer(dt) {
   const winding = state.mode === 'charging' || state.mode === 'cooldown';
   let anim;
   if (carry) anim = moving ? 'steal run' : 'steal idle';
-  else if (!grounded && vy > 0 && actions.jump) anim = 'jump';
   else if (winding && !moving && actions['throw idle']) anim = 'throw idle';
   else anim = moving ? 'walk' : 'idle';
   playAnim(anim);
@@ -1099,6 +1151,54 @@ function updatePlayer(dt) {
 /* Camera                                                              */
 /* ------------------------------------------------------------------ */
 const _t = new THREE.Vector3(), _off = new THREE.Vector3();
+/* Chat: everyone on your server sees it (Enter on a keyboard, the chat button on a phone). Needs the multiplayer server. */
+const chat = { open: false, el: $('chat'), log: $('chat-log'), form: $('chat-form'), input: $('chat-input'), lines: 0 };
+const CHAT_MAX_LINES = 60;
+const chatColor = (name) => { let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return 'hsl(' + (h % 360) + ',85%,72%)'; };
+function chatAdd(name, text, system, mine) {
+  const line = document.createElement('div');
+  line.className = 'line' + (system ? ' sys' : '') + (mine ? ' me' : '');
+  if (!system) { const b = document.createElement('b'); b.textContent = name + ':'; b.style.color = chatColor(name); line.appendChild(b); }
+  line.appendChild(document.createTextNode(text));                     // textContent only: other players' text is never parsed as HTML
+  chat.log.appendChild(line);
+  while (chat.log.children.length > CHAT_MAX_LINES) chat.log.removeChild(chat.log.firstChild);
+  chat.log.scrollTop = chat.log.scrollHeight;
+  setTimeout(() => line.classList.add('fade'), system ? 6000 : 12000);  // fades out unless the chat box is open
+}
+function chatOpen() {
+  if (chat.open || !ready || dom.overlay.style.display !== 'none' || dexOpen) return;
+  if (!NET.on) { say('Chat needs the multiplayer server (node server.js).', 4); return; }
+  chat.open = true;
+  chat.el.classList.add('open');
+  for (const k in keys) keys[k] = false;
+  touch.x = touch.y = 0;
+  if (!IS_TOUCH && document.pointerLockElement) document.exitPointerLock();
+  chat.log.scrollTop = chat.log.scrollHeight;
+  setTimeout(() => { try { chat.input.focus(); } catch (e) { /* ignore */ } }, 0);
+}
+function chatClose() {
+  if (!chat.open) return;
+  chat.open = false;
+  chat.el.classList.remove('open');
+  chat.input.blur();
+  if (!IS_TOUCH && started && !dexOpen) { try { const r = renderer.domElement.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* needs a click, handled in mousedown */ } }
+}
+function chatSend() {
+  const text = chat.input.value.replace(/\s+/g, ' ').trim().slice(0, 120);
+  chat.input.value = '';
+  if (text) netSend({ t: 'chat', text });
+  chatClose();
+}
+chat.form.addEventListener('submit', (e) => { e.preventDefault(); chatSend(); });
+chat.input.addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.key === 'Escape') { e.preventDefault(); chat.input.value = ''; chatClose(); }
+});
+chat.input.addEventListener('keyup', (e) => e.stopPropagation());
+$('chat-btn').addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); if (chat.open) chatClose(); else chatOpen(); }, { passive: false });
+$('chat-btn').addEventListener('click', () => { if (!IS_TOUCH) { if (chat.open) chatClose(); else chatOpen(); } });
+document.addEventListener('touchstart', (e) => { if (chat.open && !(e.target.closest && e.target.closest('#chat, #chat-btn'))) chatClose(); }, true);
+
 /* ------------------------------------------------------------------ */
 /* Multiplayer: everyone joins the same server (room) until all pens are taken, then a new server opens.  */
 /* The server (server.js) hands out the pen and owns the eggs; everything else runs on your machine.      */
@@ -1117,6 +1217,8 @@ function netName() {
 }
 function netHud() {
   if (!netEl) return;
+  document.body.classList.toggle('net', NET.on);
+  if (!NET.on) chatClose();
   if (NET.on) { netEl.className = 'on'; netEl.innerHTML = 'Server ' + NET.room + ' <small>\u00b7 ' + NET.count + '/' + NET.cap + ' players</small>'; }
   else if (NET.tried) { netEl.className = 'on off'; netEl.textContent = 'Solo (no server)'; }
   else netEl.className = '';
@@ -1170,6 +1272,7 @@ function netMessage(m) {
     case 'state': { const r = remotes.get(m.id); if (r) netRemoteState(r, m.s, false); break; }
     case 'pets': { const r = remotes.get(m.id); if (r) netRemotePets(r, m.list); break; }
     case 'egg': netSetEgg(m.i, m.egg); break;
+    case 'chat': chatAdd(m.name || 'Player', String(m.text || '').slice(0, 200), !!m.system, m.id === NET.id); break;
     case 'denied':                                      // somebody else took that egg a moment before you
       if (carry && carry.status === 'stolen' && eggItems.indexOf(carry.item) === m.i) {
         playerRoot.remove(carry.held); carry.item.pending = false; carry = null;
@@ -1333,6 +1436,26 @@ function inZone() {
          pos.y >= zoneBox.min.y - 0.6 && pos.y <= zoneBox.max.y + 1.0;
 }
 
+/* Throwing is only allowed FORWARD, towards the islands. throwFwd = from the Throw Zone towards the middle of the areas (flat, normalised).
+   While you stand in the zone the camera cannot turn further than THROW_ARC either side of it, and tryThrow() clamps the direction again, so no turn / lag / touch trick can launch an egg backwards. */
+const THROW_ARC = THREE.MathUtils.degToRad(60);
+const throwFwd = new THREE.Vector3(0, 0, 1);
+function updateThrowFwd() {
+  if (!zoneBox || !areas.length) return;
+  const zc = zoneBox.getCenter(new THREE.Vector3()), ac = new THREE.Vector3();
+  for (const a of areas) ac.add(a.box.getCenter(new THREE.Vector3()));
+  ac.multiplyScalar(1 / areas.length);
+  const dx = ac.x - zc.x, dz = ac.z - zc.z, l = Math.hypot(dx, dz);
+  if (l > 1e-3) throwFwd.set(dx / l, 0, dz / l);
+}
+const wrapPi = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+const aimAngle = (y) => Math.atan2(-Math.sin(y), -Math.cos(y));          // the world direction the camera looks (flat), as atan2(x, z)
+function clampYawForward(y) {                                            // returns a camera yaw whose look direction is within THROW_ARC of throwFwd
+  const fa = Math.atan2(throwFwd.x, throwFwd.z), d = wrapPi(aimAngle(y) - fa);
+  if (Math.abs(d) <= THROW_ARC) return y;
+  return fa + Math.sign(d) * THROW_ARC - Math.PI;
+}
+
 function powerAt(t) {
   const ph = (t / CONFIG.power.period) % 1;
   const tri = ph < 0.5 ? ph * 2 : 2 - ph * 2;
@@ -1346,6 +1469,7 @@ function updateThrowState(dt) {
   });
 
   if (state.mode === 'idle' && zone) { state.mode = 'charging'; state.t = 0; log.debug('Power bar started'); }
+  if (state.mode === 'charging' || state.mode === 'cooldown') yaw = clampYawForward(yaw);   // in the zone you can only look (and so throw) forward
   if (state.mode === 'charging') {
     if (!zone) { state.mode = 'idle'; log.debug('Left throw zone'); }
     else { state.t += dt; state.power = powerAt(state.t); }
@@ -1455,6 +1579,7 @@ function tryThrow() {
   const power = state.power, T = CONFIG.throwing;
   state.mode = 'cooldown';
   state.cooldown = T.cooldown;
+  yaw = clampYawForward(yaw);                          // never throw backwards, whatever the camera was doing
   const el = THREE.MathUtils.degToRad(T.elevationDeg);
   _f.set(-Math.sin(yaw), 0, -Math.cos(yaw));
   const dir = new THREE.Vector3().copy(_f).multiplyScalar(Math.cos(el)); dir.y = Math.sin(el);
@@ -2101,6 +2226,7 @@ function refreshAcct() {
 async function initAccounts() {
   authShow('Checking sign-in...', false, false, false);
   const guestTimer = setTimeout(() => { if (acct.status === 'loading') authShow('Sign-in is taking a while...', false, false, true); }, 8000);
+  $('auth-guest').addEventListener('click', () => { acct.guest = true; authHide(); refreshAcct(); });   // attached first: it must work even when Firebase cannot be loaded
   let A, D, auth;
   try {
     const base = 'https://www.gstatic.com/firebasejs/' + FIREBASE_VER + '/';
@@ -2134,7 +2260,6 @@ async function initAccounts() {
     $('auth-msg').textContent = 'Password reset email sent - check your inbox.'; $('auth-msg').classList.remove('bad');
   }));
   for (const id of ['auth-email', 'auth-pass']) $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') $('auth-in').click(); });
-  $('auth-guest').addEventListener('click', () => { acct.guest = true; authHide(); refreshAcct(); });
   A.onAuthStateChanged(auth, async (user) => {
     clearTimeout(guestTimer);
     acct.user = user; acct.loaded = false; acct.status = 'ready';
@@ -2632,7 +2757,7 @@ function placeGym(sp) {                                  // the map has a marker
     gymItems.push(makeGym('treadmill', tx, floor(tx, tz), tz, Math.atan2(toCenter.x, toCenter.z)));
     log.info('No gym markers in the map: gym placed against the far wall of Pen', playerPen.num);
   }
-  penSlots = penSlots.filter((s) => gymItems.every((g) => Math.hypot(s.x - g.x, s.z - g.z) > 4));
+  penSlots = penSlots.filter((s) => gymItems.every((g) => Math.hypot(s.x - g.x, s.z - g.z) > 5.5));
 }
 const canTrain = () => ready && form === 'human' && !carry && dom.overlay.style.display === 'none';
 const gymDist = (g) => Math.hypot(Math.max(g.hit.min.x - pos.x, 0, pos.x - g.hit.max.x), Math.max(g.hit.min.z - pos.z, 0, pos.z - g.hit.max.z));   // metres from you to the machine's edge
@@ -2748,6 +2873,10 @@ function tick() {
   }
 }
 
+if (CONFIG.debug) window.TAE = {   // test hook, only with ?debug=1
+  get pos() { return pos; }, get yaw() { return yaw; }, set yaw(v) { yaw = v; }, get state() { return state; }, get form() { return form; }, get flight() { return flight; },
+  tryThrow, throwFwd, zoneBox: () => zoneBox, NET, remotes, gymItems, startGym, stopGym, canTrain, inZone,
+};
 init().catch(fatal);
 </script>
 </body>
