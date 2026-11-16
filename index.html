@@ -117,6 +117,15 @@
   #money small { font: 700 14px var(--font); color: #7dff9a; margin-left: 2px; }
   #money.bump { animation: moneybump .45s ease; }
   @keyframes moneybump { 40% { transform: scale(1.18); border-color: var(--gold); } }
+  /* offline earnings popup */
+  #offline { position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center; background: rgba(8,12,28,.72); backdrop-filter: blur(4px); color: #fff; font-family: var(--font); }
+  #offline .off-card { width: min(380px, 90vw); padding: 24px 22px 20px; border-radius: 24px; background: rgba(18,22,40,.97); border: 2px solid var(--gold); box-shadow: 0 20px 60px rgba(0,0,0,.55); text-align: center; animation: offpop .35s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes offpop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  #offline .off-title { font: 700 20px/1.25 var(--font); opacity: .95; margin: 0; }
+  #offline .off-amt { font: 800 46px/1.15 var(--font); color: var(--gold); margin: 8px 0 4px; text-shadow: 0 2px 10px rgba(255,211,77,.35); word-break: break-all; }
+  #offline .off-sub { font: 500 14px/1.4 var(--font); opacity: .8; margin: 0 0 16px; }
+  #offline button { font: 700 18px var(--font); padding: 10px 34px; border-radius: 999px; border: 0; cursor: pointer; background: var(--gold); color: #5a3a00; }
+  #offline button:hover { filter: brightness(1.08); }
   /* hotbar */
   #hotbar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; border-radius: 18px; background: var(--panel);
             border: 2px solid var(--edge); backdrop-filter: blur(6px); pointer-events: none; z-index: 3; }
@@ -367,6 +376,13 @@
 </div>
 <button type="button" id="chat-btn" aria-label="Chat">&#128172;</button>
 <div id="money"><span class="coin">$</span><b>0</b><small></small></div>
+<div id="offline" role="dialog" aria-modal="true" aria-label="Offline earnings"><div class="off-card">
+  <p class="off-title">You Got</p>
+  <div class="off-amt" id="off-amt">$0</div>
+  <p class="off-title">While You Were Gone</p>
+  <p class="off-sub" id="off-sub"></p>
+  <button type="button" id="off-ok">Collect</button>
+</div></div>
 <button type="button" id="dex-btn">Index</button>
 <button type="button" id="shop-btn">Upgrades <small>[U]</small></button>
 <div id="dex"></div>
@@ -438,6 +454,7 @@ const params = new URLSearchParams(location.search);
 const IS_TOUCH = params.get('touch') === '1' || (params.get('touch') !== '0' && ((typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in window));
 if (IS_TOUCH) document.body.classList.add('touch');
 const CONFIG = {
+  offline: { enabled: true, maxHours: 12, minSeconds: 30, rate: 1 },   // cash earned while away: capped at maxHours, ignored under minSeconds, rate 1 = full pet income
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
@@ -2700,7 +2717,7 @@ const authEl = $('auth');
 function snapshot() {                                  // everything that is saved, as plain data
   const b = playerPen ? playerPen.box : null;
   const pets = b ? petsInPen.map((p) => ({ id: p.id, mult: p.mult, u: clampN((p.pos.x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((p.pos.z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) })) : pendingPets;
-  return { v: 2, money, dex, slots: inv.slots, train, up, pets, profile: { name: profile.name, parts: profile.parts } };
+  return { v: 2, lastSeen: Date.now(), money, dex, slots: inv.slots, train, up, pets, profile: { name: profile.name, parts: profile.parts } };
 }
 function resetState() {                                // back to a brand new game (in memory)
   stopGym();
@@ -2761,13 +2778,17 @@ async function flushSave() {
     await D.set(D.ref(db, 'users/' + acct.user.uid), { data: JSON.stringify(snapshot()), updated: D.serverTimestamp() });
   } catch (e) { saveDirty = true; log.warn('Cloud save failed (will retry)', e); }
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) flushSave(); });
-window.addEventListener('pagehide', () => { flushSave(); });
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = Date.now(); saveDirty = true; flushSave(); }   // saveDirty: stamps lastSeen
+  else if (hiddenAt) { const since = hiddenAt; hiddenAt = 0; if (acct.user && acct.loaded) grantOffline(since); }   // the loop is paused while the tab is hidden, so pay for that time here
+});
+window.addEventListener('pagehide', () => { saveDirty = true; flushSave(); });
 
 async function loadCloud() {
   const { D, db } = acct.fb;
   const snap = await D.get(D.ref(db, 'users/' + acct.user.uid));
-  if (snap.exists() && snap.val() && snap.val().data) { applySave(JSON.parse(snap.val().data)); log.info('Cloud save loaded'); }
+  if (snap.exists() && snap.val() && snap.val().data) { const d = JSON.parse(snap.val().data); applySave(d); log.info('Cloud save loaded'); grantOffline(+d.lastSeen || 0); }
   else log.info('New account: keeping the current progress as its first save');   // guest progress carries over into a new account
   acct.loaded = true;
   saveDirty = true; flushSave();
@@ -3012,6 +3033,53 @@ function refreshMoney(bump) {
   const r = incomePerSec(), inc = ui.money.querySelector('small');
   if (inc) inc.textContent = r > 0 ? '+$' + fmtMoney(r) + '/s' : '';
   if (bump) { ui.money.classList.remove('bump'); void ui.money.offsetWidth; ui.money.classList.add('bump'); }
+}
+/* Offline earnings: lastSeen is saved with the game; when it is loaded again the pets in the pen are paid for the time in between. */
+function offlineRate() {                                // pets standing in the pen plus saved pets still waiting for their models
+  let t = incomePerSec();
+  for (const q of pendingPets) t += CONFIG.pets[q.id].income * (q.mult || 1);
+  return t;
+}
+function fmtDuration(sec) {
+  sec = Math.floor(sec);
+  const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  const parts = [];
+  if (d) parts.push(d + 'd');
+  if (h) parts.push(h + 'h');
+  if (m) parts.push(m + 'm');
+  if (!d && !h && !m) parts.push(s + 's');
+  return parts.slice(0, 2).join(' ');
+}
+let offTimer = 0;
+function showOffline(amount, away, capped) {
+  const box = $('offline'), amt = $('off-amt');
+  $('off-sub').textContent = 'Away for ' + fmtDuration(away) + (capped ? ' (earnings cap: ' + CONFIG.offline.maxHours + 'h)' : '');
+  box.style.display = 'flex';
+  cancelAnimationFrame(offTimer);
+  const t0 = performance.now(), dur = 1200;
+  const step = (now) => {                               // count up from 0
+    const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    amt.textContent = '$' + Math.floor(amount * e).toLocaleString();
+    if (k < 1) offTimer = requestAnimationFrame(step);
+  };
+  offTimer = requestAnimationFrame(step);
+  try { $('off-ok').focus(); } catch (e) { /* not focusable yet */ }
+}
+$('off-ok').addEventListener('click', () => { cancelAnimationFrame(offTimer); $('offline').style.display = 'none'; });
+function grantOffline(since) {                          // since = ms timestamp of when the player was last here
+  const C = CONFIG.offline;
+  if (!C.enabled || !(since > 0)) return 0;
+  const raw = (Date.now() - since) / 1000;
+  if (!isFinite(raw) || raw < C.minSeconds) return 0;   // clock went backwards or only a quick refresh
+  const capSec = C.maxHours * 3600, away = Math.min(raw, capSec);
+  const rate = offlineRate();
+  const gain = Math.floor(rate * away * C.rate);
+  if (gain < 1) return 0;
+  money += gain;
+  refreshMoney(true); refreshMenuStats(); saveGame();
+  showOffline(gain, away, raw > capSec);
+  log.info('Offline earnings: $' + gain + ' for ' + Math.round(away) + 's at $' + rate + '/s');
+  return gain;
 }
 function refreshMenuStats() {
   refreshAcct();
