@@ -82,7 +82,7 @@
   .tbtn:active { background: rgba(255,211,77,.7); color: #3a2a00; }
   #t-throw { right: calc(118px + env(safe-area-inset-right)); bottom: calc(60px + env(safe-area-inset-bottom)); width: 88px; height: 88px; display: none;
              background: #ffd34d; color: #3a2a00; font-size: 17px; animation: actpulse 1s ease-in-out infinite; }
-  #t-drop { right: calc(14px + env(safe-area-inset-right)); bottom: calc(150px + env(safe-area-inset-bottom)); width: 64px; height: 64px; display: none; font-size: 15px; background: rgba(120,30,30,.75); }
+  #t-gift { right: calc(14px + env(safe-area-inset-right)); bottom: calc(150px + env(safe-area-inset-bottom)); width: 64px; height: 64px; display: none; font-size: 15px; background: rgba(30,120,70,.8); }
   #t-respawn { right: calc(12px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width: 44px; height: 44px; font-size: 22px; }
   body.touch #hud { top: calc(62px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); font-size: 11px; line-height: 1.4; max-width: 46vw; }
   body.touch #hud .kb, body:not(.touch) #hud .tc { display: none; }
@@ -298,7 +298,7 @@
 <div id="speedfx"></div>
 <div id="net"></div>
 <div id="hud">
-  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>I</b> pet index &nbsp; <b>G</b> drop egg &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
+  <span class="kb"><b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>I</b> pet index &nbsp; <b>G</b> gift to a nearby player &nbsp; <b>Click</b> an egg to steal it, <b>click</b> a spot in your pen to place it<br>
   Enter the yellow <b>Throw Zone</b> &rarr; <b>Space</b> or <b>Click</b> stops the power bar and throws<br></span>
   <span class="tc"><b>Left</b> stick move &nbsp; <b>Right</b> side drag to look<br>
   In the yellow <b>Throw Zone</b> tap <b>Throw</b> to stop the power bar<br></span>
@@ -334,7 +334,7 @@
   <div id="joyzone"></div><div id="lookzone"></div>
   <div id="joy"><div id="joy-knob"></div></div>
   <button class="tbtn" id="t-throw" type="button">Throw</button>
-  <button class="tbtn" id="t-drop" type="button">Drop</button>
+  <button class="tbtn" id="t-gift" type="button">Gift</button>
   <button class="tbtn" id="t-respawn" type="button" aria-label="Respawn">&#8634;</button>
 </div>
 <div id="chat">
@@ -374,7 +374,7 @@
       <li>Everyone plays on the same <b>server</b> (top right) - one pen each. When all pens are taken, a new server opens for the next player.</li>
       <li>Walk into the yellow <b>Throw Zone</b> and throw an egg with <b>Space</b> / <b>Click</b> (touch: <b>Throw</b>). You can only throw forward, towards the islands.</li>
       <li>Land, then get close to an egg and <b>click it</b> to steal it. Run out of the area before the chicken (or the scorpion in the Sands) catches you!</li>
-      <li>Changed your mind? Press <b>G</b> (or the <b>Drop</b> button on a phone) to drop the egg you are carrying. A stolen egg goes back where it came from; one you already escaped with is lost, so it asks you to press twice.</li>
+      <li>Next to another player? Press <b>G</b> twice (or the <b>Gift</b> button on a phone) to give them the egg you are carrying (after you escaped with it) or the pet selected in your hotbar. Needs multiplayer.</li>
       <li>Take it to your pen and <b>click a spot</b> to place it. A timer counts down until it hatches (bigger egg = longer).</li>
       <li>The pet lands in your <b>hotbar</b>. Pick it with <b>1-9</b> or the mouse wheel, then <b>click a spot in your pen</b> to place it. Pets in your pen earn money every second (chicken $10/s up to snake $50/s and scorpion $75/s at 1x, more for bigger eggs).</li>
       <li>In your pen, <b>click the Pull-Up Bar</b> to gain <b>Strength</b> (throws go farther) and <b>click the Treadmill</b> to gain <b>Speed</b>. You hop on automatically and keep training on your own; <b>click again</b> to stop.</li>
@@ -499,7 +499,9 @@ const CONFIG = {
   rarities: { common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' }, rare: { label: 'Rare', color: '#5aa9ff' }, epic: { label: 'Epic', color: '#c77dff' } },
   eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3, cactus: 1, bone: 2 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
   hotbarSlots: 9, petPenMax: 30, petSpeed: 0.8,
-  petSizeGain: 0.25,   // pet size = base height * (1 + (eggMult - 1) * petSizeGain): a 1x egg gives a normal pet, a 10x egg gives a pet 3.25x taller
+  petMaxMult: 25,      // biggest size a PET can have (the biggest EGG is eggs.maxMult = 10x): a 1x egg hatches a 1x pet, a 10x egg hatches a 25x pet, in between is linear
+  gift: { range: 6 },  // metres: how close another player must be to gift them an egg or pet (scaled with the player below)
+  petSizeGain: 0.25,   // pet size = base height * (1 + (eggMult - 1) * petSizeGain): a pet of size m is 1 + (m - 1) * this times taller (a 25x pet = 7x taller)
   // range = how close you must be to an egg's edge to see Steal. carry* = size/height of the egg held over your head.
   steal: { penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
 };
@@ -508,7 +510,7 @@ const CONFIG = {
   const S = CONFIG.playerScale, P = CONFIG.player;
   P.height *= S; P.radius *= S; P.stepHeight *= S; P.probeHeights = P.probeHeights.map((h) => h * S);
   CONFIG.camera.distance *= S; CONFIG.camera.height *= S;
-  CONFIG.steal.range *= S; CONFIG.steal.reach *= S; CONFIG.gym.reach *= S;
+  CONFIG.steal.range *= S; CONFIG.steal.reach *= S; CONFIG.gym.reach *= S; CONFIG.gift.range *= S;
   // the islands sit further out on a bigger map: throw range goes with v^2, so launch speed follows sqrt(mapScale / the 0.4 the map was balanced at)
   CONFIG.throwing.powerScale *= Math.sqrt(CONFIG.mapScale / 0.4);
 }
@@ -995,7 +997,7 @@ if (IS_TOUCH) {
   const press = (id, fn) => $(id).addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); fn(); }, { passive: false });
   press('t-throw', () => tryThrow());
   press('t-respawn', () => respawn());
-  press('t-drop', () => dropEgg());
+  press('t-gift', () => giftToPlayer());
   document.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 document.addEventListener('mousemove', (e) => {
@@ -1027,7 +1029,7 @@ window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'Space' && state.mode === 'charging') tryThrow();
   if (e.code === 'KeyR') respawn();
-  if (e.code === 'KeyG' || e.code === 'KeyQ') dropEgg();
+  if (e.code === 'KeyG' || e.code === 'KeyQ') giftToPlayer();
   const dg = /^Digit([1-9])$/.exec(e.code);
   if (dg && +dg[1] <= CONFIG.hotbarSlots) selectSlot(+dg[1] - 1);
 });
@@ -1272,6 +1274,7 @@ async function netStart() {
 /*   eggs/<i>       = { k:'egg', type, mult }  |  { k:'held', by, type, mult }  |  { k:'regrow', at }              */
 /*                    every change is a transaction (steal = egg -> held, escape = held -> regrow, ...). Any      */
 /*                    client respawns eggs that are due, also transactionally, so there is no host to lose.       */
+/*   gifts/<toId>/<push> = { kind:'egg'|'pet', type|id, mult, area, from, fromName, ts }   an inbox per player; the receiver deletes it (a transaction) when it takes the gift */
 /*   chat/<push>    = { id, name, text, ts }   old lines are trimmed by the player with the lowest pen             */
 /*                                                                                                                 */
 /* Database rules (Firebase console > Realtime Database > Rules): keep your existing "users" rule and add:        */
@@ -1280,7 +1283,7 @@ async function netStart() {
 /* ------------------------------------------------------------------ */
 const FB_MAX_ROOMS = 40;
 const FB = { D: null, db: null, id: null, room: 0, pen: null, base: '', off: 0, players: new Map(), states: new Map(), pets: new Map(), known: new Set(),
-             eggs: [], eggSig: [], spawning: new Set(), unsubs: [], timers: [], held: null, heldDisc: null, lastState: '', joinedAt: 0, lastClean: 0, lostT: 0, pagehide: false };
+             eggs: [], eggSig: [], inbox: new Map(), sent: new Map(), taking: new Set(), spawning: new Set(), unsubs: [], timers: [], held: null, heldDisc: null, lastState: '', joinedAt: 0, lastClean: 0, lostT: 0, pagehide: false };
 const fbAllowed = () => params.get('solo') !== '1' && /^https?:$/.test(location.protocol);
 const fbNow = () => Date.now() + FB.off;                 // server clock: egg regrow times must agree between players
 const fbRef = (p) => FB.D.ref(FB.db, FB.base + '/' + p);
@@ -1345,7 +1348,9 @@ function fbListen() {
     FB.known.add(id);
     netMessage({ t: 'join', id, name: v.name, pen: v.pen, count: FB.players.size, s: FB.states.get(id), pets: fbArr(FB.pets.get(id)) });
   }));
+  un.push(D.onChildAdded(fbRef('gifts/' + FB.id), (s) => { const g = s.val(); if (g) { FB.inbox.set(s.key, g); fbDeliver(); } }));
   un.push(D.onChildRemoved(fbRef('players'), (s) => {
+    fbRefund(s.key);                                       // gifts still sitting unopened in the inbox of someone who just left come back to you
     const id = s.key; FB.players.delete(id); FB.known.delete(id); FB.states.delete(id); FB.pets.delete(id);
     if (id !== FB.id) netMessage({ t: 'leave', id, count: FB.players.size });
   }));
@@ -1374,9 +1379,38 @@ function fbListen() {
     if (s.val() === false && NET.on && NET.fb === FB) FB.lostT = setTimeout(() => { if (NET.on && NET.fb === FB) netLost(); }, 5000);
   }));
 }
+function fbGift(toId, payload, refund) {
+  const D = FB.D, pr = D.push(fbRef('gifts/' + toId), { ...payload, from: FB.id, fromName: netName(), ts: D.serverTimestamp() });
+  FB.sent.set(pr.key, { to: toId, payload });
+  Promise.resolve(pr).catch(() => { FB.sent.delete(pr.key); refund(); });
+}
+function fbRefund(leftId) {
+  for (const [gid, g] of [...FB.sent]) {
+    if (g.to !== leftId) continue;
+    FB.sent.delete(gid);
+    FB.D.runTransaction(fbRef('gifts/' + leftId + '/' + gid), (cur) => (cur ? null : undefined)).then((res) => {
+      if (res.committed) { FB.inbox.set('back-' + gid, { ...g.payload, _back: true }); fbDeliver(); }   // it was never opened: it is yours again
+    }).catch(() => {});
+  }
+}
+function fbDeliver() {                                    // hand over gifts as soon as there is room (free hands / a free hotbar slot)
+  if (!NET.on || NET.fb !== FB) return;
+  for (const [gid, g] of [...FB.inbox]) {
+    if (FB.taking.has(gid) || !giftCanAccept(g)) continue;
+    if (g._back) { FB.inbox.delete(gid); giftReceive(g, null); continue; }
+    FB.taking.add(gid);
+    FB.D.runTransaction(fbRef('gifts/' + FB.id + '/' + gid), (cur) => (cur ? null : undefined)).then((res) => {   // taking it = deleting it: exactly one taker
+      FB.taking.delete(gid); FB.inbox.delete(gid);
+      if (!res.committed) return;
+      if (giftCanAccept(g)) giftReceive(g, g.fromName || 'Someone');
+      else FB.D.set(fbRef('gifts/' + FB.id + '/' + gid), g).catch(() => {});                                    // your hands got full meanwhile: put it back
+    }).catch(() => FB.taking.delete(gid));
+  }
+}
 function fbTick() {                                       // runs every second on every client; transactions make sure only one spawn wins
   if (!NET.on || NET.fb !== FB) return;
   const D = FB.D, now = fbNow();
+  fbDeliver();
   for (let i = 0; i < eggItems.length; i++) {
     const e = FB.eggs[i];
     let next = null;
@@ -1449,6 +1483,7 @@ function fbCleanup() {                                    // leave the room: rel
     } catch (e) { /* offline: the server already removed them */ }
   }
   Object.assign(FB, { pen: null, base: '', held: null, heldDisc: null, lastState: '', spawning: new Set() });
+  FB.inbox.clear(); FB.sent.clear(); FB.taking.clear();
   FB.players.clear(); FB.states.clear(); FB.pets.clear(); FB.known.clear(); FB.eggs = []; FB.eggSig = [];
 }
 function netWelcome(ws, m) {
@@ -2007,33 +2042,72 @@ function dropCarry(msg) {                                   // the stolen egg go
   carry = null;
   if (msg) say(msg);
 }
-/* Drop the egg you are carrying (key G / Q, or the Drop button on a phone).
-   - A STOLEN egg goes straight back to where it came from (nothing is lost).
-   - An egg you already escaped with ("safe") is thrown away for good, so that needs a second press within 2.5 s. */
-let dropArmed = 0;
-const fallingEggs = [];
-function dropEgg() {
-  if (!ready || !carry || form !== 'human') return false;
-  if (carry.status === 'stolen') { dropCarry('You dropped the egg - it went back where it came from.'); dropArmed = 0; return true; }
+/* Gift (key G / Q, or the Gift button on a phone): hand the egg you are carrying (once you have escaped with it) or the pet selected in your
+   hotbar to the nearest other player. Needs multiplayer (Firebase). You press twice within 2.5 s to confirm so nothing is given away by accident. */
+let giftArmed = 0;
+function giftTarget() {                                  // the nearest other player in reach
+  if (!NET.on || !NET.fb) return null;
+  let best = null, bd = CONFIG.gift.range;
+  for (const r of remotes.values()) {
+    const p = r.root.position, d = Math.hypot(p.x - pos.x, p.z - pos.z);
+    if (d < bd && Math.abs(p.y - pos.y) < 6) { bd = d; best = r; }
+  }
+  return best;
+}
+function giftItem() {                                    // what G would hand over: the safe egg you carry, otherwise the selected pet
+  if (carry) return carry.status === 'safe' ? { kind: 'egg', label: carry.egg.type + ' egg ' + carry.egg.mult.toFixed(1) + 'x' } : null;
+  const sl = inv.slots[inv.sel];
+  if (!sl) return null;
+  const m = sl.sizes && sl.sizes.length ? sl.sizes[sl.sizes.length - 1] : 1;
+  return { kind: 'pet', label: CONFIG.pets[sl.pet].name + ' ' + m.toFixed(1) + 'x' };
+}
+function giftToPlayer() {
+  if (!ready || form !== 'human' || gym.session) return false;
+  if (!NET.on || !NET.fb) { say('Gifting needs multiplayer: join a server with another player.', 3.5); return true; }
+  if (carry && carry.status === 'stolen') { say('Escape with the egg first, then you can gift it.', 3); return true; }
+  const item = giftItem();
+  if (!item) { say('Nothing to gift: carry a safe egg or select a pet in your hotbar.', 3); return true; }
+  const to = giftTarget();
+  if (!to) { say('Stand next to another player to gift your ' + item.label + '.', 3); return true; }
   const now = performance.now();
-  if (now - dropArmed > 2500) { dropArmed = now; say('Press G again to drop this egg for good (it will be lost).', 2.5); return true; }
-  dropArmed = 0;
-  const e = carry.egg, label = e.type + ' egg ' + e.mult.toFixed(1) + 'x';
-  const m = eggTpl[e.type].make();                         // a copy that falls to the ground and vanishes
-  m.scale.setScalar(carryHeight(e));
-  m.position.set(pos.x, pos.y + CONFIG.steal.carryBase, pos.z);
-  scene.add(m);
-  fallingEggs.push({ m, vy: 1.5, y0: pos.y, t: 0 });
-  dropCarry('Dropped the ' + label + '.');
+  if (now - giftArmed > 2500) { giftArmed = now; say('Press G again to gift your ' + item.label + ' to ' + to.name + '.', 2.5); return true; }
+  giftArmed = 0;
+  let payload;
+  if (item.kind === 'egg') {                              // it leaves your hands first, so it can never be in two places
+    const e = carry.egg;
+    payload = { kind: 'egg', type: e.type, mult: Math.round(e.mult * 100) / 100, area: e.area || null };
+    playerRoot.remove(carry.held); carry = null;
+  } else {
+    const sl = inv.slots[inv.sel], mult = sl.sizes && sl.sizes.length ? sl.sizes.pop() : 1;
+    payload = { kind: 'pet', id: sl.pet, mult: Math.round(mult * 100) / 100 };
+    sl.count--; if (sl.count <= 0) inv.slots[inv.sel] = null;
+    refreshHotbar(); saveGame();
+  }
+  fbGift(to.id, payload, () => giftReceive(payload, null));   // if it cannot be sent, it comes straight back
+  say('Gifted your ' + item.label + ' to ' + to.name + '!', 4);
   return true;
 }
-function updateFallingEggs(dt) {
-  for (let i = fallingEggs.length - 1; i >= 0; i--) {
-    const f = fallingEggs[i];
-    f.t += dt; f.vy -= 22 * dt;
-    f.m.position.y = Math.max(f.y0, f.m.position.y + f.vy * dt);
-    f.m.rotation.z += dt * 3;
-    if (f.t > 1.2) { scene.remove(f.m); fallingEggs.splice(i, 1); }
+function giftCanAccept(g) {
+  if (!ready) return false;
+  if (g.kind === 'egg') return form === 'human' && !carry && !!eggTpl[g.type];
+  if (g.kind === 'pet') return !!CONFIG.pets[g.id] && invCanTake(g.id);
+  return false;
+}
+function giftReceive(g, from) {                          // from = the giver's name, or null when your own gift comes back to you
+  const who = from ? from + ' gifted you' : 'Your gift came back:';
+  if (g.kind === 'egg') {
+    const E = CONFIG.eggs, tpl = eggTpl[g.type], mult = clampN(+g.mult || 1, 1, E.maxMult);
+    const e = { type: g.type, mult, area: CONFIG.areas[g.area] ? g.area : null, mesh: null, r: E.baseHeight * mult * 0.375, h: E.baseHeight * mult * tpl.h };
+    carry = { egg: e, item: { pending: false, egg: null, timer: 0, x: pos.x, z: pos.z, groundY: pos.y, area: e.area }, area: e.area, areaLabel: null, status: 'safe', held: makeHeld(e) };
+    playerRoot.add(carry.held);
+    banner('<small>' + (from ? 'Gift from ' + from : 'Gift returned') + '</small><b>' + g.type + ' egg <span style="font-size:.5em;opacity:.8">' + mult.toFixed(1) + 'x</span></b><em>Take it to your pen</em>', '#7dff9a');
+    say(who + ' a ' + g.type + ' egg (' + mult.toFixed(1) + 'x). Take it to your pen!', 5);
+  } else {
+    const P = CONFIG.pets[g.id], mult = clampN(+g.mult || 1, 1, CONFIG.petMaxMult);
+    if (!(dex[g.id] > 0)) { dex[g.id] = 1; buildDex(); }
+    addPet(g.id, mult);
+    banner('<small>' + (from ? 'Gift from ' + from : 'Gift returned') + '</small><b>' + petIcon(g.id, 'bn') + P.name + ' <span style="font-size:.5em;opacity:.8">' + mult.toFixed(1) + 'x</span></b><em>It is in your hotbar</em>', '#7dff9a');
+    say(who + ' a ' + P.name + ' (' + mult.toFixed(1) + 'x). It is in your hotbar!', 5);
   }
 }
 function updateCarry() {
@@ -2152,6 +2226,7 @@ function updateAim() {
   let petAim = null;
   if (live && !eggs.length && !gAim && !IS_TOUCH && form === 'human' && !carry && petsInPen.length && nearPen()) petAim = pickPenPet(rayAt(0, 0));
   if (petAim) hint = verb + ' the ' + CONFIG.pets[petAim.id].name + ' to pick it up';
+  if (!hint && live && form === 'human') { const gi = giftItem(), gt = gi && giftTarget(); if (gt) hint = (IS_TOUCH ? 'Tap Gift' : 'Press G') + ' to gift your ' + gi.label + ' to ' + gt.name; }
   if (gym.session) hint = verb + ' to stop training';
   if (!IS_TOUCH && hint) {
     const ray = rayAt(0, 0);
@@ -2171,13 +2246,13 @@ function updateAim() {
   dom.cross.classList.toggle('on', !!aim.kind);
 }
 
-let hudSpeed = null, hudThrow = null, hudStr = null, hudDrop = null;
+let hudSpeed = null, hudThrow = null, hudStr = null, hudGift = null;
 function updateHud() {
   if (IS_TOUCH) {
     const showThrow = form === 'human' && !carry && state.mode === 'charging';
     if (hudThrow !== showThrow) { hudThrow = showThrow; $('t-throw').style.display = showThrow ? 'flex' : 'none'; }
-    const showDrop = form === 'human' && !!carry;
-    if (hudDrop !== showDrop) { hudDrop = showDrop; $('t-drop').style.display = showDrop ? 'flex' : 'none'; }
+    const showGift = form === 'human' && !!giftItem() && !!giftTarget();
+    if (hudGift !== showGift) { hudGift = showGift; $('t-gift').style.display = showGift ? 'flex' : 'none'; }
   }
   if (hudStr !== train.strength) { hudStr = train.strength; $('str-val').textContent = String(+train.strength.toFixed(1)); $('str-sub').textContent = 'STRENGTH +' + Math.round(train.strength * CONFIG.gym.throwBonusPerStrength * 100) + '%'; }
   if (hudSpeed !== speedStat) { hudSpeed = speedStat; dom.speedVal.textContent = String(+speedStat.toFixed(2)); }
@@ -2392,12 +2467,12 @@ function applySave(d) {                                // replace the current ga
   const slots = Array.isArray(d.slots) ? d.slots : Object.values(d.slots || {});
   slots.slice(0, CONFIG.hotbarSlots).forEach((sl, i) => {
     if (!sl || !CONFIG.pets[sl.pet] || !(sl.count > 0)) return;
-    const n = sl.count | 0, sizes = Array.isArray(sl.sizes) ? sl.sizes.map((v) => clampN(+v || 1, 1, CONFIG.eggs.maxMult)).slice(0, n) : [];
+    const n = sl.count | 0, sizes = Array.isArray(sl.sizes) ? sl.sizes.map((v) => clampN(+v || 1, 1, CONFIG.petMaxMult)).slice(0, n) : [];
     while (sizes.length < n) sizes.push(1);
     inv.slots[i] = { pet: sl.pet, count: n, sizes };
   });
   pendingPets = (Array.isArray(d.pets) ? d.pets : []).filter((q) => q && CONFIG.pets[q.id]).slice(0, penCapacity())
-    .map((q) => ({ id: q.id, mult: clampN(+q.mult || 1, 1, CONFIG.eggs.maxMult), u: clampN(+q.u || 0, 0, 1), v: clampN(+q.v || 0, 0, 1) }));
+    .map((q) => ({ id: q.id, mult: clampN(+q.mult || 1, 1, CONFIG.petMaxMult), u: clampN(+q.u || 0, 0, 1), v: clampN(+q.v || 0, 0, 1) }));
   for (const g of gymItems) setGymTier(g, up[g.kind]);
   spawnSavedPets();
   refreshHotbar(); buildDex(); refreshMoney(false); refreshMenuStats();
@@ -2726,7 +2801,7 @@ function invCanTake(id) {                           // counts pets that are stil
   return sim.includes(id) || sim.includes(null);
 }
 function addPet(id, mult) {
-  mult = Math.round(clampN(mult || 1, 1, CONFIG.eggs.maxMult) * 100) / 100;
+  mult = Math.round(clampN(mult || 1, 1, CONFIG.petMaxMult) * 100) / 100;
   let i = inv.slots.findIndex((sl) => sl && sl.pet === id);
   if (i >= 0) { inv.slots[i].count++; (inv.slots[i].sizes ||= []).push(mult); }
   else { i = inv.slots.findIndex((sl) => !sl); inv.slots[i] = { pet: id, count: 1, sizes: [mult] }; }
@@ -2734,7 +2809,8 @@ function addPet(id, mult) {
   refreshHotbar(); saveGame();
   const el = ui.slotEls[i]; if (el) { el.classList.remove('get'); void el.offsetWidth; el.classList.add('get'); }
 }
-const petSizeFactor = (mult) => 1 + (clampN(mult || 1, 1, CONFIG.eggs.maxMult) - 1) * CONFIG.petSizeGain;
+const petSizeFactor = (mult) => 1 + (clampN(mult || 1, 1, CONFIG.petMaxMult) - 1) * CONFIG.petSizeGain;
+const petMultFromEgg = (eggMult) => 1 + (clampN(eggMult || 1, 1, CONFIG.eggs.maxMult) - 1) * (CONFIG.petMaxMult - 1) / (CONFIG.eggs.maxMult - 1);   // 1x egg -> 1x pet ... 10x egg -> 25x pet
 
 /* Hatch sequence: the egg pops, the pet rises out of it, flies into the player and vanishes into the hotbar */
 const flyers = [];
@@ -2744,12 +2820,13 @@ function startHatch(h) {
   hatching.splice(hatching.indexOf(h), 1);
   h.el.remove();
   h.mesh.rotation.z = 0;
-  const m = makePetModel(h.pet, h.egg.mult);
+  const pm = petMultFromEgg(h.egg.mult);                // the pet grows beyond its egg: up to petMaxMult (25x) from a 10x egg
+  const m = makePetModel(h.pet, pm);
   m.root.scale.setScalar(0.02);
   m.root.position.set(h.mesh.position.x, h.mesh.position.y + h.size * 0.1, h.mesh.position.z);
   scene.add(m.root);
-  flyers.push({ id: h.pet, mult: h.egg.mult, pet: m, egg: h.mesh, eggScale: h.mesh.scale.x, eggSize: h.size, base: h.mesh.position.clone(), t: 0, phase: 'emerge', from: new THREE.Vector3(), to: new THREE.Vector3() });
-  log.info('Hatching', h.pet, h.egg.mult.toFixed(2) + 'x');
+  flyers.push({ id: h.pet, mult: pm, pet: m, egg: h.mesh, eggScale: h.mesh.scale.x, eggSize: h.size, base: h.mesh.position.clone(), t: 0, phase: 'emerge', from: new THREE.Vector3(), to: new THREE.Vector3() });
+  log.info('Hatching', h.pet, pm.toFixed(2) + 'x pet from a', h.egg.mult.toFixed(2) + 'x egg');
 }
 function finishHatch(f) {
   const id = f.id, P = CONFIG.pets[id], R = CONFIG.rarities[P.rarity];
@@ -3085,7 +3162,6 @@ function tick() {
   updateEggItems(dt);
   updateChickens(dt);
   updateCarry();
-  updateFallingEggs(dt);
   updateSpeedFx(dt);
   updateCamera();
   updateAim();
