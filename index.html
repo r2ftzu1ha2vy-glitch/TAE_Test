@@ -133,6 +133,7 @@
           align-items: center; justify-content: center; font-size: 30px; line-height: 1; color: #fff; transition: transform .1s, border-color .1s, background .1s; }
   .slot .k { position: absolute; top: 2px; left: 6px; font: 600 11px var(--font); opacity: .65; }
   .slot .n { position: absolute; right: 5px; bottom: 1px; font: 700 14px var(--font); text-shadow: 0 1px 3px #000; }
+  .slot.bat { margin-right: 10px; pointer-events: auto; cursor: pointer; } .slot.bat::after { content: ''; position: absolute; right: -8px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: rgba(255,255,255,.2); }
   .slot.sel { border-color: var(--gold); background: rgba(255,211,77,.2); box-shadow: 0 0 14px rgba(255,211,77,.5); transform: translateY(-5px); }
   /* pet index: a button on the left opens a panel with every pet */
   #dex-btn { position: fixed; left: 12px; top: 50%; transform: translateY(-50%); z-index: 4; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 3px solid #fff;
@@ -458,7 +459,7 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb' },
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb' },
     gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb'] },   // index = upgrade level
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb' } },
   eggs: { baseHeight: 0.8, maxMult: 10, respawn: 6,   // 1x egg = baseHeight metres tall; size never exceeds maxMult
@@ -506,6 +507,11 @@ const CONFIG = {
   // powerScale: the bar still reads 5-20, but the launch speed is power * powerScale (0.7 -> roughly half the old distance at 20).
   throwing: { powerScale: 0.7, elevationDeg: 35, gravity: 9.8, cooldown: 1.2, maxLanded: 40, maxFlightTime: 12 },
   egg: { size: 0.45 },
+  // Baseball bat: always in the hotbar (button left of slot 1, key F or 0). Equip it, then click to swing (Bat Hit clip). Anyone in front of you within `reach`
+  // (body-size units, scaled with the player) is knocked back and ragdolls. scale/grip/handY/lean place the model in the left hand (the arm the Bat clips raise).
+  // knock = launch speed in m/s (decays by `decay` per second), lift = upward hop, ragdoll = seconds on the floor, immune = extra seconds nobody can chain-hit you,
+  // hitAt = seconds into the swing when the bat connects, swingSpeed = playback speed of the Bat Hit clip, cone = cos of the half-angle in front of you that counts.
+  bat: { scale: 1.3, grip: 0.4, handY: 0.42, lean: 0.25, reach: 2.4, cone: 0.35, cooldown: 0.75, hitAt: 0.27, swingSpeed: 1.5, knock: 15, lift: 6, decay: 3, ragdoll: 1.8, immune: 1.0 },
   // Gym in your pen. Click the Pull-Up Bar (strength) or the Treadmill (speed) to start auto-training; click again to stop. reach = how close you must stand (metres from the machine's edge).
   // Auto-training: you are teleported onto the machine and locked in place; reps are counted by the timings of your machine's upgrade level (see gymTiers).
   // gripAlign: where the Training clip's raised arms sit on the bar (0 = lowest point of the pull, 1 = highest, 0.5 = middle).
@@ -556,7 +562,7 @@ const CONFIG = {
   gift: { range: 6 },  // metres: how close another player must be to gift them an egg or pet (scaled with the player below)
   petSizeGain: 0.25,   // pet size = base height * (1 + (eggMult - 1) * petSizeGain): a pet of size m is 1 + (m - 1) * this times taller (a 25x pet = 7x taller)
   // range = how close you must be to an egg's edge to see Steal. carry* = size/height of the egg held over your head.
-  steal: { penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
+  steal: { dropSeconds: 10, penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
 };
 
 { // scale the body-size settings by playerScale (speeds are deliberately left alone) and keep the throw reach in step with the map size
@@ -753,6 +759,10 @@ let penSlots = [], penSlotCursor = 0;
 const gymMarkers = { bar: {}, treadmill: {} };   // pen number -> centre of its PullUp_BarPenN / TreadmillPenN marker cube in the map
 const penEggs = [], placed = {};              // meshes standing in your pen / counts per type
 let carry = null;                             // { egg, item, area, status: 'stolen' | 'safe', held }
+const bat = { equipped: false, cd: 0, swingT: -1, hitDone: false, n: 0, lastHit: null };   // the always-owned baseball bat
+const rag = { t: 0, dur: 0, vx: 0, vz: 0, tilt: 0, imm: 0, rest: [], ph: [] };           // local ragdoll after being hit
+const dropped = [];                           // eggs lying where a thief was caught outside the egg's area: { x, z, groundY, egg, area, home, life }
+let batGltfRef = null, batHolder = null, ragLimbs = [];
 const chickens = [];
 let playerModel = null, modelBaseY = 0, feetExtra = 0; const legMeshes = [];
 
@@ -813,6 +823,8 @@ async function init() {
   const typeGltfs = restGltfs.slice(GM.treadmill.length + GM.bar.length);
   setupMap(mapGltf.scene);
   setupPlayer(playerGltf);
+  try { batGltfRef = await load(CONFIG.models.bat); } catch (err) { log.warn('Baseball bat model failed to load:', err && err.message); }
+  setupBat();
   eggTpl.normal = bakeEgg(typeGltfs[names.indexOf('normal')].scene);
   names.forEach((n, i) => { if (n !== 'normal') eggTpl[n] = bakeEgg(typeGltfs[i].scene, eggTpl.normal.refH); });
   playerEgg = bakeEgg(eggGltf.scene, eggTpl.normal.refH);
@@ -954,6 +966,159 @@ function playAnim(name) {
   currentAnim = name;
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Dropped eggs: a thief caught OUTSIDE the egg's own area drops it where they stand. It lies there steal.dropSeconds, can be picked up again by clicking it, then returns to its spawner */
+/* ------------------------------------------------------------------ */
+function caughtBy(kind) {
+  if (carry && carry.status === 'stolen') {
+    const a = areaAt(pos.x, pos.z);
+    if (!a || a.id !== carry.area) {                       // the egg made it out of its area: it drops right here
+      const e = carry.egg, home = carry.item;
+      const g = groundAt(pos.x, pos.y + 2, pos.z), gy = g === null ? pos.y : g;
+      e.mesh.position.set(pos.x, gy, pos.z); e.mesh.visible = true; scene.add(e.mesh);
+      dropped.push({ x: pos.x, z: pos.z, groundY: gy, egg: e, area: carry.area, home, drop: true, life: CONFIG.steal.dropSeconds, pending: true });
+      playerRoot.remove(carry.held);
+      carry = null;
+      say('The ' + kind + ' caught you! The egg dropped where you were caught - it stays for ' + CONFIG.steal.dropSeconds + 's.', 5);
+      return;
+    }
+  }
+  dropCarry('The ' + kind + ' caught you! The egg went back and you woke up in your pen.');
+}
+function updateDropped(dt) {
+  for (let i = dropped.length - 1; i >= 0; i--) {
+    const d = dropped[i];
+    d.life -= dt;
+    d.egg.mesh.visible = d.life > 3 || Math.floor(d.life * 6) % 2 === 0;       // blinks for the last 3 seconds
+    if (d.life > 0) continue;
+    const home = d.home, e = d.egg;                        // time is up: back to the spawner it came from
+    dropped.splice(i, 1);
+    e.mesh.visible = true; e.mesh.position.set(home.x, home.groundY, home.z);
+    home.egg = e; home.pending = false;
+    netSend({ t: 'return', i: eggItems.indexOf(home) });
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Baseball bat + ragdoll                                              */
+/* ------------------------------------------------------------------ */
+const myNetId = () => (NET.fb ? FB.id : NET.id);
+const _bp = new THREE.Vector3(), _bq = new THREE.Quaternion();
+function findNode(model, re) { let f = null; model.traverse((o) => { if (!f && re.test(o.name)) f = o; }); return f; }
+function makeBatHolder(model) {                            // the bat sits in the Left Arm's hand: the Bat Hold / Bat Hit / Bat Walk clips all raise that arm
+  if (!batGltfRef) return null;
+  const arm = findNode(model, /^Left[ _]Arm$/i);
+  if (!arm) { log.warn('No Left Arm node: bat not attached'); return null; }
+  const B = CONFIG.bat, inner = batGltfRef.scene.clone(true);
+  inner.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  const box = new THREE.Box3().setFromObject(inner);
+  inner.position.set(-(box.min.x + (box.max.x - box.min.x) * B.grip), -(box.min.y + box.max.y) / 2, -(box.min.z + box.max.z) / 2);   // the grip point becomes the origin
+  const holder = new THREE.Group();
+  holder.add(inner); holder.scale.setScalar(B.scale); holder.visible = false;
+  holder.userData.arm = arm;
+  // bat long axis (+X = barrel) in the arm's own frame: arm-local -Z is "up" while the arm is raised forward, leaning a little away from the face
+  holder.userData.qGrip = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, Math.sin(B.lean), -Math.cos(B.lean)).normalize());
+  model.add(holder);
+  return holder;
+}
+function batFollow(h) {                                    // call after the mixer has posed the arm
+  const arm = h.userData.arm;
+  arm.updateMatrix();
+  h.position.copy(_bp.set(0, CONFIG.bat.handY, 0).applyMatrix4(arm.matrix));
+  h.quaternion.copy(arm.quaternion).multiply(h.userData.qGrip);
+}
+function setupBat() {
+  playerRoot.rotation.order = 'YXZ';                       // yaw first, then lie down about the body's own axis when ragdolled
+  batHolder = makeBatHolder(playerModel);
+  ragLimbs = [/^Head$/i, /^Right[ _]Arm$/i, /^Left[ _]Arm$/i, /^Right[ _]Leg$/i, /^Left[ _]Leg$/i].map((re) => findNode(playerModel, re)).filter(Boolean);
+  for (const n of ['bat hit']) if (!actions[n]) log.warn('Player is missing animation:', n);
+}
+function playSwing(a) {                                    // Bat Hit only moves the Left Arm: lay it over Bat Hold / Bat Walk with a big weight so it wins on that arm and leaves the rest alone
+  a.reset(); a.weight = 24; a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.timeScale = CONFIG.bat.swingSpeed;
+  a.play(); a.fadeIn(0.05);
+  const dur = a.getClip().duration / CONFIG.bat.swingSpeed;
+  setTimeout(() => { a.fadeOut(0.1); }, Math.max(0, (dur - 0.1) * 1000));
+}
+function equipBat(on, quiet) {
+  if (on) {
+    if (!ready || form !== 'human') return;
+    if (carry) { if (!quiet) say('You cannot use the bat while carrying an egg.', 2.5); return; }
+    if (gym.session || rag.t > 0) return;
+    if (inZone()) { if (!quiet) say('No bat in the Throw Zone.', 2.5); return; }
+    bat.equipped = true;
+  } else {
+    bat.equipped = false; bat.swingT = -1;
+    if (actions['bat hit']) actions['bat hit'].stop();
+  }
+  refreshHotbar();
+}
+function toggleBat() { equipBat(!bat.equipped); }
+function batSwing() {
+  if (!bat.equipped || form !== 'human' || carry || gym.session || rag.t > 0) return false;
+  if (bat.cd > 0) return true;                             // still recovering: the click is used up, not turned into something else
+  bat.cd = CONFIG.bat.cooldown; bat.swingT = 0; bat.hitDone = false; bat.n++;
+  if (actions['bat hit']) playSwing(actions['bat hit']);
+  return true;
+}
+function updateBat(dt) {
+  bat.cd = Math.max(0, bat.cd - dt);
+  rag.imm = Math.max(0, rag.imm - dt);
+  if (bat.equipped && (carry || form !== 'human' || gym.session || (inZone() && rag.t <= 0))) equipBat(false, true);
+  if (bat.swingT < 0) return;
+  const B = CONFIG.bat, clip = actions['bat hit'] && actions['bat hit'].getClip();
+  bat.swingT += dt;
+  if (!bat.hitDone && bat.swingT >= B.hitAt) { bat.hitDone = true; batHit(); }
+  if (bat.swingT >= (clip ? clip.duration / B.swingSpeed : 0.7)) bat.swingT = -1;
+}
+function batHit() {                                        // the bat connects: the nearest player in front of you gets knocked back
+  const B = CONFIG.bat, reach = B.reach * CONFIG.playerScale;
+  const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+  let best = null, bd = Infinity, bx = 0, bz = 0;
+  for (const r of remotes.values()) {
+    if (r.form !== 'human' || (r.rg || 0) > 0.2) continue;
+    const p = r.root.position, dx = p.x - pos.x, dz = p.z - pos.z, d = Math.hypot(dx, dz);
+    if (d > reach || d < 1e-3 || Math.abs(p.y - pos.y) > 3) continue;
+    if ((dx * fx + dz * fz) / d < B.cone || d >= bd) continue;
+    best = r; bd = d; bx = dx / d; bz = dz / d;
+  }
+  if (!best) return;
+  bat.lastHit = { to: best.id, n: bat.n, x: Math.round(bx * 100) / 100, z: Math.round(bz * 100) / 100 };   // sent with the state; the victim's game does the ragdoll
+  say('You hit ' + best.name + '!', 2);
+}
+function ragStart(dx, dz) {                                // dx, dz = flat unit direction the hit pushes you (away from the attacker)
+  if (rag.imm > 0 || rag.t > 0 || form !== 'human' || !ready) return;
+  const B = CONFIG.bat, l = Math.hypot(dx, dz) || 1;
+  dx /= l; dz /= l;
+  stopGym();
+  if (bat.swingT >= 0 && actions['bat hit']) actions['bat hit'].stop();
+  bat.swingT = -1;
+  rag.t = rag.dur = B.ragdoll; rag.imm = B.ragdoll + B.immune;
+  rag.vx = dx * B.knock; rag.vz = dz * B.knock;
+  vy = B.lift; grounded = false;
+  facing = Math.atan2(-dx, -dz);                           // you face the attacker and fall onto your back
+  rag.rest = ragLimbs.map((n) => n.quaternion.clone());
+  rag.ph = ragLimbs.map(() => Math.random() * 6.28);
+  if (state.mode === 'charging') state.mode = 'idle';
+  say('You got hit!', 1.5);
+}
+const _rx = new THREE.Vector3(1, 0, 0), _rz = new THREE.Vector3(0, 0, 1);
+function ragPose(dt) {                                     // procedural ragdoll: fall over, limbs flop and settle, then get back up
+  rag.t -= dt;
+  const el = rag.dur - rag.t, ss = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+  const tilt = ss(el / 0.22) * ss(rag.t / 0.5);
+  rag.tilt = rag.t <= 0 ? 0 : tilt;
+  playerRoot.position.set(pos.x, pos.y + 0.17 * CONFIG.playerScale * tilt, pos.z);
+  playerRoot.rotation.y = facing;
+  playerRoot.rotation.x = -tilt * Math.PI / 2;
+  ragLimbs.forEach((n, i) => {
+    const a = 1.1 * Math.exp(-1.8 * el) * Math.sin(13 * el + rag.ph[i]) + (i === 0 ? 0 : 0.5 * tilt * (i % 2 ? 1 : -1));
+    n.quaternion.copy(rag.rest[i]).multiply(_bq.setFromAxisAngle(_rx, a));
+    if (i === 1 || i === 2) n.quaternion.multiply(_bq.setFromAxisAngle(_rz, (i === 1 ? 1 : -1) * 0.8 * tilt));
+  });
+  if (batHolder) { batHolder.visible = bat.equipped; if (bat.equipped) batFollow(batHolder); }
+}
+
 /* ------------------------------------------------------------------ */
 /* Spawn                                                               */
 /* ------------------------------------------------------------------ */
@@ -963,6 +1128,7 @@ function endEggForm() {
 }
 function respawn() {
   stopGym();
+  rag.t = 0; rag.tilt = 0; rag.imm = 0; if (playerRoot) playerRoot.rotation.x = 0;   // standing up again after a bat hit
   throwCap = 0; lastOkValid = false;
   endEggForm();
   if (carry && carry.status === 'stolen') dropCarry('You respawned - the stolen egg went back.');
@@ -1138,7 +1304,7 @@ if (IS_TOUCH) {
     for (const t of e.changedTouches) {
       const st = taps[t.identifier]; if (!st) continue; delete taps[t.identifier];
       if (performance.now() - st.t < 350 && Math.hypot(t.clientX - st.x, t.clientY - st.y) < 14 && dom.overlay.style.display === 'none')
-        worldClick((t.clientX / window.innerWidth) * 2 - 1, -(t.clientY / window.innerHeight) * 2 + 1);
+        { if (!worldClick((t.clientX / window.innerWidth) * 2 - 1, -(t.clientY / window.innerHeight) * 2 + 1)) batSwing(); }
     }
   };
   for (const z of [joyZone, lookZone]) { z.addEventListener('touchstart', tapStart, { passive: true }); z.addEventListener('touchend', tapEnd); }
@@ -1164,6 +1330,7 @@ document.addEventListener('mousedown', (e) => {
   if (gym.session) { stopGym(); return; }                          // any click while training stops it
   if (state.mode === 'charging' && !carry && form === 'human') { tryThrow(); return; }   // in the Throw Zone a click throws
   if (worldClick(0, 0)) return;                                    // otherwise the click goes where the crosshair points: steal that egg / place in the pen
+  if (batSwing()) return;                                          // bat equipped: the click is a swing
   tryThrow();
 });
 const typing = (e) => !!(e.target && e.target.closest && e.target.closest('#auth, #chat, #profile'));   // typing in the sign-in form / chat: no game keys
@@ -1178,6 +1345,7 @@ window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'Space' && state.mode === 'charging') tryThrow();
   if (e.code === 'KeyR') respawn();
+  if (e.code === 'KeyF' || e.code === 'Digit0') toggleBat();
   if (e.code === 'KeyG' || e.code === 'KeyQ') giftToPlayer();
   if (e.code === 'KeyH') giftToPlayer('pet');                // gift the selected hotbar pet even while you carry an egg
   const dg = /^Digit([1-9])$/.exec(e.code);
@@ -1232,7 +1400,8 @@ function updatePlayer(dt) {
   const ix = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touch.x;
   const iz = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touch.y;
   _mv.set(0, 0, 0).addScaledVector(_f, iz).addScaledVector(_r, ix);
-  const frozen = form === 'human' && !carry && inZone();   // standing in the Throw Zone: no walking, only look + throw
+  const down = form === 'human' && rag.t > 0;               // ragdolled by a bat hit: no control until you get up
+  const frozen = (form === 'human' && !carry && inZone()) || down;   // standing in the Throw Zone: no walking, only look + throw
   const moving = !frozen && _mv.lengthSq() > 0.04;     // small dead zone for the touch stick
   fxTarget = 0;
   if (moving) {
@@ -1248,6 +1417,16 @@ function updatePlayer(dt) {
     facing = angleLerp(facing, Math.atan2(_mv.x, _mv.z), P.turnSpeed * dt);
   } else if (state.mode === 'charging' || state.mode === 'cooldown') {
     facing = angleLerp(facing, Math.atan2(_f.x, _f.z), P.turnSpeed * dt);
+  }
+  if (!eggForm && !down && bat.swingT >= 0) facing = angleLerp(facing, Math.atan2(_f.x, _f.z), Math.min(1, 20 * dt));   // swinging: face where the camera looks
+  if (down) {                                           // knockback slide
+    const dec = Math.exp(-CONFIG.bat.decay * dt);
+    rag.vx *= dec; rag.vz *= dec;
+    const rx = rag.vx * dt, rz = rag.vz * dt;
+    gatherBarriers();
+    const bh = CONFIG.player.height;
+    if (rx !== 0 && !blocked(Math.sign(rx), 0) && !hitsBarrier(pos.x + rx, pos.z, P.radius, bh)) pos.x += rx;
+    if (rz !== 0 && !blocked(0, Math.sign(rz)) && !hitsBarrier(pos.x, pos.z + rz, P.radius, bh)) pos.z += rz;
   }
 
   // vertical
@@ -1280,10 +1459,13 @@ function updatePlayer(dt) {
     playerEggMesh.position.set(pos.x, pos.y + THREE.MathUtils.lerp(CONFIG.eggs.baseHeight * 0.5, P.radius, eggLie), pos.z);
     return;
   }
+  if (down) { ragPose(dt); return; }
+  playerRoot.rotation.x = 0; rag.tilt = 0;
   // animation: holding an egg always uses the Steal clips
   const winding = state.mode === 'charging' || state.mode === 'cooldown';
   let anim;
   if (carry) anim = moving ? 'steal run' : 'steal idle';
+  else if (bat.equipped && actions['bat hold']) anim = moving && actions['bat walk'] ? 'bat walk' : 'bat hold';
   else if (winding && !moving && actions['throw idle']) anim = 'throw idle';
   else anim = moving ? 'walk' : 'idle';
   playAnim(anim);
@@ -1292,6 +1474,7 @@ function updatePlayer(dt) {
   playerRoot.rotation.y = facing;
   mixer.timeScale = 1 + CONFIG.speedFx.animBoost * fxFeel;      // legs spin faster the faster you are
   mixer.update(dt);
+  if (batHolder) { batHolder.visible = bat.equipped; if (bat.equipped) batFollow(batHolder); }
 
   // The Steal clips are authored with the feet well off the floor. While holding an egg, ease the model down so the feet stay on the ground.
   if (legMeshes.length) {
@@ -1597,6 +1780,10 @@ function fbSend(o) {
       if (o.carry) st.carry = { type: o.carry.type, mult: fbRound(o.carry.mult) };
       if (o.ub !== undefined) { st.ub = o.ub; st.ut = o.ut; }
       if (o.gts) st.gts = fbRound(o.gts);
+      if (o.bat) st.bat = 1;
+      if (o.sw) st.sw = o.sw | 0;
+      if (o.rg) st.rg = fbRound(o.rg);
+      if (o.ht) st.ht = o.ht;
       const sig = JSON.stringify(st);
       if (sig === FB.lastState) break;                    // standing still: nothing to send
       FB.lastState = sig; D.set(fbRef('states/' + id), st).catch(() => {});
@@ -1720,6 +1907,7 @@ function netAddRemote(o) {
   if (acts.jump) { acts.jump.setLoop(THREE.LoopOnce, 1); acts.jump.clampWhenFinished = true; }
   const r = { id: o.id, name: o.name || 'Player', color: cleanParts(o.color), pen: o.pen, root, avatar, model, mixer, acts, anim: '', tag, eggMesh, held: null, heldKey: '', form: 'human',
               tx: 0, ty: 0, tz: 0, tf: 0, facing: 0, init: false, pets: [] };
+  r.batH = makeBatHolder(model); r.hitN = o.s && o.s.ht ? o.s.ht.n : 0; r.sw = o.s ? (o.s.sw | 0) : 0; r.rg = 0; r.rgS = 0;
   remotes.set(o.id, r);
   if (o.s) netRemoteState(r, o.s, true);
   if (o.pets && o.pets.length) netRemotePets(r, o.pets);
@@ -1774,6 +1962,10 @@ function netRemoteState(r, s, snap) {
     r.heldKey = key;
   }
   if (s.ub !== undefined) netRemoteGyms(r, s.ub | 0, s.ut | 0);
+  r.rg = s.rg || 0;
+  if (r.batH) r.batH.visible = !!s.bat && human;
+  if ((s.sw | 0) !== r.sw) { r.sw = s.sw | 0; if (!snap && human && r.acts['bat hit']) playSwing(r.acts['bat hit']); }
+  if (s.ht && s.ht.n !== r.hitN) { r.hitN = s.ht.n; if (!snap && s.ht.to === myNetId()) ragStart(+s.ht.x || 0, +s.ht.z || 0); }   // somebody hit you
   if (r.acts.training) r.acts.training.timeScale = s.gts > 0 ? s.gts : 1;      // faster bar upgrades pull up faster
   const want = human ? (r.acts[s.anim] ? s.anim : 'idle') : '';
   if (want && want !== r.anim && r.acts[want]) {
@@ -1809,7 +2001,7 @@ function netTick(dt) {
   if (NET.sendAcc >= 0.1 && ready) {
     NET.sendAcc = 0;
     const fl = form === 'flying' && flight;
-    netSend({ t: 'state', x: fl ? flight.c.x : pos.x, y: fl ? flight.c.y - CONFIG.eggs.baseHeight * 0.5 : pos.y, z: fl ? flight.c.z : pos.z, f: facing, form, anim: currentAnim || 'idle',
+    netSend({ t: 'state', bat: bat.equipped ? 1 : 0, sw: bat.n, rg: rag.tilt, ht: bat.lastHit, x: fl ? flight.c.x : pos.x, y: fl ? flight.c.y - CONFIG.eggs.baseHeight * 0.5 : pos.y, z: fl ? flight.c.z : pos.z, f: facing, form, anim: currentAnim || 'idle',
               carry: carry ? { type: carry.egg.type, mult: carry.egg.mult } : null,
               ub: up.bar, ut: up.treadmill, gts: gym.session && gym.session.g.kind === 'bar' ? CONFIG.gym.barClipLength / gym.session.every : 0 });
   }
@@ -1825,6 +2017,9 @@ function netTick(dt) {
     r.facing = angleLerp(r.facing, r.tf, Math.min(1, 10 * dt));
     r.root.rotation.y = r.facing;
     r.mixer.update(dt);
+    r.rgS += ((r.rg || 0) - r.rgS) * Math.min(1, 14 * dt);          // ragdoll lie-down, as reported by that player
+    r.avatar.rotation.x = -r.rgS * Math.PI / 2; r.avatar.position.y = r.rgS * 0.22;
+    if (r.batH && r.batH.visible) batFollow(r.batH);
     const b = penBoxes[r.pen];
     for (const p of r.pets) stepPet(p, b, dt);
   }
@@ -2016,7 +2211,7 @@ function updatePowerBar() {
 
 const strengthMult = () => 1 + train.strength * CONFIG.gym.throwBonusPerStrength;
 function tryThrow() {
-  if (state.mode !== 'charging') return;
+  if (state.mode !== 'charging' || rag.t > 0) return;
   const power = state.power, T = CONFIG.throwing;
   state.mode = 'cooldown';
   state.cooldown = T.cooldown;
@@ -2197,7 +2392,7 @@ function inOwnPen() {
 function nearestSteal() {
   if (carry || (form !== 'human' && form !== 'egg')) return null;
   let best = null, bd = Infinity;
-  for (const it of eggItems) {
+  for (const it of eggItems.concat(dropped)) {
     const e = it.egg;
     if (!e) continue;
     const d = Math.hypot(pos.x - it.x, pos.z - it.z);
@@ -2217,14 +2412,15 @@ function steal(it) {
   const e = it.egg;
   if (!e || carry) return;
   if (form === 'egg') endEggForm();                       // clicking Steal turns you back into the player
-  scene.remove(e.mesh);
-  it.egg = null; it.pending = true;
+  scene.remove(e.mesh); e.mesh.visible = true;
+  const home = it.drop ? it.home : it;                   // a dropped egg belongs to the spawner it came from
+  if (it.drop) dropped.splice(dropped.indexOf(it), 1); else { it.egg = null; it.pending = true; }
   const area = areas.find((a) => a.id === it.area);
-  carry = { egg: e, item: it, area: it.area, areaLabel: area ? area.label : null, status: 'stolen', held: makeHeld(e) };
+  carry = { egg: e, item: home, area: it.area, areaLabel: area ? area.label : null, status: 'stolen', held: makeHeld(e) };
   playerRoot.add(carry.held);
   state.mode = 'idle';
   say('Stolen! RUN - the ' + (area && area.enemy || 'chicken') + ' is after you!' + (area && area.chaseAnywhere ? ' It will not stop - get to your pen!' : ''), 4);
-  netSend({ t: 'steal', i: eggItems.indexOf(it) });
+  if (!it.drop) netSend({ t: 'steal', i: eggItems.indexOf(it) });   // a dropped egg is still yours on the server
   log.info('Stole', e.type, e.mult.toFixed(2) + 'x from', it.area);
 }
 function dropCarry(msg) {                                   // the stolen egg goes back where it came from
@@ -2352,7 +2548,7 @@ function rayAt(nx, ny) { _pr.setFromCamera({ x: nx, y: ny }, camera); return _pr
 function reachEggs() {                                   // eggs close enough to steal
   const out = [];
   if (carry || (form !== 'human' && form !== 'egg')) return out;
-  for (const it of eggItems) {
+  for (const it of eggItems.concat(dropped)) {
     const e = it.egg;
     if (!e) continue;
     if (Math.hypot(pos.x - it.x, pos.z - it.z) < e.r + CONFIG.steal.reach && Math.abs(pos.y - it.groundY) < e.h + 1.5) out.push(it);
@@ -2427,6 +2623,7 @@ function updateAim() {
   if (live && !eggs.length && !gAim && !IS_TOUCH && form === 'human' && !carry && petsInPen.length && nearPen()) petAim = pickPenPet(rayAt(0, 0));
   if (petAim) hint = verb + ' the ' + CONFIG.pets[petAim.id].name + ' to pick it up';
   if (!hint && live && form === 'human') { const gi = giftItem(), gt = gi && giftTarget(); if (gt) { hint = (IS_TOUCH ? 'Tap Gift' : 'Press G') + ' to gift your ' + gi.label + ' to ' + gt.name; const gp = carry && giftItem('pet'); if (gp) hint += (IS_TOUCH ? '  /  Gift pet: ' : '  /  H: ') + gp.label; } }
+  if (!hint && live && bat.equipped && form === 'human') hint = verb + ' to swing the bat';
   if (gym.session) hint = verb + ' to stop training';
   if (!IS_TOUCH && hint) {
     const ray = rayAt(0, 0);
@@ -2608,7 +2805,7 @@ function chickenFollow(ch, dt) {                         // not the host: show t
   ch.state = chasingMe ? 'chase' : 'wander';
   ch.free = chasingMe && !!A.chaseAnywhere;
   if (chasingMe && Math.hypot(pos.x - p.x, pos.z - p.z) < ch.cfg.catchRadius + 0.6 && Math.abs(pos.y - p.y) < 2.5) {   // a little extra reach: the guard you see is a split second behind the real one
-    dropCarry('The ' + ch.kind + ' caught you! The egg went back and you woke up in your pen.');
+    caughtBy(ch.kind);
     respawn();
   }
   chickenPlay(ch, anim);
@@ -2639,7 +2836,7 @@ function updateChicken(ch, dt) {
     else if (dist < C.catchRadius && Math.abs(tg.y - p.y) < 2.5) {
       if (tg.mine) {
         ch.state = 'wander'; ch.target = null; ch.wait = 1.5; ch.free = false; sendHome(ch);
-        dropCarry('The ' + ch.kind + ' caught you! The egg went back and you woke up in your pen.');
+        caughtBy(ch.kind);
         respawn();                                           // caught = sent back to your pen
       }                                                      // someone else's thief: their own game sees the catch and sends them home
     } else if (dist > 1e-4) {
@@ -2876,8 +3073,15 @@ async function initAccounts() {
     else { $('auth-guest').textContent = 'Back to the game (guest)'; authShow('Sign in to save your progress.', true, false, true); }
   });
 }
+const BAT_ICON = '<svg viewBox="0 0 48 48" width="42" height="42"><g transform="rotate(40 24 24)" stroke="#6b4210" stroke-width="1.6" fill="#e0aa62"><rect x="20" y="2" width="8" height="26" rx="4"/><rect x="22.5" y="26" width="3" height="13" rx="1.5"/><circle cx="24" cy="41.5" r="3"/></g></svg>';
 function buildHotbar() {
   ui.hotbar.innerHTML = ''; ui.slotEls = [];
+  const be = document.createElement('div');
+  be.className = 'slot bat'; be.title = 'Baseball bat (F / 0) - click to equip, then click to swing';
+  be.innerHTML = '<span class="k">F</span><span class="ic">' + BAT_ICON + '</span>';
+  be.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleBat(); }, { passive: false });
+  be.addEventListener('click', () => toggleBat());
+  ui.hotbar.appendChild(be); ui.batEl = be;
   for (let i = 0; i < CONFIG.hotbarSlots; i++) {
     const el = document.createElement('div');
     el.className = 'slot';
@@ -2888,16 +3092,17 @@ function buildHotbar() {
   }
 }
 function refreshHotbar() {
+  if (ui.batEl) ui.batEl.classList.toggle('sel', bat.equipped);
   inv.slots.forEach((sl, i) => {
     const el = ui.slotEls[i]; if (!el) return;
-    el.classList.toggle('sel', i === inv.sel);
+    el.classList.toggle('sel', i === inv.sel && !bat.equipped);
     el.querySelector('.ic').innerHTML = sl ? petIcon(sl.pet) : '';
     el.querySelector('.n').textContent = sl && sl.count > 1 ? sl.count : '';
     el.title = sl ? CONFIG.pets[sl.pet].name + (sl.sizes && sl.sizes.length ? '  (' + sl.sizes.map((v) => v.toFixed(1) + 'x').join(', ') + ')' : '') : '';
   });
 }
-function selectSlot(i) { const n = CONFIG.hotbarSlots; inv.sel = ((i % n) + n) % n; refreshHotbar(); }
-function heldPet() { const sl = inv.slots[inv.sel]; return sl ? sl.pet : null; }
+function selectSlot(i) { if (bat.equipped) equipBat(false, true); const n = CONFIG.hotbarSlots; inv.sel = ((i % n) + n) % n; refreshHotbar(); }
+function heldPet() { if (bat.equipped) return null; const sl = inv.slots[inv.sel]; return sl ? sl.pet : null; }
 
 let dexTab = 'index';                                   // the panel has two tabs: 'index' (pets) and 'shop' (upgrades)
 const fmtBig = (n) => (n >= 1e9 ? +(n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? +(n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? +(n / 1e3).toFixed(1) + 'K' : String(n));
@@ -3478,6 +3683,8 @@ function tick() {
 
   if (toast.t > 0) toast.t -= dt;
   updatePlayer(dt);
+  updateBat(dt);
+  updateDropped(dt);
   updateTraining(dt);
   if (form === 'human' && !carry) updateThrowState(dt);
   updateFlight(dt);
@@ -3520,7 +3727,7 @@ function tick() {
 
 if (CONFIG.debug) window.TAE = {   // test hook, only with ?debug=1
   get pos() { return pos; }, get yaw() { return yaw; }, set yaw(v) { yaw = v; }, get state() { return state; }, get form() { return form; }, get flight() { return flight; },
-  tryThrow, throwFwd, zoneBox: () => zoneBox, NET, remotes, gymItems, startGym, stopGym, canTrain, inZone,
+  get carry() { return carry; }, steal, eggItems, areaAt, bat, rag, dropped, batSwing, equipBat, ragStart, caughtBy, tryThrow, throwFwd, zoneBox: () => zoneBox, NET, remotes, gymItems, startGym, stopGym, canTrain, inZone,
 };
 init().catch(fatal);
 </script>
