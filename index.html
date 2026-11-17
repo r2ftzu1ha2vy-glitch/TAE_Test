@@ -344,6 +344,24 @@
   #admin .ad-btn { font: 700 13px var(--font); color: #1b1030; background: #c77dff; border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
   #admin .ad-btn:hover { filter: brightness(1.1); }
   #admin .ad-note { font-size: 11px; opacity: .65; margin-top: 8px; font-weight: 500; }
+  #admin { width: 340px; box-sizing: border-box; max-height: calc(100vh - 100px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #c77dff transparent; }
+  #admin .ad-sel { display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 8px; border-radius: 12px; background: rgba(255,255,255,.08); border: 2px solid var(--rc, #c77dff); }
+  #admin .ad-sel .pet-ic, #admin .ad-sel .pet-emoji { width: 52px; height: 52px; font-size: 36px; display: flex; align-items: center; justify-content: center; object-fit: contain; flex: none; }
+  #admin .ad-sel b { display: block; font: 700 16px var(--font); }
+  #admin .ad-sel small { display: block; opacity: .8; font-size: 12px; font-weight: 600; }
+  #admin .ad-sel em { font-style: normal; font-weight: 700; color: var(--rc, #c77dff); }
+  #admin .ad-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-height: 196px; overflow-y: auto; padding: 3px; scrollbar-width: thin; scrollbar-color: #c77dff transparent; }
+  #admin .ad-pt { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px 5px; border-radius: 10px; background: rgba(255,255,255,.07); border: 2px solid transparent;
+                  border-bottom: 3px solid var(--rc); color: #fff; font: 600 10px/1.1 var(--font); cursor: pointer; text-align: center; min-width: 0; transition: background .12s, transform .12s; }
+  #admin .ad-pt:hover { background: rgba(255,255,255,.16); transform: translateY(-1px); }
+  #admin .ad-pt.sel { background: rgba(255,255,255,.2); border-color: var(--rc); box-shadow: 0 0 10px var(--rc); }
+  #admin .ad-pt .pet-ic, #admin .ad-pt .pet-emoji { width: 44px; height: 44px; font-size: 30px; display: flex; align-items: center; justify-content: center; object-fit: contain; }
+  #admin .ad-pt span { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #admin .ad-chips { display: flex; gap: 4px; flex: none; }
+  #admin .ad-chip { font: 700 12px var(--font); color: #fff; background: rgba(255,255,255,.12); border: 1px solid var(--edge); border-radius: 7px; padding: 4px 7px; cursor: pointer; }
+  #admin .ad-chip:hover { background: rgba(199,125,255,.45); }
+  #admin .ad-row .ad-num { width: 70px; flex: none; }
+  #admin .ad-sec { background: rgba(255,255,255,.03); border-radius: 10px; padding: 8px 10px; margin-top: 8px; border-top: 0; }
 
   /* day / night indicator */
   #daynight { position: fixed; top: 12px; left: 14px; display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 10px; border-radius: 18px; color: #fff; pointer-events: none;
@@ -424,9 +442,13 @@
     <div class="ad-row"><span>Fly speed</span><input type="number" id="ad-flyspd" value="30" min="1" max="2000" step="5"></div>
   </div>
   <div class="ad-sec"><small>Give pets</small>
-    <div class="ad-row"><select id="ad-pet"></select></div>
-    <div class="ad-row"><span>Size (1-25x)</span><input type="number" id="ad-petmult" value="1" min="1" max="25" step="0.5"></div>
-    <div class="ad-row"><span>Amount</span><input type="number" id="ad-petcount" value="1" min="1" max="50" step="1"><button class="ad-btn" type="button" data-give="pet">Give</button></div>
+    <div class="ad-sel" id="ad-sel"></div>
+    <div class="ad-grid" id="ad-grid"></div>
+    <div class="ad-row"><span>Size (1-25x)</span><input type="number" class="ad-num" id="ad-petmult" value="1" min="1" max="25" step="0.5">
+      <div class="ad-chips"><button class="ad-chip" type="button" data-set="ad-petmult" data-val="1">1x</button><button class="ad-chip" type="button" data-set="ad-petmult" data-val="10">10x</button><button class="ad-chip" type="button" data-set="ad-petmult" data-val="25">25x</button></div></div>
+    <div class="ad-row"><span>Amount</span><input type="number" class="ad-num" id="ad-petcount" value="1" min="1" max="50" step="1">
+      <div class="ad-chips"><button class="ad-chip" type="button" data-set="ad-petcount" data-val="1">1</button><button class="ad-chip" type="button" data-set="ad-petcount" data-val="5">5</button><button class="ad-chip" type="button" data-set="ad-petcount" data-val="9">9</button></div></div>
+    <div class="ad-row"><button class="ad-btn" type="button" data-give="pet" style="flex:1;padding:8px 12px;font-size:14px">Give selected pet</button></div>
   </div>
   <div class="ad-sec"><small>Give speed</small>
     <div class="ad-row"><input type="number" id="ad-speed" value="1000" step="any"><button class="ad-btn" type="button" data-give="speed">Give</button></div>
@@ -437,7 +459,7 @@
   <div class="ad-sec"><small>Give money</small>
     <div class="ad-row"><input type="number" id="ad-money" value="1000000" step="any"><button class="ad-btn" type="button" data-give="money">Give</button></div>
   </div>
-  <div class="ad-sec"><small>Day / night (this device only)</small>
+  <div class="ad-sec"><small>Day / night (shared with everyone in the room)</small>
     <div class="ad-row"><span id="ad-dn">Day</span><button class="ad-btn" type="button" data-give="daynight">Skip to next</button></div>
   </div>
   <div class="ad-note">Negative numbers take it away. After the first code, press ` (backtick, under Esc) to open / close this panel. Esc also closes it. The cursor stays free while it is open.</div>
@@ -760,10 +782,15 @@ Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, n
 sun.shadow.bias = -0.0005;
 scene.add(sun, sun.target);
 
-/* Day / night: DN.len seconds of day, then DN.len seconds of night, forever. The clock is the real time (Date.now), so every player sees the same phase with no server.
+/* Day / night: DN.len seconds of day, then DN.len seconds of night, forever. The clock is the SERVER clock when multiplayer (Firebase) is on (Date.now + DN.off, DN.off = the server's clock offset), so every player sees the same phase even if their own clocks are wrong; solo it is Date.now.
+   The admin 'skip day/night' shift lives in the room (rooms/rN/daynight) so everybody gets it.
    Night: the Throw Zone is closed (no throwing) and eggs hatch DN.hatchMult times faster. */
-const DN = { len: 180, hatchMult: 30, shift: 0, k: 0, el: $('daynight'), key: '' };
-const dnT = () => { const c = DN.len * 2; return (((Date.now() / 1000 + DN.shift) % c) + c) % c; };
+const DN = { len: 180, hatchMult: 30, shift: 0, off: 0, k: 0, el: $('daynight'), key: '' };
+const dnT = () => { const c = DN.len * 2; return ((((Date.now() + DN.off) / 1000 + DN.shift) % c) + c) % c; };
+function dnSetShift(v) {                                  // admin skip: applied here at once and shared with everyone in the room
+  const c = DN.len * 2; DN.shift = ((v % c) + c) % c; DN.key = '';
+  if (typeof NET !== 'undefined' && NET.fb && FB.D && FB.base) { try { Promise.resolve(FB.D.set(fbRef('daynight'), { shift: DN.shift, by: FB.id })).catch(() => {}); } catch (e) { /* offline */ } }
+}
 const isNight = () => dnT() >= DN.len;
 const DN_COL = { skyD: new THREE.Color(0x9ad1ff), skyN: new THREE.Color(0x0a0e2e), hemD: new THREE.Color(0xffffff), hemN: new THREE.Color(0x8a9cff), grdD: new THREE.Color(0x667788), grdN: new THREE.Color(0x151a3a), sunD: new THREE.Color(0xffffff), sunN: new THREE.Color(0x8fa6ff) };
 function updateDayNight(dt) {
@@ -1579,7 +1606,7 @@ document.addEventListener('mousedown', (e) => {
 let codeBuf = '';
 /* Admin panel: opened / closed by typing CONFIG.adminCode. Everything goes through the same variables the game itself uses (money, train, inv, speedStat),
    so it is saved with the account like normal progress. */
-const admin = { open: false, unlocked: false, fly: false, flySpeed: 30, el: $('admin'), flyBox: $('ad-fly') };
+const admin = { open: false, unlocked: false, fly: false, flySpeed: 30, pet: 'user', el: $('admin'), flyBox: $('ad-fly') };
 let adminBuf = '';
 const adminHist = [];                                   // bat + hotbar state before each recent key: typing the code presses hotbar / bat keys, we undo that
 function adminNum(id, dflt) { const v = parseFloat($(id).value); return Number.isFinite(v) ? clampN(v, -1e15, 1e15) : dflt; }
@@ -1588,6 +1615,7 @@ function setAdmin(open) {
   if (open && (!ready || dom.overlay.style.display !== 'none')) { say('Start the game first, then enter the code.', 3); return; }
   admin.open = open; admin.el.hidden = !open;
   if (open) {
+    adminBuildPets();                                  // the pet icons are rendered by now
     for (const k in keys) keys[k] = false;
     if (!IS_TOUCH && document.pointerLockElement) document.exitPointerLock();            // free the cursor so the panel can be clicked
   } else if (!IS_TOUCH) {
@@ -1637,9 +1665,9 @@ function adminGive(kind) {
     train.strength = Math.max(0, train.strength + n); saveGame();
     say('Admin: strength ' + (n >= 0 ? '+' : '') + n.toLocaleString() + ' (now ' + fmtBig(train.strength) + ')', 3);
   } else if (kind === 'daynight') {
-    const t = dnT(); DN.shift += (t >= DN.len ? DN.len * 2 : DN.len) - t + 0.2; say('Admin: skipped to ' + (isNight() ? 'night' : 'day'), 3);
+    const t = dnT(); dnSetShift(DN.shift + (t >= DN.len ? DN.len * 2 : DN.len) - t + 0.2); say('Admin: skipped to ' + (isNight() ? 'night' : 'day'), 3);
   } else if (kind === 'pet') {
-    const id = $('ad-pet').value, P = CONFIG.pets[id];
+    const id = admin.pet, P = CONFIG.pets[id];
     if (!P) return;
     const mult = clampN(adminNum('ad-petmult', 1), 1, CONFIG.petMaxMult);
     const want = clampN(Math.floor(adminNum('ad-petcount', 1)), 1, 50);
@@ -1649,12 +1677,34 @@ function adminGive(kind) {
     say(given ? 'Admin: gave ' + given + 'x ' + P.name + (given < want ? ' (hotbar full)' : '') : 'Admin: hotbar is full - free a slot first', 3);
   }
 }
-(function initAdmin() {
-  const sel = $('ad-pet');
-  for (const id of Object.keys(CONFIG.pets)) {
-    const o = document.createElement('option'); o.value = id; o.textContent = CONFIG.pets[id].icon + ' ' + CONFIG.pets[id].name + ' (' + CONFIG.pets[id].rarity + ')';
-    sel.appendChild(o);
+function adminPetIds() {                                // grouped by rarity (admin first, then epic ... common), richest first inside a group
+  const order = Object.keys(CONFIG.rarities), rank = (id) => order.indexOf(CONFIG.pets[id].rarity);
+  return Object.keys(CONFIG.pets).sort((x, y) => (rank(x) === rank(y) ? CONFIG.pets[y].income - CONFIG.pets[x].income : (rank(x) === 0 ? -1 : rank(y) === 0 ? 1 : rank(y) - rank(x))));
+}
+function adminPetInfo() {                               // the big card on top: icon, name, rarity, income at 1x
+  const id = admin.pet, P = CONFIG.pets[id], R = CONFIG.rarities[P.rarity], el = $('ad-sel');
+  el.style.setProperty('--rc', R.color);
+  el.innerHTML = petIcon(id) + '<div><b>' + P.name + '</b><small><em>' + R.label + '</em> &middot; $' + P.income.toLocaleString() + '/s at 1x</small></div>';
+}
+function adminBuildPets() {
+  const g = $('ad-grid'); g.textContent = '';
+  for (const id of adminPetIds()) {
+    const P = CONFIG.pets[id], R = CONFIG.rarities[P.rarity], b = document.createElement('button');
+    b.type = 'button'; b.className = 'ad-pt' + (id === admin.pet ? ' sel' : ''); b.dataset.pet = id; b.title = P.name + ' (' + R.label + ')';
+    b.style.setProperty('--rc', R.color);
+    b.innerHTML = petIcon(id) + '<span>' + P.name + '</span>';
+    g.appendChild(b);
   }
+  adminPetInfo();
+}
+(function initAdmin() {                                // (the pet grid is built when the panel opens: the pet icons do not exist yet at load)
+  $('ad-grid').addEventListener('click', (e) => {
+    const b = e.target.closest('.ad-pt'); if (!b || !CONFIG.pets[b.dataset.pet]) return;
+    admin.pet = b.dataset.pet;
+    for (const t of $('ad-grid').children) t.classList.toggle('sel', t === b);
+    adminPetInfo();
+  });
+  admin.el.addEventListener('click', (e) => { const c = e.target.closest('[data-set]'); if (c) $(c.dataset.set).value = c.dataset.val; });
   $('ad-close').addEventListener('click', () => setAdmin(false));
   admin.flyBox.addEventListener('change', () => setAdminFly(admin.flyBox.checked));
   $('ad-flyspd').addEventListener('input', () => { admin.flySpeed = clampN(adminNum('ad-flyspd', 30), 1, 2000); });
@@ -1993,6 +2043,7 @@ async function netStart() {
 /*                    client respawns eggs that are due, also transactionally, so there is no host to lose.       */
 /*   gifts/<toId>/<push> = { kind:'egg'|'pet', type|id, mult, area, from, fromName, ts }   an inbox per player; the receiver deletes it (a transaction) when it takes the gift */
 /*   chat/<push>    = { id, name, text, ts }   old lines are trimmed by the player with the lowest pen             */
+/*   daynight       = { shift, by }   admin 'skip day/night' offset; the cycle itself runs on the server clock       */
 /*                                                                                                                 */
 /* Database rules (Firebase console > Realtime Database > Rules): keep your existing "users" rule and add:        */
 /*   "rooms": { "$room": { ".read": true, ".write": true,                                                         */
@@ -2020,7 +2071,7 @@ async function fbJoin(timeoutMs) {
     const D = f.D, db = f.db;
     Object.assign(FB, { D, db, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), pen: null, room: 0, base: '', held: null, heldDisc: null, lastState: '' });
     await new Promise((res) => {                          // server clock offset (also keeps updating)
-      FB.unsubs.push(D.onValue(D.ref(db, '.info/serverTimeOffset'), (s) => { FB.off = s.val() || 0; res(); }));
+      FB.unsubs.push(D.onValue(D.ref(db, '.info/serverTimeOffset'), (s) => { FB.off = s.val() || 0; DN.off = FB.off; res(); }));
     });
     check();
     for (let n = 1; n <= FB_MAX_ROOMS && !FB.pen; n++) {   // first room with a free pen
@@ -2082,6 +2133,9 @@ function fbListen() {
   const onPets = (s) => { if (s.key === FB.id) return; FB.pets.set(s.key, s.val()); netMessage({ t: 'pets', id: s.key, list: fbArr(s.val()) }); };
   un.push(D.onChildAdded(fbRef('pets'), onPets), D.onChildChanged(fbRef('pets'), onPets));
   un.push(D.onChildRemoved(fbRef('pets'), (s) => { if (s.key !== FB.id) { FB.pets.delete(s.key); netMessage({ t: 'pets', id: s.key, list: [] }); } }));
+  un.push(D.onValue(fbRef('daynight'), (s) => {            // shared day / night shift (admin skip): same phase for everybody in the room
+    const v = s.val(); DN.shift = v && Number.isFinite(+v.shift) ? +v.shift : 0; DN.key = '';
+  }));
   un.push(D.onValue(fbRef('eggs'), (s) => {
     const v = s.val() || {};
     for (let i = 0; i < eggItems.length; i++) {
@@ -2234,7 +2288,7 @@ function fbCleanup() {                                    // leave the room: rel
   for (const u of FB.unsubs) { try { u(); } catch (e) { /* already detached */ } }
   for (const t of FB.timers) clearInterval(t);
   clearTimeout(FB.lostT);
-  FB.unsubs = []; FB.timers = [];
+  FB.unsubs = []; FB.timers = []; DN.off = 0;
   if (FB.D && FB.id && FB.base) {
     const D = FB.D;
     try {
