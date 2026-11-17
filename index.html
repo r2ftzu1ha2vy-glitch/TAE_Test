@@ -4,6 +4,60 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Throw An Egg</title>
+<!-- start downloading the models right away (in parallel with three.js / Firebase), the important ones first -->
+<link rel="preload" as="fetch" crossorigin href="Throw_An_Egg_Map.glb">
+<link rel="preload" as="fetch" crossorigin href="Throw_An_Egg_Player.glb">
+<link rel="preload" as="fetch" crossorigin href="Normal_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Egg_Thrown.glb">
+<link rel="preload" as="fetch" crossorigin href="Chicken.glb">
+<link rel="preload" as="fetch" crossorigin href="Alien.glb">
+<link rel="preload" as="fetch" crossorigin href="Baseball%20Bat%20by%20CreativeTrio%20-%20i2JCd3w8gh.glb">
+<link rel="preload" as="fetch" crossorigin href="Blue_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Bone_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Brown_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Bunny.glb">
+<link rel="preload" as="fetch" crossorigin href="Butterfly.glb">
+<link rel="preload" as="fetch" crossorigin href="Cactus_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Camel.glb">
+<link rel="preload" as="fetch" crossorigin href="Candy_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Chocolate_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Claw_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Cotton_Candy_Sheep.glb">
+<link rel="preload" as="fetch" crossorigin href="Crab.glb">
+<link rel="preload" as="fetch" crossorigin href="Cracked_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Duck.glb">
+<link rel="preload" as="fetch" crossorigin href="Duck_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Flower_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Golden_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Gummy%20Bear.glb">
+<link rel="preload" as="fetch" crossorigin href="Gummy_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Hamster.glb">
+<link rel="preload" as="fetch" crossorigin href="Ladybug.glb">
+<link rel="preload" as="fetch" crossorigin href="Lily_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Lolipop_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="PullUp_BarUpgrade1.glb">
+<link rel="preload" as="fetch" crossorigin href="PullUp_BarUpgrade2.glb">
+<link rel="preload" as="fetch" crossorigin href="PullUp_BarUpgrade3.glb">
+<link rel="preload" as="fetch" crossorigin href="PullUp_BarUpgrade4.glb">
+<link rel="preload" as="fetch" crossorigin href="PullUp_BarUpgrade5.glb">
+<link rel="preload" as="fetch" crossorigin href="Rainbow_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Reed_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Sand_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Scorpion.glb">
+<link rel="preload" as="fetch" crossorigin href="Scorpion_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Sell.glb">
+<link rel="preload" as="fetch" crossorigin href="Snake.glb">
+<link rel="preload" as="fetch" crossorigin href="Space_Octopus.glb">
+<link rel="preload" as="fetch" crossorigin href="Squirrel.glb">
+<link rel="preload" as="fetch" crossorigin href="Starfish.glb">
+<link rel="preload" as="fetch" crossorigin href="Strawberry_Egg.glb">
+<link rel="preload" as="fetch" crossorigin href="Toucan.glb">
+<link rel="preload" as="fetch" crossorigin href="Trail_Shop.glb">
+<link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade1.glb">
+<link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade2.glb">
+<link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade3.glb">
+<link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade4.glb">
+<link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade5.glb">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -782,19 +836,19 @@ Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, n
 sun.shadow.bias = -0.0005;
 scene.add(sun, sun.target);
 
-/* Day / night: DN.len seconds of day, then DN.len seconds of night, forever. The clock is the SERVER clock when multiplayer (Firebase) is on (Date.now + DN.off, DN.off = the server's clock offset), so every player sees the same phase even if their own clocks are wrong; solo it is Date.now.
+/* Day / night: DN.day seconds of day (180 = 3 min), then DN.night seconds of night (90 = 1 min 30 s), forever. The clock is the SERVER clock when multiplayer (Firebase) is on (Date.now + DN.off, DN.off = the server's clock offset), so every player sees the same phase even if their own clocks are wrong; solo it is Date.now.
    The admin 'skip day/night' shift lives in the room (rooms/rN/daynight) so everybody gets it.
    Night: the Throw Zone is closed (no throwing) and eggs hatch DN.hatchMult times faster. */
-const DN = { len: 180, hatchMult: 30, shift: 0, off: 0, k: 0, el: $('daynight'), key: '' };
-const dnT = () => { const c = DN.len * 2; return ((((Date.now() + DN.off) / 1000 + DN.shift) % c) + c) % c; };
+const DN = { day: 180, night: 90, cycle: 270, hatchMult: 30, shift: 0, off: 0, k: 0, el: $('daynight'), key: '' };
+const dnT = () => { const c = DN.cycle; return ((((Date.now() + DN.off) / 1000 + DN.shift) % c) + c) % c; };
 function dnSetShift(v) {                                  // admin skip: applied here at once and shared with everyone in the room
-  const c = DN.len * 2; DN.shift = ((v % c) + c) % c; DN.key = '';
+  const c = DN.cycle; DN.shift = ((v % c) + c) % c; DN.key = '';
   if (typeof NET !== 'undefined' && NET.fb && FB.D && FB.base) { try { Promise.resolve(FB.D.set(fbRef('daynight'), { shift: DN.shift, by: FB.id })).catch(() => {}); } catch (e) { /* offline */ } }
 }
-const isNight = () => dnT() >= DN.len;
+const isNight = () => dnT() >= DN.day;
 const DN_COL = { skyD: new THREE.Color(0x9ad1ff), skyN: new THREE.Color(0x0a0e2e), hemD: new THREE.Color(0xffffff), hemN: new THREE.Color(0x8a9cff), grdD: new THREE.Color(0x667788), grdN: new THREE.Color(0x151a3a), sunD: new THREE.Color(0xffffff), sunN: new THREE.Color(0x8fa6ff) };
 function updateDayNight(dt) {
-  const t = dnT(), night = t >= DN.len, left = (night ? DN.len * 2 : DN.len) - t;
+  const t = dnT(), night = t >= DN.day, left = (night ? DN.cycle : DN.day) - t;
   DN.k += ((night ? 1 : 0) - DN.k) * Math.min(1, dt * 0.8);       // eases over a few seconds at sunrise / sunset
   const k = DN.k;
   scene.background.copy(DN_COL.skyD).lerp(DN_COL.skyN, k);
@@ -997,16 +1051,24 @@ function applyBodyColor(model, parts) {                  // tint each body part 
 /* ------------------------------------------------------------------ */
 async function init() {
   const loader = new GLTFLoader();
-  const load = (url) => loader.loadAsync(url, (e) => {
-    if (e.total) dom.overlayText.textContent = 'Loading ' + url + ' ' + Math.round(e.loaded / e.total * 100) + '%';
-  });
+  const loadCache = new Map(), loadProg = new Map();     // every file is requested ONCE (several eggs share a model); progress is shown as one overall percentage
+  const load = (url) => {
+    if (!loadCache.has(url)) loadCache.set(url, loader.loadAsync(url, (e) => {
+      loadProg.set(url, e);
+      let l = 0, t = 0; for (const v of loadProg.values()) { l += v.loaded; t += v.total || v.loaded; }
+      dom.overlayText.textContent = 'Loading ' + Math.round(l / Math.max(1, t) * 100) + '%  (' + loadProg.size + ' / ' + loadCache.size + ' files started)';
+    }));
+    return loadCache.get(url);
+  };
 
   initAccounts();                                       // sign-in screen; runs while the models load
   const names = Object.keys(CONFIG.models.eggs);
   const GM = CONFIG.models.gym;
   const petIds = Object.keys(CONFIG.models.pets);
-  const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, duckGltf, gummyGltf, alienGltf, ...restGltfs0] = await Promise.all([
+  const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, duckGltf, gummyGltf, alienGltf, batGltf, standGltfs, ...restGltfs0] = await Promise.all([
     load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.chicken), load(CONFIG.models.scorpion), load(CONFIG.models.duck), load(CONFIG.models.gummy), load(CONFIG.models.alien),
+    load(CONFIG.models.bat).catch((err) => { log.warn('Baseball bat model failed to load:', err && err.message); return null; }),
+    Promise.all([load(CONFIG.models.sell), load(CONFIG.models.trailshop)]).catch((err) => { log.warn('Sell / Trail Shop models failed to load:', err && err.message); return null; }),
     ...petIds.map((id) => load(CONFIG.models.pets[id])),
     ...GM.treadmill.map((f) => load(f)), ...GM.bar.map((f) => load(f)),
     ...names.map((n) => load(CONFIG.models.eggs[n])),
@@ -1018,7 +1080,7 @@ async function init() {
   const typeGltfs = restGltfs.slice(GM.treadmill.length + GM.bar.length);
   setupMap(mapGltf.scene);
   setupPlayer(playerGltf);
-  try { batGltfRef = await load(CONFIG.models.bat); } catch (err) { log.warn('Baseball bat model failed to load:', err && err.message); }
+  batGltfRef = batGltf;
   setupBat();
   eggTpl.normal = bakeEgg(typeGltfs[names.indexOf('normal')].scene);
   names.forEach((n, i) => { if (n !== 'normal') eggTpl[n] = bakeEgg(typeGltfs[i].scene, eggTpl.normal.refH); });
@@ -1036,7 +1098,7 @@ async function init() {
   setupChickens({ chicken: chickGltf, scorpion: scorpGltf, duck: duckGltf, gummy: gummyGltf, alien: alienGltf });
   setupPets({ chicken: chickGltf, scorpion: scorpGltf, duck: duckGltf, gummybear: gummyGltf, alien: alienGltf, user: playerGltf, ...petGltfs });
   setupGym({ treadmill: treadGltfs, bar: barGltfs });
-  try { setupStands(await Promise.all([load(CONFIG.models.sell), load(CONFIG.models.trailshop)])); } catch (err) { log.warn('Sell / Trail Shop models failed to load:', err && err.message); }
+  if (standGltfs) { try { setupStands(standGltfs); } catch (err) { log.warn('Sell / Trail Shop setup failed:', err && err.message); } }
   setupTrailFx();
   buildHotbar(); buildDex(); refreshHotbar(); refreshMoney(false);
   setupEggSpawns();
@@ -1665,7 +1727,7 @@ function adminGive(kind) {
     train.strength = Math.max(0, train.strength + n); saveGame();
     say('Admin: strength ' + (n >= 0 ? '+' : '') + n.toLocaleString() + ' (now ' + fmtBig(train.strength) + ')', 3);
   } else if (kind === 'daynight') {
-    const t = dnT(); dnSetShift(DN.shift + (t >= DN.len ? DN.len * 2 : DN.len) - t + 0.2); say('Admin: skipped to ' + (isNight() ? 'night' : 'day'), 3);
+    const t = dnT(); dnSetShift(DN.shift + (t >= DN.day ? DN.cycle : DN.day) - t + 0.2); say('Admin: skipped to ' + (isNight() ? 'night' : 'day'), 3);
   } else if (kind === 'pet') {
     const id = admin.pet, P = CONFIG.pets[id];
     if (!P) return;
