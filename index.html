@@ -586,6 +586,9 @@ const CONFIG = {
   // Speed curve: the speed STAT keeps growing (and still gates the areas), but real movement slows its growth above `knee`: moved = knee * (stat / knee) ^ power.
   // Players AND chasers use the same curve, so the chase stays as fair as before. power 1 = old linear behaviour.
   speedCurve: { knee: 20, power: 0.4 },
+  // normalSpeed: the speed stat you actually WALK at whenever you are not stealing (so 16 = 8 m/s). Your real speed stat only kicks in while you carry a stolen egg (status 'stolen'), when you need it to escape.
+  // The stat itself still counts for the area requirements and the HUD; this only changes how fast you move and how strong the speed effects are.
+  normalSpeed: 16,
   // Speed feel: the faster your stat, the more the camera sells it while you move: FOV widens, camera pulls back, speed lines, faster leg animation. strength 0 = off.
   // statMax = the stat where the effects peak (the 1B goal, so every order of magnitude on the way still feels faster). curve = reverse exponential on the log scale: the effects rise quickly
   // at first and ease in towards the peak (0 = straight line on the log scale, higher = faster start).
@@ -907,6 +910,8 @@ const trails = { own: {}, eq: null };          // Trail Shop: trails bought (id 
 let wins = 0;                                  // how many times you made it to the Win zone
 const trailById = (id) => CONFIG.trails.find((t) => t.id === id) || null;
 const trailMult = () => { const t = trails.eq && trailById(trails.eq); return t ? t.mult : 1; };
+const stealing = () => !!carry && carry.status === 'stolen';
+const moveStat = () => (stealing() ? Math.max(CONFIG.normalSpeed, totalSpeed()) : CONFIG.normalSpeed);   // the speed stat used for real movement right now
 const totalSpeed = () => speedStat * trailMult();   // speed stat x trail: used for walking, the HUD and the area speed requirements
 const lastOk = new THREE.Vector3(); let lastOkValid = false;   // last position that was allowed (outside every area, or inside one you may be in)
 let throwCap = 0;                              // furthest island you may be on: 1 = first area, 2 = second... (set where your egg lands; 0 = none)
@@ -1706,7 +1711,7 @@ function updatePlayer(dt) {
   if (moving) {
     _mv.normalize();
     fxTarget = 0.85;
-    const speed = eggForm ? P.walk : effSpeed(totalSpeed()) * CONFIG.speedUnit;
+    const speed = eggForm ? P.walk : effSpeed(moveStat()) * CONFIG.speedUnit;
     const mx = _mv.x * speed * dt, mz = _mv.z * speed * dt;
     const bh = eggForm ? CONFIG.eggs.baseHeight : CONFIG.player.height;
     gatherBarriers(Math.abs(mx) + Math.abs(mz));
@@ -2353,7 +2358,7 @@ let fxTarget = 0, fxLevel = 0, fxFeel = 0;              // fxTarget = how hard y
 const fxEl = document.getElementById('speedfx');
 function updateSpeedFx(dt) {
   const F = CONFIG.speedFx, K = CONFIG.speedCurve.knee;
-  const fxPos = totalSpeed() > K ? clampN(Math.log(totalSpeed() / K) / Math.log(Math.max(F.statMax, K * 2) / K), 0, 1) : 0;      // 0..1 on a log scale, K -> statMax
+  const fxPos = moveStat() > K ? clampN(Math.log(moveStat() / K) / Math.log(Math.max(F.statMax, K * 2) / K), 0, 1) : 0;      // 0..1 on a log scale, K -> statMax
   fxLevel = F.strength > 0 ? (F.curve > 0 ? (1 - Math.exp(-F.curve * fxPos)) / (1 - Math.exp(-F.curve)) : fxPos) * F.strength : 0;
   const want = form === 'human' && !gym.session ? fxTarget * fxLevel : 0;
   fxFeel += (want - fxFeel) * Math.min(1, F.ease * dt);
