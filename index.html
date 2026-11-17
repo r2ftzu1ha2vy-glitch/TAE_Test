@@ -325,6 +325,25 @@
     #dex .dex-panel { max-height: 92vh; padding: 10px 14px; } #dex .dex-h { font-size: 20px; margin-bottom: 8px; }
     #auth .auth-card { padding: 12px 18px 10px; max-height: 94vh; overflow-y: auto; } #auth .auth-logo { display: none; }
   }
+
+  /* admin panel (opened by CONFIG.adminCode) */
+  #admin { position: fixed; top: 64px; left: 14px; width: 290px; z-index: 9; color: #fff; font: 600 14px var(--font); padding: 12px 14px 14px; border-radius: 16px;
+           background: rgba(18,22,40,.92); border: 2px solid #c77dff; backdrop-filter: blur(6px); box-shadow: 0 8px 28px rgba(0,0,0,.5); user-select: none; }
+  #admin[hidden] { display: none; }
+  #admin .ad-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font: 700 17px var(--font); color: #c77dff; }
+  #admin .ad-x { background: none; border: 0; color: #fff; font: 700 22px/1 var(--font); cursor: pointer; padding: 0 4px; }
+  #admin .ad-sec { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--edge); }
+  #admin .ad-sec > small { display: block; opacity: .75; font-weight: 600; margin-bottom: 5px; letter-spacing: .06em; text-transform: uppercase; font-size: 11px; }
+  #admin .ad-row { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+  #admin .ad-row > span { flex: 1; }
+  #admin input[type=number], #admin select { font: 600 14px var(--font); color: #fff; background: rgba(255,255,255,.1); border: 1px solid var(--edge); border-radius: 8px; padding: 5px 7px; min-width: 0; }
+  #admin input[type=number] { width: 100%; box-sizing: border-box; }
+  #admin select { flex: 1; width: 100%; }
+  #admin select option { color: #000; }
+  #admin input[type=checkbox] { width: 20px; height: 20px; accent-color: #c77dff; cursor: pointer; }
+  #admin .ad-btn { font: 700 13px var(--font); color: #1b1030; background: #c77dff; border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+  #admin .ad-btn:hover { filter: brightness(1.1); }
+  #admin .ad-note { font-size: 11px; opacity: .65; margin-top: 8px; font-weight: 500; }
 </style>
 <script type="importmap">
 { "imports": {
@@ -387,6 +406,28 @@
 </div>
 <button type="button" id="chat-btn" aria-label="Chat">&#128172;</button>
 <div id="money"><span class="coin">$</span><b>0</b><small></small></div>
+<div id="admin" hidden>
+  <div class="ad-head"><span>Admin Panel</span><button class="ad-x" id="ad-close" type="button" aria-label="Close">&times;</button></div>
+  <div class="ad-sec"><small>Fly (WASD + Space up / Shift down)</small>
+    <label class="ad-row"><span>Fly mode</span><input type="checkbox" id="ad-fly"></label>
+    <div class="ad-row"><span>Fly speed</span><input type="number" id="ad-flyspd" value="30" min="1" max="2000" step="5"></div>
+  </div>
+  <div class="ad-sec"><small>Give pets</small>
+    <div class="ad-row"><select id="ad-pet"></select></div>
+    <div class="ad-row"><span>Size (1-25x)</span><input type="number" id="ad-petmult" value="1" min="1" max="25" step="0.5"></div>
+    <div class="ad-row"><span>Amount</span><input type="number" id="ad-petcount" value="1" min="1" max="50" step="1"><button class="ad-btn" type="button" data-give="pet">Give</button></div>
+  </div>
+  <div class="ad-sec"><small>Give speed</small>
+    <div class="ad-row"><input type="number" id="ad-speed" value="1000" step="any"><button class="ad-btn" type="button" data-give="speed">Give</button></div>
+  </div>
+  <div class="ad-sec"><small>Give strength</small>
+    <div class="ad-row"><input type="number" id="ad-str" value="1000" step="any"><button class="ad-btn" type="button" data-give="strength">Give</button></div>
+  </div>
+  <div class="ad-sec"><small>Give money</small>
+    <div class="ad-row"><input type="number" id="ad-money" value="1000000" step="any"><button class="ad-btn" type="button" data-give="money">Give</button></div>
+  </div>
+  <div class="ad-note">Negative numbers take it away. Type the code again, or press Esc, to close.</div>
+</div>
 <div id="offline" role="dialog" aria-modal="true" aria-label="Offline earnings"><div class="off-card">
   <p class="off-title">You Got</p>
   <div class="off-amt" id="off-amt">$0</div>
@@ -569,6 +610,8 @@ const CONFIG = {
   hatch: { min: 10, max: 30, areas: { valley: { min: 10, max: 30 }, sands: { min: 20, max: 120 }, bay: { min: 120, max: 1080 }, candy: { min: 300, max: 1800 } } },
   // Secret code: type =1=1=1=1=1 (any time, not in a text box) to toggle instant hatching for testing. Set to '' to disable.
   secretCode: '=1=1=1=1=1',
+  // Admin code: type it any time (not in a text box) to open / close the Admin Panel (fly, pets, speed, strength, money). Set to '' to disable.
+  adminCode: '=1=1=1-2-2-2030303949494',
   // Pets. weight = chance when an egg hatches (chicken 70 : bunny 15 : ladybug 15), income = money per second while it stands in your pen (at a 1x egg; multiplied by the egg size it hatched from), height = placed size in metres.
   // area = which area's eggs can hatch it (valley / sands). weight = chance within that area's pool. lucky = affected by egg luck (default: every rarity except common).
   // fit:'max' = size the model by its longest side instead of its height (the snake is long and flat). yawOffset = PI for models that face -Z.
@@ -795,6 +838,7 @@ const Y_AXIS = new THREE.Vector3(0, 1, 0), Z_AXIS = new THREE.Vector3(0, 0, 1);
 const _qA = new THREE.Quaternion(), _qB = new THREE.Quaternion(), _qT = new THREE.Quaternion();
 const eggs = [];
 const state = { mode: 'idle', power: CONFIG.power.min, t: 0, cooldown: 0 };
+let zoneArmed = true;   // false while you carry an egg through / in the Throw Zone: the power bar only starts again after you have stepped out of the zone
 let lastSpawnIdx = -1;
 let ready = false;
 let speedStat = CONFIG.player.speed;          // the player's speed stat; shown bottom-left
@@ -1313,7 +1357,7 @@ $('reset-btn').addEventListener('click', () => {
 document.addEventListener('pointerlockchange', () => {
   if (IS_TOUCH) return;
   const locked = document.pointerLockElement === renderer.domElement;
-  if (locked) dom.overlay.style.display = 'none'; else if (ready && !dexOpen && !chat.open) showMenu();
+  if (locked) dom.overlay.style.display = 'none'; else if (ready && !dexOpen && !chat.open && !admin.open) showMenu();
 });
 /* Touch controls: left half = floating stick, right half = drag to look, buttons for Throw / Respawn / Chat. (No sprint, no jump.) */
 const touch = { x: 0, y: 0 };
@@ -1392,6 +1436,99 @@ document.addEventListener('mousedown', (e) => {
   tryThrow();
 });
 let codeBuf = '';
+/* Admin panel: opened / closed by typing CONFIG.adminCode. Everything goes through the same variables the game itself uses (money, train, inv, speedStat),
+   so it is saved with the account like normal progress. */
+const admin = { open: false, fly: false, flySpeed: 30, el: $('admin'), flyBox: $('ad-fly') };
+let adminBuf = '';
+const adminHist = [];                                   // bat + hotbar state before each recent key: typing the code presses hotbar / bat keys, we undo that
+function adminNum(id, dflt) { const v = parseFloat($(id).value); return Number.isFinite(v) ? clampN(v, -1e15, 1e15) : dflt; }
+function setAdmin(open) {
+  if (open === admin.open) return;
+  if (open && (!ready || dom.overlay.style.display !== 'none')) { say('Start the game first, then enter the code.', 3); return; }
+  admin.open = open; admin.el.hidden = !open;
+  if (open) {
+    for (const k in keys) keys[k] = false;
+    if (!IS_TOUCH && document.pointerLockElement) document.exitPointerLock();            // free the cursor so the panel can be clicked
+  } else if (!IS_TOUCH) {
+    if (document.activeElement && admin.el.contains(document.activeElement)) document.activeElement.blur();
+    try { const r = renderer.domElement.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* ignore */ }
+    setTimeout(() => { if (!admin.open && !dexOpen && ready && document.pointerLockElement !== renderer.domElement && dom.overlay.style.display === 'none') showMenu(); }, 400);
+  }
+}
+function setAdminFly(on) {
+  admin.fly = !!on; admin.flyBox.checked = admin.fly;
+  if (admin.fly) { stopGym(); vy = 0; grounded = false; }
+  say(admin.fly ? 'Admin: fly ON (Space up, Shift down)' : 'Admin: fly OFF', 3);
+}
+function adminFlyStep(dt) {                             // free flight: no gravity, no walls, no area locks. Called from updatePlayer.
+  const ix = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touch.x;
+  const iz = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touch.y;
+  const iy = (keys.Space ? 1 : 0) - ((keys.ShiftLeft || keys.ShiftRight || keys.KeyC) ? 1 : 0);
+  _f.set(-Math.sin(yaw), 0, -Math.cos(yaw));
+  _r.set(Math.cos(yaw), 0, -Math.sin(yaw));
+  _mv.set(0, 0, 0).addScaledVector(_f, iz).addScaledVector(_r, ix);
+  const horiz = _mv.lengthSq() > 0.04;
+  if (_mv.lengthSq() > 0) _mv.normalize();
+  const step = admin.flySpeed * dt;
+  pos.x = clampN(pos.x + _mv.x * step, mapBox.min.x, mapBox.max.x);
+  pos.z = clampN(pos.z + _mv.z * step, mapBox.min.z, mapBox.max.z);
+  pos.y += iy * step;
+  vy = 0; grounded = false;
+  if (horiz) facing = angleLerp(facing, Math.atan2(_mv.x, _mv.z), CONFIG.player.turnSpeed * dt);
+  playAnim(horiz || iy ? 'walk' : 'idle');
+  playerRoot.position.copy(pos);
+  playerRoot.rotation.y = facing;
+  mixer.update(dt);
+  fxTarget = horiz ? 0.85 : 0;
+}
+function adminGive(kind) {
+  if (!admin.open) return;
+  if (kind === 'money') {
+    const n = adminNum('ad-money', 0);
+    money = Math.max(0, money + n); refreshMoney(true); saveGame();
+    say('Admin: ' + (n >= 0 ? '+$' : '-$') + Math.abs(n).toLocaleString(), 3);
+  } else if (kind === 'speed') {
+    const n = adminNum('ad-speed', 0);
+    train.speed = Math.max(0, train.speed + n); speedStat = CONFIG.player.speed + train.speed; saveGame();
+    say('Admin: speed ' + (n >= 0 ? '+' : '') + n.toLocaleString() + ' (now ' + fmtBig(totalSpeed()) + ')', 3);
+  } else if (kind === 'strength') {
+    const n = adminNum('ad-str', 0);
+    train.strength = Math.max(0, train.strength + n); saveGame();
+    say('Admin: strength ' + (n >= 0 ? '+' : '') + n.toLocaleString() + ' (now ' + fmtBig(train.strength) + ')', 3);
+  } else if (kind === 'pet') {
+    const id = $('ad-pet').value, P = CONFIG.pets[id];
+    if (!P) return;
+    const mult = clampN(adminNum('ad-petmult', 1), 1, CONFIG.petMaxMult);
+    const want = clampN(Math.floor(adminNum('ad-petcount', 1)), 1, 50);
+    let given = 0;
+    for (let i = 0; i < want; i++) { if (!invCanTake(id)) break; addPet(id, mult); given++; }
+    if (given) { dex[id] = (dex[id] > 0 ? dex[id] : 0) + given; buildDex(); }
+    say(given ? 'Admin: gave ' + given + 'x ' + P.name + (given < want ? ' (hotbar full)' : '') : 'Admin: hotbar is full - free a slot first', 3);
+  }
+}
+(function initAdmin() {
+  const sel = $('ad-pet');
+  for (const id of Object.keys(CONFIG.pets)) {
+    const o = document.createElement('option'); o.value = id; o.textContent = CONFIG.pets[id].icon + ' ' + CONFIG.pets[id].name + ' (' + CONFIG.pets[id].rarity + ')';
+    sel.appendChild(o);
+  }
+  $('ad-close').addEventListener('click', () => setAdmin(false));
+  admin.flyBox.addEventListener('change', () => setAdminFly(admin.flyBox.checked));
+  $('ad-flyspd').addEventListener('input', () => { admin.flySpeed = clampN(adminNum('ad-flyspd', 30), 1, 2000); });
+  admin.el.addEventListener('click', (e) => { const b = e.target.closest('[data-give]'); if (b) adminGive(b.dataset.give); });
+  for (const ev of ['wheel', 'contextmenu']) admin.el.addEventListener(ev, (e) => e.stopPropagation());
+})();
+
+function adminCodeKey(e) {                              // true when the admin code was just completed
+  const A = CONFIG.adminCode; if (!A || !e.key || e.key.length !== 1) return false;
+  adminHist.push({ bat: bat.equipped, sel: inv.sel }); if (adminHist.length > A.length) adminHist.shift();
+  adminBuf = (adminBuf + e.key).slice(-A.length);
+  if (adminBuf !== A) return false;
+  const h = adminHist[0]; adminBuf = ''; codeBuf = ''; adminHist.length = 0;
+  if (h) { selectSlot(h.sel); equipBat(h.bat, true); }    // put the hotbar + bat back how they were before the code was typed
+  setAdmin(!admin.open);
+  return true;
+}
 function secretCodeKey(e) {                          // watches the typed characters for CONFIG.secretCode
   const C = CONFIG.secretCode; if (!C || !e.key || e.key.length !== 1) return;
   codeBuf = (codeBuf + e.key).slice(-C.length);
@@ -1401,9 +1538,11 @@ function secretCodeKey(e) {                          // watches the typed charac
   say(instantHatch ? 'Secret code: instant hatching ON' : 'Secret code: instant hatching OFF', 4);
   banner('<small>Secret code</small><b>Instant hatch ' + (instantHatch ? 'ON' : 'OFF') + '</b>', '#c77dff');
 }
-const typing = (e) => !!(e.target && e.target.closest && e.target.closest('#auth, #chat, #profile'));   // typing in the sign-in form / chat: no game keys
+const typing = (e) => !!(e.target && e.target.closest && e.target.closest('#auth, #chat, #profile, #admin'));   // typing in the sign-in form / chat: no game keys
 window.addEventListener('keydown', (e) => {
   if (typing(e)) return;
+  if (adminCodeKey(e)) return;
+  if (admin.open) { if (e.code === 'Escape') setAdmin(false); return; }   // panel open: the cursor is free, no game keys
   secretCodeKey(e);
   if (e.code === 'Space') e.preventDefault();
   if (e.repeat) return;
@@ -1484,6 +1623,7 @@ function updatePlayer(dt) {
   const eggForm = form === 'egg';
   const P = eggForm ? { ...CONFIG.player, ...CONFIG.eggForm } : CONFIG.player;
   curP = P;
+  if (admin.fly && !eggForm) { adminFlyStep(dt); return; }   // admin free flight
   if (gym.session && !eggForm) { updateGymPlayer(dt); return; }   // auto-training: no walking, no gravity, the clip plays in place
   const px = pos.x, pz = pos.z;
   _f.set(-Math.sin(yaw), 0, -Math.cos(yaw));
@@ -2210,13 +2350,18 @@ function powerAt(t) {
   return CONFIG.power.min + (CONFIG.power.max - CONFIG.power.min) * tri;
 }
 
+function holdThrowZone() {                              // carrying an egg: never in throw mode, and walking through the zone does not re-arm it for when the egg is gone
+  if (state.mode !== 'idle') state.mode = 'idle';
+  if (inZone()) zoneArmed = false;
+}
 function updateThrowState(dt) {
   const zone = inZone();
   if (zoneMesh) zoneMesh.traverse((o) => {
     if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m.opacity = zone ? 0.75 : 0.5; });
   });
 
-  if (state.mode === 'idle' && zone) { state.mode = 'charging'; state.t = 0; log.debug('Power bar started'); }
+  if (!zone) zoneArmed = true;
+  if (state.mode === 'idle' && zone && zoneArmed) { state.mode = 'charging'; state.t = 0; log.debug('Power bar started'); }
   if (state.mode === 'charging' || state.mode === 'cooldown') yaw = clampYawForward(yaw);   // in the zone you can only look (and so throw) forward
   if (state.mode === 'charging') {
     if (!zone) { state.mode = 'idle'; log.debug('Left throw zone'); }
@@ -2497,7 +2642,7 @@ function areaAt(x, z) {   // 0.1 m tolerance so the hair-thin seam between Cluck
 
 // Keeps people out of areas they may not be in: humans (unless thieving a stolen egg) and anyone on an island further than the one their egg landed on.
 function enforceAreas() {
-  if (!ready || form === 'flying' || !areas.length) return;
+  if (!ready || form === 'flying' || admin.fly || !areas.length) return;
   const a = areaAt(pos.x, pos.z);
   let msg = null;
   if (a && form === 'human' && !(carry && carry.status === 'stolen')) msg = 'Only eggs can enter ' + a.label + ' - throw an egg to get in!';
@@ -4092,6 +4237,7 @@ function tick() {
   updateDropped(dt);
   updateTraining(dt);
   if (form === 'human' && !carry) updateThrowState(dt);
+  else if (form === 'human' && carry) holdThrowZone();
   updateFlight(dt);
   enforceAreas();
   updateEggItems(dt);
