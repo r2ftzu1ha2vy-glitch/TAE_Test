@@ -609,7 +609,7 @@ const CONFIG = {
   bat: { scale: 1.3, grip: 0.4, handY: 0.42, lean: 0.25, reach: 2.4, cone: 0.35, cooldown: 0.75, hitAt: 0.27, swingSpeed: 1.5, knock: 15, lift: 6, decay: 3, ragdoll: 1.8, immune: 1.0 },
   // Held pet: the pet selected in the hotbar sits in your left hand (the Bat Hold / Bat Walk clips raise that arm), at the same size it has when placed.
   // handY = how far along the arm the hand is, lift = how far the pet's feet sit above the palm.
-  petHold: { handY: 0.42, lift: 0.04, chainDepth: params.has('chain') ? Math.max(0, parseInt(params.get('chain'), 10) || 0) : 25 },   // held pets keep their PLACED size (no fitting). An admin pet holds another admin pet, which holds another ... chainDepth levels deep (?chain=N)
+  petHold: { handY: 0.42, lift: 0.04, chainDepth: params.has('chain') ? Math.max(0, parseInt(params.get('chain'), 10) || 0) : 2 },   // held pets keep their PLACED size (no fitting). An admin pet holds another admin pet, which holds another ... chainDepth extra pets deep: 2 = 3 admin pets in total (?chain=N)
   // Gym in your pen. Click the Pull-Up Bar (strength) or the Treadmill (speed) to start auto-training; click again to stop. reach = how close you must stand (metres from the machine's edge).
   // Auto-training: you are teleported onto the machine and locked in place; reps are counted by the timings of your machine's upgrade level (see gymTiers).
   // gripAlign: where the Training clip's raised arms sit on the bar (0 = lowest point of the pull, 1 = highest, 0.5 = middle).
@@ -1227,7 +1227,7 @@ function petHolderSet(h, id, mult) {                       // show pet `id` in t
     petHolderClear(h);
     if (key) {
       // Every pet is shown at the size it has when placed: the holder lives inside the player's scaled model, so cancel that scale out (world scale -> 1).
-      // An admin pet raises its arm (Bat Hold pose) and holds another admin pet in that hand, which does the same, chainDepth levels deep.
+      // An admin pet raises its arm (Bat Hold pose) and holds another admin pet in that hand, which does the same, chainDepth extra pets deep (2 = 3 admin pets in total).
       const isAdmin = !!CONFIG.pets[id].admin;
       let parent = h;
       for (let depth = 0; ; depth++) {
