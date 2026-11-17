@@ -327,7 +327,7 @@
   }
 
   /* admin panel (opened by CONFIG.adminCode) */
-  #admin { position: fixed; top: 64px; left: 14px; width: 290px; z-index: 9; color: #fff; font: 600 14px var(--font); padding: 12px 14px 14px; border-radius: 16px;
+  #admin { position: fixed; top: 84px; left: 14px; width: 290px; z-index: 9; color: #fff; font: 600 14px var(--font); padding: 12px 14px 14px; border-radius: 16px;
            background: rgba(18,22,40,.92); border: 2px solid #c77dff; backdrop-filter: blur(6px); box-shadow: 0 8px 28px rgba(0,0,0,.5); user-select: none; }
   #admin[hidden] { display: none; }
   #admin .ad-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font: 700 17px var(--font); color: #c77dff; }
@@ -344,6 +344,16 @@
   #admin .ad-btn { font: 700 13px var(--font); color: #1b1030; background: #c77dff; border: 0; border-radius: 8px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
   #admin .ad-btn:hover { filter: brightness(1.1); }
   #admin .ad-note { font-size: 11px; opacity: .65; margin-top: 8px; font-weight: 500; }
+
+  /* day / night indicator */
+  #daynight { position: fixed; top: 12px; left: 14px; display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 10px; border-radius: 18px; color: #fff; pointer-events: none;
+              background: var(--panel); border: 2px solid var(--edge); backdrop-filter: blur(6px); z-index: 2; transition: border-color .6s, background .6s; }
+  #daynight .dn-ic { font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
+  #daynight b { display: block; font: 700 18px/1.1 var(--font); letter-spacing: .06em; text-transform: uppercase; }
+  #daynight small { display: block; font: 600 12px var(--font); opacity: .9; margin-top: 2px; }
+  #daynight.night { border-color: #8a7dff; background: rgba(20,18,56,.78); }
+  #daynight.night b { color: #b9b0ff; }
+  body.touch #daynight { top: calc(12px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left)); padding: 4px 12px 4px 8px; } body.touch #daynight .dn-ic { font-size: 22px; } body.touch #daynight b { font-size: 14px; } body.touch #daynight small { font-size: 10px; }
 </style>
 <script type="importmap">
 { "imports": {
@@ -405,6 +415,7 @@
   <div id="chat-hint">Press <b>Enter</b> to chat</div>
 </div>
 <button type="button" id="chat-btn" aria-label="Chat">&#128172;</button>
+<div id="daynight"><span class="dn-ic">☀️</span><div><b class="dn-t">Day</b><small class="dn-s"></small></div></div>
 <div id="money"><span class="coin">$</span><b>0</b><small></small></div>
 <div id="admin" hidden>
   <div class="ad-head"><span>Admin Panel</span><button class="ad-x" id="ad-close" type="button" aria-label="Close">&times;</button></div>
@@ -425,6 +436,9 @@
   </div>
   <div class="ad-sec"><small>Give money</small>
     <div class="ad-row"><input type="number" id="ad-money" value="1000000" step="any"><button class="ad-btn" type="button" data-give="money">Give</button></div>
+  </div>
+  <div class="ad-sec"><small>Day / night (this device only)</small>
+    <div class="ad-row"><span id="ad-dn">Day</span><button class="ad-btn" type="button" data-give="daynight">Skip to next</button></div>
   </div>
   <div class="ad-note">Negative numbers take it away. After the first code, press ` (backtick, under Esc) to open / close this panel. Esc also closes it. The cursor stays free while it is open.</div>
 </div>
@@ -539,6 +553,8 @@ const CONFIG = {
   duck:  { name: 'duck',        height: 1.6, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: 0 },
   gummy: { name: 'gummy bear',  height: 2.4, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.3, yawOffset: 0 },
   // Starfall guard (Alien.glb, one animation clip: used for walking, slowed down for idle). If it walks sideways or backwards, change yawOffset (Math.PI = turn around, Math.PI / 2 = quarter turn).
+  // Guardians grow with distance: guard size = its base height x (1 + guardGrowth x area number), counting Cluck Valley as 0. 0.25 -> x1, x1.25, x1.5, x1.75, x2 for the 5 areas. 0 = all base size.
+  guardGrowth: 0.25,
   alien: { name: 'alien',       height: 2.2, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.2, yawOffset: 0 },
   eggForm: { walk: 4, radius: 0.3, stepHeight: 0.25, probeHeights: [0.2, 0.5], cameraDistance: 4, cameraHeight: 0.8 },
   // Uniform scale applied to the whole map. Source map is ~253 x 304 m; 0.5 -> ~126 x 152 m (was 0.4).
@@ -716,13 +732,38 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9ad1ff);
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x667788, 1.1));
+const hemi = new THREE.HemisphereLight(0xffffff, 0x667788, 1.1);
+scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffffff, 1.6);
 sun.castShadow = true;
 sun.shadow.mapSize.set(IS_TOUCH ? 1024 : 2048, IS_TOUCH ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 200 });
 sun.shadow.bias = -0.0005;
 scene.add(sun, sun.target);
+
+/* Day / night: DN.len seconds of day, then DN.len seconds of night, forever. The clock is the real time (Date.now), so every player sees the same phase with no server.
+   Night: the Throw Zone is closed (no throwing) and eggs hatch DN.hatchMult times faster. */
+const DN = { len: 180, hatchMult: 30, shift: 0, k: 0, el: $('daynight'), key: '' };
+const dnT = () => { const c = DN.len * 2; return (((Date.now() / 1000 + DN.shift) % c) + c) % c; };
+const isNight = () => dnT() >= DN.len;
+const DN_COL = { skyD: new THREE.Color(0x9ad1ff), skyN: new THREE.Color(0x0a0e2e), hemD: new THREE.Color(0xffffff), hemN: new THREE.Color(0x8a9cff), grdD: new THREE.Color(0x667788), grdN: new THREE.Color(0x151a3a), sunD: new THREE.Color(0xffffff), sunN: new THREE.Color(0x8fa6ff) };
+function updateDayNight(dt) {
+  const t = dnT(), night = t >= DN.len, left = (night ? DN.len * 2 : DN.len) - t;
+  DN.k += ((night ? 1 : 0) - DN.k) * Math.min(1, dt * 0.8);       // eases over a few seconds at sunrise / sunset
+  const k = DN.k;
+  scene.background.copy(DN_COL.skyD).lerp(DN_COL.skyN, k);
+  hemi.color.copy(DN_COL.hemD).lerp(DN_COL.hemN, k); hemi.groundColor.copy(DN_COL.grdD).lerp(DN_COL.grdN, k); hemi.intensity = 1.1 - 0.7 * k;
+  sun.color.copy(DN_COL.sunD).lerp(DN_COL.sunN, k); sun.intensity = 1.6 - 1.3 * k;
+  const sec = Math.ceil(left), key = (night ? 'n' : 'd') + sec;
+  if (key === DN.key) return;
+  DN.key = key;
+  const m = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+  DN.el.classList.toggle('night', night);
+  DN.el.querySelector('.dn-ic').textContent = night ? '\u{1F319}' : '\u2600\uFE0F';
+  DN.el.querySelector('.dn-t').textContent = night ? 'Night' : 'Day';
+  DN.el.querySelector('.dn-s').textContent = night ? 'Day in ' + m + ' \u00b7 hatching x' + DN.hatchMult + ' \u00b7 no throwing' : 'Night in ' + m;
+  const adn = document.getElementById('ad-dn'); if (adn) adn.textContent = (night ? 'Night' : 'Day') + ' (' + m + ' left)';
+}
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -1504,6 +1545,8 @@ function adminGive(kind) {
     const n = adminNum('ad-str', 0);
     train.strength = Math.max(0, train.strength + n); saveGame();
     say('Admin: strength ' + (n >= 0 ? '+' : '') + n.toLocaleString() + ' (now ' + fmtBig(train.strength) + ')', 3);
+  } else if (kind === 'daynight') {
+    const t = dnT(); DN.shift += (t >= DN.len ? DN.len * 2 : DN.len) - t + 0.2; say('Admin: skipped to ' + (isNight() ? 'night' : 'day'), 3);
   } else if (kind === 'pet') {
     const id = $('ad-pet').value, P = CONFIG.pets[id];
     if (!P) return;
@@ -2374,6 +2417,10 @@ function updateThrowState(dt) {
   });
 
   if (!zone) zoneArmed = true;
+  if (isNight()) {                                       // night: the Throw Zone is closed (you can walk through it, nothing starts)
+    if (state.mode === 'charging') state.mode = 'idle';
+    if (zone && zoneArmed) { zoneArmed = false; say('Night - throwing is closed until sunrise. Eggs hatch x' + DN.hatchMult + ' faster!', 4); }
+  }
   if (state.mode === 'idle' && zone && zoneArmed) { state.mode = 'charging'; state.t = 0; log.debug('Power bar started'); }
   if (state.mode === 'charging' || state.mode === 'cooldown') yaw = clampYawForward(yaw);   // in the zone you can only look (and so throw) forward
   if (state.mode === 'charging') {
@@ -2456,7 +2503,7 @@ function statusText() {
   if (form === 'egg') return 'You are an egg! Roll up to an egg and click it. R = respawn';
   if (!zoneBox) return 'No Throw Zone found in map';
   return state.mode === 'charging' ? 'Press SPACE or CLICK to lock the power'
-    : state.mode === 'cooldown' ? 'Thrown!' : 'Walk into the yellow Throw Zone';
+    : state.mode === 'cooldown' ? 'Thrown!' : isNight() ? 'Night - throwing is closed until sunrise' : 'Walk into the yellow Throw Zone';
 }
 function updatePowerBar() {
   const show = form === 'human' && (state.mode === 'charging' || state.mode === 'cooldown');
@@ -2481,7 +2528,7 @@ function updatePowerBar() {
 
 const strengthMult = () => 1 + train.strength * CONFIG.gym.throwBonusPerStrength;
 function tryThrow() {
-  if (state.mode !== 'charging' || rag.t > 0) return;
+  if (state.mode !== 'charging' || rag.t > 0 || isNight()) return;
   const power = state.power, T = CONFIG.throwing;
   state.mode = 'cooldown';
   state.cooldown = T.cooldown;
@@ -3079,7 +3126,9 @@ function randomSpot(ch, m) {
 function setupChickens(gltfs) {
   for (const area of areas) {
     if (area.chicken === false) continue;
-    const kind = area.enemy && gltfs[area.enemy] ? area.enemy : 'chicken', gltf = gltfs[kind], E = CONFIG[kind];
+    const kind = area.enemy && gltfs[area.enemy] ? area.enemy : 'chicken', gltf = gltfs[kind], B = CONFIG[kind];
+    const grow = 1 + (CONFIG.guardGrowth || 0) * areas.indexOf(area);          // the further the area, the bigger its guardian: size, catch radius and edge margin all scale
+    const E = { ...B, height: B.height * grow, catchRadius: B.catchRadius * grow, margin: B.margin * grow };
     const model = SkeletonUtils.clone(gltf.scene);
     model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
     const box = bindPoseBox(model);
@@ -3098,7 +3147,7 @@ function setupChickens(gltfs) {
     const gy = chickenOk(ch, start.x, start.z, 0);
     ch.pos.set(start.x, gy === null ? area.box.max.y : gy, start.z);
     chickens.push(ch);
-    log.info(kind, 'ready in', area.label, 'model height', size.y.toFixed(3), '-> scale', (E.height / size.y).toFixed(3));
+    log.info(kind, 'ready in', area.label, 'model height', size.y.toFixed(3), '-> scale', (E.height / size.y).toFixed(3), '(guard size x' + grow.toFixed(2) + ')');
   }
 }
 function sendHome(ch) {            // after a chase that left the area: back to a spot inside its own area
@@ -3800,7 +3849,7 @@ function updateFlyers(dt) {
 function updateHatching(dt) {
   for (let i = hatching.length - 1; i >= 0; i--) {
     const h = hatching[i];
-    h.left = Math.max(0, h.left - dt);
+    h.left = Math.max(0, h.left - dt * (isNight() ? DN.hatchMult : 1));   // night: eggs hatch DN.hatchMult times faster
     if (h.left < 3) { h.wob += dt * 26; h.mesh.rotation.z = Math.sin(h.wob) * 0.2 * (1 - h.left / 3); }   // the egg shakes before it hatches
     if (h.left <= 0) {
       if (!h.pet) h.pet = pickPet(h.egg.type, h.egg.area);
@@ -4266,6 +4315,7 @@ function tick() {
   updateWin(dt);
   updateTrailFx(dt);
   updateSpeedFx(dt);
+  updateDayNight(dt);
   updateCamera();
   updateAim();
   updateHatching(dt);
