@@ -444,7 +444,7 @@
       <li><b>Sign in</b> (email or Google) and your money, pets, pen, upgrades and training are saved. <b>Guests are not saved.</b></li>
       <li>Open <b>Upgrades</b> (button on the left, or press <b>U</b>) to upgrade the Pull-Up Bar, the Treadmill, and your pen (+1 pet slot each).</li>
       <li>Walk up to the <b>Sell</b> stand next to the Throw Zone (press <b>E</b>) to sell pets from your hotbar for cash, and to the <b>Trail Shop</b> to buy trails that boost your Speed.</li>
-      <li><b>Win:</b> make it all the way to the end of the Candy Kingdom to get the egg! You need a huge throw (lots of Strength) to get that far.</li>
+      <li><b>Win:</b> steal an egg and bring it back across the <b>Win line</b> at the front of the islands - when you touch it, the game knows you made it and you got the egg!</li>
       <li>Open the <b>Index</b> button (or press <b>I</b>) to see every pet.</li>
       <li>Press <b>Enter</b> (touch: the chat button) to <b>chat</b> with the other players on your server.</li>
     </ol>
@@ -597,9 +597,6 @@ const CONFIG = {
   petSizeGain: 0.25,   // pet size = base height * (1 + (eggMult - 1) * petSizeGain): a pet of size m is 1 + (m - 1) * this times taller (a 25x pet = 7x taller)
   // range = how close you must be to an egg's edge to see Steal. carry* = size/height of the egg held over your head.
   steal: { dropSeconds: 10, penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
-  // WIN: reach the far end of the last island (Candy Kingdom) and you get the egg. The goal zone is the last `depth` metres of that island, full width.
-  // useMarker: true uses the map's own "Win" node instead (that node is a wall across the START of the map, so it is off by default). resetDelay = seconds before you are sent back to your pen.
-  win: { useMarker: false, depth: 18, resetDelay: 6, eggScale: 8 },
   // SELL + TRAIL SHOP stands: they stand on the "Sell" and "Trail_Shop" marker cubes of the map. reach = how close (m) you must be to use one, height = model height in metres,
   // yaw = turn the stand (radians) so its front faces the player.
   stands: { reach: 9, height: 5, yaw: { sell: 0, trailshop: 0 } },
@@ -897,7 +894,6 @@ async function init() {
   setupPets({ chicken: chickGltf, scorpion: scorpGltf, duck: duckGltf, gummybear: gummyGltf, ...petGltfs });
   setupGym({ treadmill: treadGltfs, bar: barGltfs });
   try { setupStands(await Promise.all([load(CONFIG.models.sell), load(CONFIG.models.trailshop)])); } catch (err) { log.warn('Sell / Trail Shop models failed to load:', err && err.message); }
-  setupWin();
   setupTrailFx();
   buildHotbar(); buildDex(); refreshHotbar(); refreshMoney(false);
   setupEggSpawns();
@@ -1189,7 +1185,6 @@ function endEggForm() {
   playerRoot.visible = true; playerEggMesh.visible = false;
 }
 function respawn() {
-  winT = -1;                                            // a manual respawn cancels the post-win countdown
   stopGym();
   rag.t = 0; rag.tilt = 0; rag.imm = 0; if (playerRoot) playerRoot.rotation.x = 0;   // standing up again after a bat hit
   throwCap = 0; lastOkValid = false;
@@ -2675,7 +2670,8 @@ function updateCarry() {
   const chased = !!(hunter && hunter.chaseAnywhere);        // this area's guard follows you everywhere: only your own pen is safe
   // escaped = out of every area (Cluck Valley's chicken stops at the border) or, for a guard that follows you everywhere (scorpion, duck, gummy bear...), at your pen.
   // "At your pen" also counts the 3 m around it where you can already place the egg, so the egg is yours the moment you could place it - never only after placing.
-  if (carry.status === 'stolen' && form === 'human' && (chased ? (inOwnPen() || nearPen()) : !areaAt(pos.x, pos.z))) {
+  if (carry.status === 'stolen' && form === 'human' && (crossedWin() || (chased ? (inOwnPen() || nearPen()) : !areaAt(pos.x, pos.z)))) {
+    wins++; refreshMenuStats();
     carry.status = 'safe';
     carry.item.pending = false; carry.item.timer = CONFIG.eggs.respawn;
     netSend({ t: 'escaped', i: eggItems.indexOf(carry.item) });
@@ -2683,10 +2679,10 @@ function updateCarry() {
     log.info('Escaped with the egg');
     if (addEgg(eg.type, eg.mult, eg.area)) {             // it goes into the hotbar: your hands are free again
       playerRoot.remove(carry.held); carry = null; tut.step = 4;
-      banner('<small>You got it!</small><b>' + eg.type + ' egg <span style="font-size:.5em;opacity:.8">' + eg.mult.toFixed(1) + 'x</span></b><em>It is in your hotbar - take it to your pen</em>', '#7dff9a');
+      banner('<small>Win! You got the egg!</small><b>' + eg.type + ' egg <span style="font-size:.5em;opacity:.8">' + eg.mult.toFixed(1) + 'x</span></b><em>It is in your hotbar - take it to your pen</em>', '#7dff9a');
       say('You escaped! The ' + eg.type + ' egg is in your hotbar. Take it to Pen ' + (playerPen ? playerPen.num : '?') + ', select it and click a spot to place it.', 5);
     } else {
-      banner('<small>You got it!</small><b>' + eg.type + ' egg <span style="font-size:.5em;opacity:.8">' + eg.mult.toFixed(1) + 'x</span></b><em>' + (chased ? 'Click a spot in your pen to place it' : 'Take it to your pen') + '</em>', '#7dff9a');
+      banner('<small>Win! You got the egg!</small><b>' + eg.type + ' egg <span style="font-size:.5em;opacity:.8">' + eg.mult.toFixed(1) + 'x</span></b><em>' + (chased ? 'Click a spot in your pen to place it' : 'Take it to your pen') + '</em>', '#7dff9a');
       say('Your hotbar is full, so you are still holding the egg. ' + (chased ? 'Click a spot in your pen to place it.' : 'Take it to your pen.'), 5);
     }
   }
@@ -4072,41 +4068,13 @@ function sellPets(which) {
   log.info('Sold', n, 'pets for', gain);
 }
 
-/* Win: the far end of the last island. A big golden egg waits there. */
-let winBox = null, winEgg = null, winT = -1;
-function setupWin() {
-  const W = CONFIG.win;
-  if (W.useMarker && mapMarkers.win) winBox = mapMarkers.win.clone();
-  else {
-    const A = areas[areas.length - 1];
-    if (!A) { log.warn('No areas: the Win zone is disabled.'); return; }
-    winBox = new THREE.Box3(new THREE.Vector3(A.box.min.x, A.box.min.y - 30, A.box.max.z - W.depth), new THREE.Vector3(A.box.max.x, A.box.max.y + 60, A.box.max.z + 10));
-  }
-  if (eggTpl.golden) {
-    const A = areas[areas.length - 1], H = CONFIG.eggs.baseHeight * W.eggScale;
-    const x = (winBox.min.x + winBox.max.x) / 2, z = W.useMarker ? (winBox.min.z + winBox.max.z) / 2 : winBox.max.z - W.depth / 2;
-    const gy = groundAt(x, winBox.max.y, z);
-    const grp = new THREE.Group(); grp.position.set(x, gy === null ? A.box.max.y : gy, z);
-    winEgg = eggTpl.golden.make(); winEgg.scale.setScalar(H); grp.add(winEgg);          // pivot = the egg's base
-    winEgg.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); o.material.vertexColors = true; o.material.emissive = new THREE.Color(0xffb000); o.material.emissiveIntensity = 0.35; o.castShadow = false; } });   // own material: it glows, the other golden eggs do not
-    const sp = labelSprite('THE EGG', '#ffd34d'); sp.scale.set(6, 1.5, 1); sp.position.set(0, H + 1.5, 0); grp.add(sp);
-    scene.add(grp);
-  }
-  log.info('Win zone:', winBox.min.toArray().map((v) => +v.toFixed(1)), winBox.max.toArray().map((v) => +v.toFixed(1)));
+/* Win: the map's "Win" marker is a line across the front of the corridor. A thief who carries a stolen egg across it (back out towards the pens) has made it:
+   the egg is theirs, whatever guard is chasing them. */
+function crossedWin() {
+  const W = mapMarkers.win;
+  return !!W && pos.x >= W.min.x && pos.x <= W.max.x && pos.z <= W.max.z && pos.z >= W.min.z - 40;   // on the pen side of the line (or on it)
 }
-function updateWin(dt) {
-  if (winEgg) winEgg.rotation.y += dt * 0.8;
-  if (winT >= 0) { winT -= dt; if (winT < 0) { winT = -1; respawn(); } return; }
-  if (!winBox || !ready || form === 'flying') return;
-  if (pos.x >= winBox.min.x && pos.x <= winBox.max.x && pos.z >= winBox.min.z && pos.z <= winBox.max.z && pos.y >= winBox.min.y && pos.y <= winBox.max.y) gotTheEgg();
-}
-function gotTheEgg() {
-  wins++; winT = CONFIG.win.resetDelay;
-  banner('<small>You made it to the end!</small><b>\u{1F95A} YOU GOT THE EGG! \u{1F95A}</b><em>You win! Back to your pen in ' + CONFIG.win.resetDelay + 's...</em>', '#ffd34d');
-  say('YOU GOT THE EGG! You win!', CONFIG.win.resetDelay);
-  saveGame(); refreshMenuStats();
-  log.info('WIN #' + wins);
-}
+function updateWin(dt) {}
 
 /* ------------------------------------------------------------------ */
 /* Main loop                                                           */
@@ -4167,7 +4135,7 @@ function tick() {
 
 if (CONFIG.debug) window.TAE = {   // test hook, only with ?debug=1
   get pos() { return pos; }, get yaw() { return yaw; }, set yaw(v) { yaw = v; }, get state() { return state; }, get form() { return form; }, get flight() { return flight; },
-  get carry() { return carry; }, steal, eggItems, netMessage, barrierBoxes, areas: () => areas, playerPen: () => playerPen, nearPen, inOwnPen, mapBox: () => mapBox, CONFIG, mapMarkers, areaBoxes, stands, trails, trailMult, totalSpeed, standKey, nearStand, sellPets, trailAction, openPanel, get winBox() { return winBox; }, get instantHatch() { return instantHatch; }, hatching, placePet, selectSlot, get wins() { return wins; }, get money() { return money; }, set money(v) { money = v; }, inv, train, penCapacity, addPet: (id, mult) => { const i = inv.slots.findIndex((x) => !x); inv.slots[i] = { pet: id, count: 1, sizes: [mult || 1] }; refreshHotbar(); }, setSpeed: (v) => { speedStat = v; }, setCarrySafe: () => { if (carry) carry.status = 'safe'; }, areaAt, bat, rag, dropped, batSwing, equipBat, ragStart, caughtBy, tryThrow, throwFwd, zoneBox: () => zoneBox, NET, remotes, gymItems, startGym, stopGym, canTrain, inZone,
+  get carry() { return carry; }, steal, eggItems, netMessage, barrierBoxes, areas: () => areas, playerPen: () => playerPen, nearPen, inOwnPen, mapBox: () => mapBox, CONFIG, mapMarkers, areaBoxes, stands, trails, trailMult, totalSpeed, standKey, nearStand, sellPets, trailAction, openPanel, crossedWin, get instantHatch() { return instantHatch; }, hatching, placePet, selectSlot, get wins() { return wins; }, get money() { return money; }, set money(v) { money = v; }, inv, train, penCapacity, addPet: (id, mult) => { const i = inv.slots.findIndex((x) => !x); inv.slots[i] = { pet: id, count: 1, sizes: [mult || 1] }; refreshHotbar(); }, setSpeed: (v) => { speedStat = v; }, setCarrySafe: () => { if (carry) carry.status = 'safe'; }, areaAt, bat, rag, dropped, batSwing, equipBat, ragStart, caughtBy, tryThrow, throwFwd, zoneBox: () => zoneBox, NET, remotes, gymItems, startGym, stopGym, canTrain, inZone,
 };
 init().catch(fatal);
 </script>
