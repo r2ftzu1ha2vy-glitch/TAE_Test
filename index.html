@@ -58,7 +58,7 @@
 <link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade3.glb">
 <link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade4.glb">
 <link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade5.glb">
-<link rel="preload" as="fetch" crossorigin href="Tomato.glb">
+<link rel="preload" as="fetch" crossorigin href="Tomato_1.glb">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -604,7 +604,7 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', alien: 'Alien.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb', spaceoctopus: 'Space_Octopus.glb', tomato: 'Tomato.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', alien: 'Alien.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb', spaceoctopus: 'Space_Octopus.glb', tomato: 'Tomato_1.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
     sell: 'Sell.glb', trailshop: 'Trail_Shop.glb',
     gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb', 'Treadmill_Upgrade4.glb', 'Treadmill_Upgrade5.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb', 'PullUp_BarUpgrade4.glb', 'PullUp_BarUpgrade5.glb'] },   // index = upgrade level
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb',
@@ -751,13 +751,12 @@ const CONFIG = {
     gummybear: { name: 'Gummy Bear', area: 'candy', rarity: 'epic',     weight: 100, income: 1500, height: 1.2, icon: '\u{1F9F8}', lucky: false },
     spaceoctopus: { name: 'Space Octopus', area: 'starfall', rarity: 'epic', weight: 45, income: 12000, height: 1.1, icon: '\u{1F419}', lucky: true },
     user:      { name: 'User',      area: 'admin', rarity: 'admin', admin: true, tint: true, weight: 0, income: 100000, height: 1.5, icon: '\u{1F9D1}' },   // ADMIN ONLY: never hatches, only the admin panel gives it. Uses the player model in the player's own colours.
-    tomato:    { name: 'Tomato',    area: 'admin', rarity: 'admin', admin: true, weight: 0, income: 100000, height: 1.0, icon: '\u{1F345}', spin: true },   // ADMIN ONLY (admin panel). spin: it rolls over and over (a full vertical 360) while it walks
+    tomato:    { name: 'Tomato',    area: 'admin', rarity: 'admin', admin: true, weight: 0, income: 100000, height: 1.0, icon: '\u{1F345}' },   // ADMIN ONLY (admin panel): never hatches. Uses the Idle / Walk animations that are in Tomato_1.glb
     alien:     { name: 'Alien',     area: 'starfall', rarity: 'epic',     weight: 100, income: 6000, height: 1.4, icon: '\u{1F47D}', lucky: false },
   },
   rarities: { admin: { label: 'Admin', color: '#ff4d4d' }, common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' }, rare: { label: 'Rare', color: '#5aa9ff' }, epic: { label: 'Epic', color: '#c77dff' } },
   eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3, cactus: 1, bone: 2, sand: 1.25, claw: 2, scorpion: 2.5, blue: 1, duck: 1.25, flower: 1.25, lily: 1.5, reed: 2, candy: 1, chocolate: 1.25, strawberry: 1.5, lolipop: 2, gummy: 2.5, comet: 1, meteor: 1.25, nebula: 1.5, galaxy: 2.5 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
-  hotbarSlots: 9, petPenMax: 30, petSpeed: 0.8, petSpin: 7,   // petSpin = radians per second a spin:true pet (Tomato) rolls forward while it walks (7 = a bit more than one full turn a second)
- 
+  hotbarSlots: 9, petPenMax: 30, petSpeed: 0.8, 
   petMaxMult: 25,      // biggest size a PET can have (the biggest EGG is eggs.maxMult = 10x): a 1x egg hatches a 1x pet, a 10x egg hatches a 25x pet, in between is linear
   gift: { range: 6 },  // metres: how close another player must be to gift them an egg or pet (scaled with the player below)
   petSizeGain: 0.25,   // pet size = base height * (1 + (eggMult - 1) * petSizeGain): a pet of size m is 1 + (m - 1) * this times taller (a 25x pet = 7x taller)
@@ -4154,17 +4153,13 @@ function makePetModel(id, mult) {                       // a pet scaled by how b
   }
   model.position.set(T.ox, T.oy, T.oz);
   const inner = new THREE.Group(); inner.scale.setScalar(T.scale * petSizeFactor(mult)); inner.rotation.y = T.yaw; inner.add(model);
-  const root = new THREE.Group(); let spin = null;
-  if (CONFIG.pets[id].spin) {                           // rolls about its own middle: root > spin (pivot at half the height, turns about X = sideways axis) > inner (moved back down)
-    const cy = CONFIG.pets[id].height * petSizeFactor(mult) * 0.5;
-    spin = new THREE.Group(); spin.position.y = cy; inner.position.y = -cy; spin.add(inner); root.add(spin);
-  } else root.add(inner);
+  const root = new THREE.Group(); root.add(inner);
   const mixer = new THREE.AnimationMixer(model), actions = {};
   for (const clip of T.gltf.animations) actions[clip.name.toLowerCase()] = mixer.clipAction(clip);
   const clips = T.gltf.animations;
   if (clips.length && !actions.walk) actions.walk = actions[clips[0].name.toLowerCase()];   // single-clip models (snake): that clip is the walk
   if (clips.length && !actions.idle) { const a = mixer.clipAction(clips[0].clone()); a.timeScale = 0.25; actions.idle = a; }          // no idle clip: the same clip, slowed right down
-  return { root, model, mixer, actions, anim: '', spin, spinA: 0 };
+  return { root, model, mixer, actions, anim: '' };
 }
 function spawnPet(id, pt, mult) {
   const m = makePetModel(id, mult);
@@ -4234,12 +4229,6 @@ function stepPet(p, b, dt) {                           // one pet wandering abou
     petPlay(p, anim);
     p.root.position.copy(p.pos);
     p.root.rotation.y = p.yaw;
-    if (p.spin) {                                       // Tomato: keeps rolling forward while it walks, and when it stops it finishes the turn it is in, then rests upright
-      const TWO = Math.PI * 2, goal = Math.ceil(p.spinA / TWO - 1e-6) * TWO;
-      if (anim === 'walk') p.spinA += CONFIG.petSpin * dt;
-      else if (p.spinA > 0) { p.spinA = Math.min(goal, p.spinA + CONFIG.petSpin * dt); if (p.spinA >= goal - 1e-6) p.spinA = 0; }
-      p.spin.rotation.x = p.spinA;
-    }
     p.mixer.update(dt);
   }
 }
