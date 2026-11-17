@@ -2026,6 +2026,19 @@ function fbListen() {
     clearTimeout(FB.lostT);
     if (s.val() === false && NET.on && NET.fb === FB) FB.lostT = setTimeout(() => { if (NET.on && NET.fb === FB) netLost(); }, 5000);
   }));
+  // Pen guard: nobody may share a pen. If a short disconnect freed your pen the server drops it, so take it back at once if it is still free;
+  // if somebody else got it in the meantime, leave the shared server (solo) instead of standing in their pen. FB.pen is cleared first so the cleanup never deletes THEIR claim.
+  const myPen = FB.pen, myId = FB.id;
+  un.push(D.onValue(fbRef('pens/' + myPen), (s) => {
+    if (!(NET.on && NET.fb === FB) || FB.pen !== myPen) return;
+    const owner = s.val();
+    if (owner === myId) return;
+    const lose = () => { if (NET.on && NET.fb === FB && FB.pen === myPen) { FB.pen = null; log.warn('Pen ' + myPen + ' was taken by another player'); netLost(); } };
+    if (owner !== null) return lose();
+    D.runTransaction(fbRef('pens/' + myPen), (cur) => (cur === null ? myId : undefined)).then((res) => {
+      if (res.committed) D.onDisconnect(fbRef('pens/' + myPen)).remove(); else lose();
+    }).catch(() => {});
+  }));
 }
 function fbGift(toId, payload, refund) {
   const D = FB.D, pr = D.push(fbRef('gifts/' + toId), { ...payload, from: FB.id, fromName: netName(), ts: D.serverTimestamp() });
