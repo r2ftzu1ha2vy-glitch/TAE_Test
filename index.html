@@ -459,21 +459,28 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb' },
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
     gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb'] },   // index = upgrade level
-    eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb' } },
+    eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb',
+             blue: 'Blue_Egg.glb', duck: 'Duck_Egg.glb', flower: 'Flower_Egg.glb', lily: 'Lily_Egg.glb', reed: 'Reed_Egg.glb',                                   // Bubble Bay
+             candy: 'Candy_Egg.glb', chocolate: 'Chocolate_Egg.glb', gummy: 'Gummy_Egg.glb', lolipop: 'Lolipop_Egg.glb', strawberry: 'Strawberry_Egg.glb' } },   // Candy Kingdom
   eggs: { baseHeight: 0.8, maxMult: 10, respawn: 6,   // 1x egg = baseHeight metres tall; size never exceeds maxMult
     sizeTiers: [ { w: 72, min: 1, max: 2 }, { w: 21, min: 2, max: 4 }, { w: 5.5, min: 4, max: 6 }, { w: 1.2, min: 6, max: 8 }, { w: 0.3, min: 8, max: 10 } ],   // big eggs are MUCH rarer now (10x was 1 in 100, now 1 in ~330)
-    // areas = where the egg type can spawn (omit = everywhere). Cactus / Bone / Sand / Claw / Scorpion eggs only grow in the Scorching Sands.
+    // areas = where the egg type can spawn (omit = everywhere). Cactus / Bone / Sand / Claw / Scorpion eggs only grow in the Scorching Sands, Blue / Duck / Flower / Lily / Reed in Bubble Bay, Candy / Chocolate / Strawberry / Lolipop / Gummy in the Candy Kingdom.
     types: { normal: { w: 45, pts: 10, areas: ['valley'] }, brown: { w: 28, pts: 20, areas: ['valley'] }, cracked: { w: 12, pts: 5, areas: ['valley'] },
              golden: { w: 10, pts: 100 }, rainbow: { w: 5, pts: 250 },
              cactus: { w: 55, pts: 40, areas: ['sands'] }, bone: { w: 30, pts: 80, areas: ['sands'] },
-             sand: { w: 45, pts: 50, areas: ['sands'] }, claw: { w: 20, pts: 110, areas: ['sands'] }, scorpion: { w: 10, pts: 160, areas: ['sands'] } } },
+             sand: { w: 45, pts: 50, areas: ['sands'] }, claw: { w: 20, pts: 110, areas: ['sands'] }, scorpion: { w: 10, pts: 160, areas: ['sands'] },
+             blue: { w: 45, pts: 150, areas: ['bay'] }, duck: { w: 30, pts: 220, areas: ['bay'] }, flower: { w: 28, pts: 300, areas: ['bay'] }, lily: { w: 20, pts: 420, areas: ['bay'] }, reed: { w: 10, pts: 600, areas: ['bay'] },
+             candy: { w: 45, pts: 400, areas: ['candy'] }, chocolate: { w: 30, pts: 600, areas: ['candy'] }, strawberry: { w: 28, pts: 800, areas: ['candy'] }, lolipop: { w: 20, pts: 1100, areas: ['candy'] }, gummy: { w: 10, pts: 1600, areas: ['candy'] } } },
   // height 1.6 = the size the chicken actually appeared at before (the old bounding-box bug scaled it up from the configured 1.0).
   // margin = keep-out distance from area edges while wandering; chaseMargin = same while chasing; alert = seconds it freezes before it runs.
   chicken: { height: 1.6, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: 0 },
   // The Scorching Sands enemy. Same settings as the chicken. The scorpion model faces -Z, hence yawOffset = PI.
   scorpion: { height: 1.5, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: Math.PI },
+  // Bubble Bay guard (Duck.glb) and Candy Kingdom guard (Gummy Bear.glb). Both models face +Z like the chicken. `name` is what the messages call them.
+  duck:  { name: 'duck',        height: 1.6, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.0, yawOffset: 0 },
+  gummy: { name: 'gummy bear',  height: 2.4, speed: 1.3, margin: 2, chaseMargin: 0.4, alert: 0.6, catchRadius: 1.3, yawOffset: 0 },
   eggForm: { walk: 4, radius: 0.3, stepHeight: 0.25, probeHeights: [0.2, 0.5], cameraDistance: 4, cameraHeight: 0.8 },
   // Uniform scale applied to the whole map. Source map is ~253 x 304 m; 0.5 -> ~126 x 152 m (was 0.4).
   // Override with ?mapscale=0.3 (smaller) or ?mapscale=0.6 (bigger).
@@ -486,11 +493,15 @@ const CONFIG = {
     spawn: /^Player[ _]Spawn/i,
     zone: /^Throw[ _]Zone/i,
     valley: /^Cluck[ _]Valley$/i, sands: /^Scorching[ _]Sands$/i, valleyEgg: /^Cluck[ _]Valley[ _]Egg(_\d+)?$/i, sandsEgg: /^Scorching[ _]Sands[ _]Egg(_\d+)?$/i,
+    // every area: the floor node and its egg spawner markers. Order = nearest to furthest (must match the order of CONFIG.areas).
+    areaNodes: { valley: [/^Cluck[ _]Valley$/i, /^Cluck[ _]Valley[ _]Egg(_\d+)?$/i], sands: [/^Scorching[ _]Sands$/i, /^Scorching[ _]Sands[ _]Egg(_\d+)?$/i],
+                 bay: [/^Bubble[ _]Bay$/i, /^Bubble[ _]Bay[ _]Egg(_\d+)?$/i], candy: [/^Candy[ _]Kingdom$/i, /^Candy[ _]Kingdom[ _]Egg(_\d+)?$/i] },
+    guardStart: { valley: /^Chicken/i, bay: /^Duck$/i, candy: /^Gummy[ _]Bear$/i },   // marker nodes in the map: where each area's guard starts
     fence: /^Fence_?Pen(\d+)/i, spawnPen: /Pen(\d+)/i,
     gymBar: /^PullUp_?Bar_?Pen(\d+)/i, gymTread: /^Treadmill_?Pen(\d+)/i,   // marker cubes in the map: the machine for pen N stands where its marker is
     barrier: [/^Fence_?Pen/i, /^Wall/i],          // always solid at every height and from every side: never stepped on, never walked through
-    nonSolid: [/^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg(_\d+)?$/i, /^Chicken/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
-    hidden: [/^Player[ _]Spawn/i, /Egg(_\d+)?$/i, /^Chicken/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
+    nonSolid: [/^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg(_\d+)?$/i, /^Chicken/i, /^Duck$/i, /^Gummy[ _]Bear$/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
+    hidden: [/^Player[ _]Spawn/i, /Egg(_\d+)?$/i, /^Chicken/i, /^Duck$/i, /^Gummy[ _]Bear$/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
   },
   // speed = the player's speed stat (walk speed). Starts at 10. There is no sprint and no jump. Override with ?speed=N
   // speedUnit: metres per second per point of speed (player AND chickens), so "10" reads big but moves at a comfortable 5 m/s.
@@ -505,7 +516,8 @@ const CONFIG = {
   camera: { distance: 4.5, sens: 0.0025, touchSens: 0.006, minPitch: -0.2, maxPitch: 1.3, height: 1.5 },
   power: { min: 5, max: 20, period: 1.1 },        // period = seconds for one full up-and-down sweep
   // powerScale: the bar still reads 5-20, but the launch speed is power * powerScale (0.7 -> roughly half the old distance at 20).
-  throwing: { powerScale: 0.7, elevationDeg: 35, gravity: 9.8, cooldown: 1.2, maxLanded: 40, maxFlightTime: 12 },
+  // bounce = how much speed a thrown egg keeps when it hits the invisible edge of the map and bounces back (1 = all of it, 0 = drops dead). maxFlightTime is only a safety net.
+  throwing: { powerScale: 0.7, elevationDeg: 35, gravity: 9.8, cooldown: 1.2, maxLanded: 40, maxFlightTime: 90, bounce: 0.6 },
   egg: { size: 0.45 },
   // Baseball bat: always in the hotbar (button left of slot 1, key F or 0). Equip it, then click to swing (Bat Hit clip). Anyone in front of you within `reach`
   // (body-size units, scaled with the player) is knocked back and ragdolls. scale/grip/handY/lean place the model in the left hand (the arm the Bat clips raise).
@@ -535,6 +547,8 @@ const CONFIG = {
   areas: {
     valley: { label: 'Cluck Valley',    speed: 5,  chase: 5, ptsMult: 1, enemy: 'chicken', chicken: true, eggs: true },
     sands:  { label: 'Scorching Sands', speed: 750, chase: 1000, ptsMult: 2, enemy: 'scorpion', chaseAnywhere: true, chicken: true, eggs: true },
+    bay:    { label: 'Bubble Bay',      speed: 1000000,  chase: 1300000,  ptsMult: 4, enemy: 'duck',  chaseAnywhere: true, chicken: true, eggs: true },   // needs 1m speed
+    candy:  { label: 'Candy Kingdom',   speed: 50000000, chase: 65000000, ptsMult: 8, enemy: 'gummy', chaseAnywhere: true, chicken: true, eggs: true },   // needs 50m speed
   },
   // Hatching: an egg placed in your pen hatches after hatch.min (smallest egg) .. hatch.max (biggest egg, eggs.maxMult) seconds.
   hatch: { min: 10, max: 30 },
@@ -554,9 +568,11 @@ const CONFIG = {
     snake:     { name: 'Snake',     area: 'sands',  rarity: 'rare',     weight: 65, income: 50, height: 0.9, icon: '\u{1F40D}', lucky: false, fit: 'max', yawOffset: Math.PI },
     camel:     { name: 'Camel',     area: 'sands',  rarity: 'rare',     weight: 45, income: 60, height: 1.3, icon: '\u{1F42B}', lucky: true },
     scorpion:  { name: 'Scorpion',  area: 'sands',  rarity: 'epic',     weight: 35, income: 75, height: 0.7, icon: '\u{1F982}', lucky: true,  yawOffset: Math.PI },
+    duck:      { name: 'Duck',      area: 'bay',    rarity: 'rare',     weight: 100, income: 400, height: 0.9, icon: '\u{1F986}', lucky: false },
+    gummybear: { name: 'Gummy Bear', area: 'candy', rarity: 'epic',     weight: 100, income: 1500, height: 1.2, icon: '\u{1F9F8}', lucky: false },
   },
   rarities: { common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' }, rare: { label: 'Rare', color: '#5aa9ff' }, epic: { label: 'Epic', color: '#c77dff' } },
-  eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3, cactus: 1, bone: 2, sand: 1.25, claw: 2, scorpion: 2.5 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
+  eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3, cactus: 1, bone: 2, sand: 1.25, claw: 2, scorpion: 2.5, blue: 1, duck: 1.25, flower: 1.25, lily: 1.5, reed: 2, candy: 1, chocolate: 1.25, strawberry: 1.5, lolipop: 2, gummy: 2.5 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
   hotbarSlots: 9, petPenMax: 30, petSpeed: 0.8,
   petMaxMult: 25,      // biggest size a PET can have (the biggest EGG is eggs.maxMult = 10x): a 1x egg hatches a 1x pet, a 10x egg hatches a 25x pet, in between is linear
   gift: { range: 6 },  // metres: how close another player must be to gift them an egg or pet (scaled with the player below)
@@ -737,7 +753,7 @@ let currentAnim = '';
 let spawnPoints = [];
 let zoneBox = null, zoneMesh = null;
 let mapBox = new THREE.Box3();
-let valleyBox = null, sandsBox = null, chickenStart = null;
+const areaBoxes = {}, guardStarts = {};   // area id -> Box3 of its floor node / where its guard marker stands
 const eggSpawnBoxes = [], eggItems = [], eggTpl = {};
 let playerEgg = null, playerEggMesh = null, chicken = null, flight = null;
 let form = 'human';                 // 'human' | 'flying' | 'egg'
@@ -810,8 +826,8 @@ async function init() {
   const names = Object.keys(CONFIG.models.eggs);
   const GM = CONFIG.models.gym;
   const petIds = Object.keys(CONFIG.models.pets);
-  const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, ...restGltfs0] = await Promise.all([
-    load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.chicken), load(CONFIG.models.scorpion),
+  const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, duckGltf, gummyGltf, ...restGltfs0] = await Promise.all([
+    load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.chicken), load(CONFIG.models.scorpion), load(CONFIG.models.duck), load(CONFIG.models.gummy),
     ...petIds.map((id) => load(CONFIG.models.pets[id])),
     ...GM.treadmill.map((f) => load(f)), ...GM.bar.map((f) => load(f)),
     ...names.map((n) => load(CONFIG.models.eggs[n])),
@@ -837,8 +853,8 @@ async function init() {
   scene.add(playerEggMesh);
   buildAreas();
   updateThrowFwd();
-  setupChickens({ chicken: chickGltf, scorpion: scorpGltf });
-  setupPets({ chicken: chickGltf, scorpion: scorpGltf, ...petGltfs });
+  setupChickens({ chicken: chickGltf, scorpion: scorpGltf, duck: duckGltf, gummy: gummyGltf });
+  setupPets({ chicken: chickGltf, scorpion: scorpGltf, duck: duckGltf, gummybear: gummyGltf, ...petGltfs });
   setupGym({ treadmill: treadGltfs, bar: barGltfs });
   buildHotbar(); buildDex(); refreshHotbar(); refreshMoney(false);
   setupEggSpawns();
@@ -882,11 +898,11 @@ function setupMap(root) {
     const box = () => new THREE.Box3().setFromObject(o);
     const pen = CONFIG.match.fence.exec(o.name);
     if (pen) (penBoxes[pen[1]] ||= new THREE.Box3()).union(box());
-    if (CONFIG.match.valleyEgg.test(o.name)) eggSpawnBoxes.push({ box: box(), area: 'valley' });
-    else if (CONFIG.match.sandsEgg.test(o.name)) eggSpawnBoxes.push({ box: box(), area: 'sands' });
-    else if (CONFIG.match.valley.test(o.name)) valleyBox = box();
-    else if (CONFIG.match.sands.test(o.name)) sandsBox = box();
-    else if (/^Chicken/i.test(o.name)) chickenStart = box().getCenter(new THREE.Vector3());
+    for (const [id, [floorRe, eggRe]] of Object.entries(CONFIG.match.areaNodes)) {
+      if (eggRe.test(o.name)) eggSpawnBoxes.push({ box: box(), area: id });
+      else if (floorRe.test(o.name)) areaBoxes[id] = box();
+    }
+    for (const [id, re] of Object.entries(CONFIG.match.guardStart)) if (re.test(o.name) && !guardStarts[id]) guardStarts[id] = box().getCenter(new THREE.Vector3());
     const gb = CONFIG.match.gymBar.exec(o.name), gt = CONFIG.match.gymTread.exec(o.name);
     if (gb) gymMarkers.bar[gb[1]] = box().getCenter(new THREE.Vector3());
     if (gt) gymMarkers.treadmill[gt[1]] = box().getCenter(new THREE.Vector3());
@@ -1365,20 +1381,14 @@ const _bb = new THREE.Box3();
 const _f = new THREE.Vector3(), _r = new THREE.Vector3(), _mv = new THREE.Vector3(), _o = new THREE.Vector3(), _d = new THREE.Vector3();
 
 let curP = CONFIG.player;
-function blocked(dx, dz) {
-  _d.set(dx, 0, dz).normalize();
-  for (const h of curP.probeHeights) {
-    _o.set(pos.x, pos.y + h, pos.z);
-    if (castRayIn(walkSolids, _o, _d, curP.radius + 0.02)) return true;
-  }
-  return false;
-}
 // Fences and walls are boxes, so test the player's footprint against them directly. That cannot slip between rails or posts and works from every side.
+// `reach` = how far we are about to move this frame: boxes that far away must be looked at too (at a speed of thousands of m/s one frame is a long way).
 const _nb = [];
-function gatherBarriers() {
+function gatherBarriers(reach = 0) {
   _nb.length = 0;
+  const m = 3 + reach;
   for (const b of barrierBoxes) {
-    if (pos.x > b.min.x - 3 && pos.x < b.max.x + 3 && pos.z > b.min.z - 3 && pos.z < b.max.z + 3 && pos.y < b.max.y + 4 && pos.y > b.min.y - 6) _nb.push(b);
+    if (pos.x > b.min.x - m && pos.x < b.max.x + m && pos.z > b.min.z - m && pos.z < b.max.z + m && pos.y < b.max.y + 4 && pos.y > b.min.y - 6) _nb.push(b);
   }
 }
 function hitsBarrier(x, z, r, h) {
@@ -1386,6 +1396,33 @@ function hitsBarrier(x, z, r, h) {
     if (x > b.min.x - r && x < b.max.x + r && z > b.min.z - r && z < b.max.z + r && b.max.y > pos.y + 0.05 && b.min.y < pos.y + h) return true;
   }
   return false;
+}
+
+/* Swept movement along ONE axis: never moves further than the first wall / fence / post on the way, however long the step is.
+   Before, only the spot you would END on was checked, so a fast player (a step of many metres per frame) jumped straight over thin walls and fences.
+   1) walls that are meshes: one ray per probe height, as long as the whole step.  2) fence / wall boxes: clamp against each box ahead of you.
+   `stuck` = you already overlap a fence (odd spawn / landing): the boxes are ignored so you can walk out. Returns the distance really moved. */
+function moveAxis(ax, d, P, bh, stuck) {
+  if (!d) return 0;
+  const sgn = Math.sign(d), oth = ax === 'x' ? 'z' : 'x';
+  let allow = Math.abs(d);
+  _d.set(ax === 'x' ? sgn : 0, 0, ax === 'z' ? sgn : 0);
+  for (const h of P.probeHeights) {
+    _o.set(pos.x, pos.y + h, pos.z);
+    const hit = castRayIn(walkSolids, _o, _d, P.radius + allow + 0.02);
+    if (hit) allow = Math.min(allow, Math.max(0, hit.distance - P.radius - 0.02));
+  }
+  if (!stuck) {
+    const c = pos[ax], r = P.radius;
+    for (const b of _nb) {
+      if (!(b.max.y > pos.y + 0.05 && b.min.y < pos.y + bh)) continue;       // above your head / below your feet
+      if (!(pos[oth] > b.min[oth] - r && pos[oth] < b.max[oth] + r)) continue; // not in your lane
+      const gap = sgn > 0 ? (b.min[ax] - r) - c : c - (b.max[ax] + r);         // free distance before the box (negative = it is behind you)
+      if (gap > -1e-4 && gap < allow) allow = Math.max(0, gap - 1e-3);
+    }
+  }
+  pos[ax] += sgn * allow;
+  return allow;
 }
 
 function updatePlayer(dt) {
@@ -1410,10 +1447,10 @@ function updatePlayer(dt) {
     const speed = eggForm ? P.walk : effSpeed(speedStat) * CONFIG.speedUnit;
     const mx = _mv.x * speed * dt, mz = _mv.z * speed * dt;
     const bh = eggForm ? CONFIG.eggs.baseHeight : CONFIG.player.height;
-    gatherBarriers();
+    gatherBarriers(Math.abs(mx) + Math.abs(mz));
     const stuck = hitsBarrier(pos.x, pos.z, P.radius, bh);        // already overlapping a fence (odd spawn/landing): let the player walk out
-    if (mx !== 0 && !blocked(Math.sign(mx), 0) && (stuck || !hitsBarrier(pos.x + mx, pos.z, P.radius, bh))) pos.x += mx;
-    if (mz !== 0 && !blocked(0, Math.sign(mz)) && (stuck || !hitsBarrier(pos.x, pos.z + mz, P.radius, bh))) pos.z += mz;
+    moveAxis('x', mx, P, bh, stuck);
+    moveAxis('z', mz, P, bh, stuck);
     facing = angleLerp(facing, Math.atan2(_mv.x, _mv.z), P.turnSpeed * dt);
   } else if (state.mode === 'charging' || state.mode === 'cooldown') {
     facing = angleLerp(facing, Math.atan2(_f.x, _f.z), P.turnSpeed * dt);
@@ -1423,11 +1460,13 @@ function updatePlayer(dt) {
     const dec = Math.exp(-CONFIG.bat.decay * dt);
     rag.vx *= dec; rag.vz *= dec;
     const rx = rag.vx * dt, rz = rag.vz * dt;
-    gatherBarriers();
-    const bh = CONFIG.player.height;
-    if (rx !== 0 && !blocked(Math.sign(rx), 0) && !hitsBarrier(pos.x + rx, pos.z, P.radius, bh)) pos.x += rx;
-    if (rz !== 0 && !blocked(0, Math.sign(rz)) && !hitsBarrier(pos.x, pos.z + rz, P.radius, bh)) pos.z += rz;
+    gatherBarriers(Math.abs(rx) + Math.abs(rz));
+    const bh = CONFIG.player.height, stuck = hitsBarrier(pos.x, pos.z, P.radius, bh);
+    moveAxis('x', rx, P, bh, stuck);
+    moveAxis('z', rz, P, bh, stuck);
   }
+  // never leave the map sideways, however fast you go (the swept walls above already stop you at every fence; this is the last safety net)
+  pos.x = clampN(pos.x, mapBox.min.x, mapBox.max.x); pos.z = clampN(pos.z, mapBox.min.z, mapBox.max.z);
 
   // vertical
   const wasGrounded = grounded;
@@ -1619,7 +1658,7 @@ async function netStart() {
 /* ------------------------------------------------------------------ */
 const FB_MAX_ROOMS = 40;
 const FB = { D: null, db: null, id: null, room: 0, pen: null, base: '', off: 0, players: new Map(), states: new Map(), pets: new Map(), known: new Set(), chick: new Map(),
-             eggs: [], eggSig: [], inbox: new Map(), sent: new Map(), taking: new Set(), spawning: new Set(), unsubs: [], timers: [], held: null, heldDisc: null, lastState: '', joinedAt: 0, lastClean: 0, lostT: 0, pagehide: false };
+             eggs: [], eggSig: [], inbox: new Map(), sent: new Map(), taking: new Set(), spawning: new Set(), unsubs: [], timers: [], held: null, heldDisc: null, lastState: '', joinedAt: 0, lastClean: 0, lostT: 0, pagehide: false, lite: false, warnedState: false };
 const fbAllowed = () => params.get('solo') !== '1' && /^https?:$/.test(location.protocol);
 const fbNow = () => Date.now() + FB.off;                 // server clock: egg regrow times must agree between players
 const fbRef = (p) => FB.D.ref(FB.db, FB.base + '/' + p);
@@ -1772,6 +1811,23 @@ function fbTick() {                                       // runs every second o
     if (low === FB.id) D.get(fbRef('chat')).then((snap) => { snap.forEach((c) => { const v = c.val(); if (v && v.ts < now - 180000) D.remove(c.ref); }); }).catch(() => {});
   }
 }
+/* The database turned a state update down (almost always the Realtime Database RULES: see database.rules.json). Without this, a rule that does not know a field
+   (the carried egg, the bat...) made EVERY update that contained it fail silently - so while you held an egg the other players saw you frozen in place.
+   Now: say so once, and keep sending the plain position / animation so the others still see you move. */
+function fbStateRefused(e, id, st) {
+  if (!NET.on || NET.fb !== FB) return;
+  const denied = /permission[_ ]denied/i.test(String((e && (e.code || e.message)) || e));
+  if (!FB.warnedState) {
+    FB.warnedState = true;
+    log.warn('Firebase refused a state update' + (denied ? ' (PERMISSION_DENIED: update the Realtime Database rules, see database.rules.json)' : ''), e);
+    if (denied) say('Multiplayer: the server rules refuse part of your updates - others may not see everything. Update the Firebase rules (database.rules.json).', 8);
+  }
+  if (!denied || FB.lite) return;
+  FB.lite = true;                                        // send only x, y, z, f, form, anim from now on
+  const lite = { x: st.x, y: st.y, z: st.z, f: st.f, form: st.form, anim: st.anim };
+  FB.lastState = JSON.stringify(lite);
+  FB.D.set(fbRef('states/' + id), lite).catch(() => {});
+}
 function fbSend(o) {
   const D = FB.D, id = FB.id;
   switch (o.t) {
@@ -1784,9 +1840,11 @@ function fbSend(o) {
       if (o.sw) st.sw = o.sw | 0;
       if (o.rg) st.rg = fbRound(o.rg);
       if (o.ht) st.ht = o.ht;
+      if (FB.lite) { for (const k of Object.keys(st)) if (!['x', 'y', 'z', 'f', 'form', 'anim'].includes(k)) delete st[k]; }   // the database refused the full update before: movement only
       const sig = JSON.stringify(st);
       if (sig === FB.lastState) break;                    // standing still: nothing to send
-      FB.lastState = sig; D.set(fbRef('states/' + id), st).catch(() => {});
+      FB.lastState = sig;
+      D.set(fbRef('states/' + id), st).catch((e) => fbStateRefused(e, id, st));
       break;
     }
     case 'pets': { if (o.list && o.list.length) D.set(fbRef('pets/' + id), o.list.map((p) => ({ id: p.id, mult: fbRound(p.mult), u: fbRound(p.u), v: fbRound(p.v) }))).catch(() => {}); else D.remove(fbRef('pets/' + id)).catch(() => {}); break; }
@@ -1831,7 +1889,7 @@ function fbCleanup() {                                    // leave the room: rel
       for (const p of paths) { D.onDisconnect(fbRef(p)).cancel(); D.remove(fbRef(p)); }   // cancel the pending onDisconnect so it cannot hit a pen someone else took later
     } catch (e) { /* offline: the server already removed them */ }
   }
-  Object.assign(FB, { pen: null, base: '', held: null, heldDisc: null, lastState: '', spawning: new Set() });
+  Object.assign(FB, { pen: null, base: '', held: null, heldDisc: null, lastState: '', spawning: new Set(), lite: false, warnedState: false });
   FB.inbox.clear(); FB.sent.clear(); FB.taking.clear();
   FB.players.clear(); FB.states.clear(); FB.pets.clear(); FB.known.clear(); FB.chick.clear(); FB.eggs = []; FB.eggSig = [];
 }
@@ -2176,8 +2234,8 @@ function statusText() {
   if (carry) {
     if (carry.status === 'stolen') {
       const h = areas.find((x) => x.id === carry.area);
-      if (h && h.chaseAnywhere) return 'The ' + h.enemy + ' is after you! Get to your pen' + (playerPen ? ' (Pen ' + playerPen.num + ', ' + Math.round(Math.hypot(pos.x - playerPen.center.x, pos.z - playerPen.center.z)) + ' m away)' : '') + '!';
-      const a = areaAt(pos.x, pos.z); return 'The ' + (a && a.enemy || 'chicken') + ' is after you! Get out of ' + (a ? a.label : 'the area') + '!';
+      if (h && h.chaseAnywhere) return 'The ' + enemyName(h) + ' is after you! Get to your pen' + (playerPen ? ' (Pen ' + playerPen.num + ', ' + Math.round(Math.hypot(pos.x - playerPen.center.x, pos.z - playerPen.center.z)) + ' m away)' : '') + '!';
+      const a = areaAt(pos.x, pos.z); return 'The ' + enemyName(a) + ' is after you! Get out of ' + (a ? a.label : 'the area') + '!';
     }
     if (nearPen()) return IS_TOUCH ? 'Tap a spot in your pen to place the egg' : 'Click a spot in your pen to place the egg';
     return playerPen ? 'Safe! Take the egg to your pen (Pen ' + playerPen.num + ', ' + Math.round(Math.hypot(pos.x - playerPen.center.x, pos.z - playerPen.center.z)) + ' m away)' : 'Safe! Take the egg to your pen';
@@ -2232,12 +2290,29 @@ function tryThrow() {
 }
 
 const _n = new THREE.Vector3(), _seg = new THREE.Vector3(), _next = new THREE.Vector3();
+/* A thrown egg can never leave the map: when it would cross the outer edge (sideways or past the far end of the last area) it bounces back,
+   like off an invisible wall - the sideways speed is flipped and damped by CONFIG.throwing.bounce, the rest of the flight carries on. */
+function bounceAtMapEdge(next, fl) {
+  const m = CONFIG.eggForm.radius + 0.3, B = CONFIG.throwing.bounce;
+  let hit = false;
+  for (const ax of ['x', 'z']) {
+    const lo = mapBox.min[ax] + m, hi = mapBox.max[ax] - m;
+    for (let k = 0; k < 8 && (next[ax] > hi || next[ax] < lo); k++) {       // a huge step can overshoot more than once
+      if (next[ax] > hi) { next[ax] = 2 * hi - next[ax]; fl.vel[ax] = -Math.abs(fl.vel[ax]) * B; }
+      else { next[ax] = 2 * lo - next[ax]; fl.vel[ax] = Math.abs(fl.vel[ax]) * B; }
+      hit = true;
+    }
+    next[ax] = clampN(next[ax], lo, hi);
+  }
+  if (hit) { fl.bounces = (fl.bounces || 0) + 1; if (fl.bounces === 1) say('Bounced off the edge of the map!', 2.5); }
+}
 function updateFlight(dt) {
   if (form !== 'flying' || !flight) return;
   const half = CONFIG.eggs.baseHeight * 0.5, r = CONFIG.eggForm.radius;
   flight.t += dt;
   flight.vel.y -= CONFIG.throwing.gravity * dt;
   _next.copy(flight.c).addScaledVector(flight.vel, dt);
+  bounceAtMapEdge(_next, flight);
   _seg.subVectors(_next, flight.c);
   const len = _seg.length();
   const hit = len > 1e-6 ? castRay(flight.c, _seg.clone().normalize(), len + r) : null;  // swept test: cannot tunnel through floors
@@ -2307,7 +2382,7 @@ function setupEggSpawns() {
     eggItems.push(item);
     spawnEgg(item);
   }
-  log.info('Egg spawners:', eggItems.length, '(' + eggItems.filter((i) => i.area === 'valley').length + ' Cluck Valley, ' + eggItems.filter((i) => i.area === 'sands').length + ' Scorching Sands)');
+  log.info('Egg spawners:', eggItems.length, '(' + Object.keys(CONFIG.areas).map((id) => eggItems.filter((i) => i.area === id).length + ' ' + CONFIG.areas[id].label).join(', ') + ')');
 }
 function updateEggItems(dt) {
   if (NET.on) return;                                  // multiplayer: the server decides when eggs (re)spawn
@@ -2325,19 +2400,20 @@ function updateEggItems(dt) {
 /* ------------------------------------------------------------------ */
 const act = { kind: null, item: null };      // the button currently on screen: 'steal' (at an egg) or 'place' (above you)
 let toast = { text: '', t: 0 };
+const enemyName = (a) => { const k = a && a.enemy; return (k && CONFIG[k] && CONFIG[k].name) || k || 'chicken'; };   // what the messages call an area's guard
 function say(text, secs = 3.5) { toast = { text, t: secs }; dom.last.textContent = text; }
 
 function buildAreas() {
-  const boxes = { valley: valleyBox, sands: sandsBox };
-  areas = Object.keys(CONFIG.areas).filter((id) => boxes[id]).map((id) => ({ id, ...CONFIG.areas[id], box: boxes[id] }));
-  if (!areas.length) log.warn('No Cluck Valley / Scorching Sands meshes found; stealing cannot be escaped.');
+  areas = Object.keys(CONFIG.areas).filter((id) => areaBoxes[id]).map((id) => ({ id, ...CONFIG.areas[id], box: areaBoxes[id] }));
+  for (const id of Object.keys(CONFIG.areas)) if (!areaBoxes[id]) log.warn('Area node missing in the map:', id);
+  if (!areas.length) log.warn('No area meshes found in the map; stealing cannot be escaped.');
 }
 function buildAreasBar() {
   dom.areasRow.innerHTML = '';
   for (const a of areas) {
     const el = document.createElement('div');
     el.className = 'area'; el.dataset.id = a.id;
-    el.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><use href="#ico-bolt"/></svg><span>' + a.label + '</span><b>' + (a.speed >= 1000 ? +(a.speed / 1000).toFixed(1) + 'k' : a.speed) + '</b>';
+    el.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><use href="#ico-bolt"/></svg><span>' + a.label + '</span><b>' + (a.speed >= 1000 ? fmtBig(a.speed) : a.speed) + '</b>';
     dom.areasRow.appendChild(el);
     a.el = el;
   }
@@ -2419,7 +2495,7 @@ function steal(it) {
   carry = { egg: e, item: home, area: it.area, areaLabel: area ? area.label : null, status: 'stolen', held: makeHeld(e) };
   playerRoot.add(carry.held);
   state.mode = 'idle';
-  say('Stolen! RUN - the ' + (area && area.enemy || 'chicken') + ' is after you!' + (area && area.chaseAnywhere ? ' It will not stop - get to your pen!' : ''), 4);
+  say('Stolen! RUN - the ' + enemyName(area) + ' is after you!' + (area && area.chaseAnywhere ? ' It will not stop - get to your pen!' : ''), 4);
   if (!it.drop) netSend({ t: 'steal', i: eggItems.indexOf(it) });   // a dropped egg is still yours on the server
   log.info('Stole', e.type, e.mult.toFixed(2) + 'x from', it.area);
 }
@@ -2512,11 +2588,15 @@ function updateCarry() {
   dom.held.textContent = 'Holding: ' + e.type + ' egg ' + e.mult.toFixed(1) + 'x' + (carry.status === 'stolen' ? '  (STOLEN - escape!)' : '  (safe - take it to your pen)');
   const hunter = areas.find((a) => a.id === carry.area);
   const chased = !!(hunter && hunter.chaseAnywhere);        // this area's guard follows you everywhere: only your own pen is safe
-  if (carry.status === 'stolen' && form === 'human' && (chased ? inOwnPen() : !areaAt(pos.x, pos.z))) {   // out of Cluck Valley AND Scorching Sands (or, if chased, inside your pen) = escaped
+  // escaped = out of every area (Cluck Valley's chicken stops at the border) or, for a guard that follows you everywhere (scorpion, duck, gummy bear...), at your pen.
+  // "At your pen" also counts the 3 m around it where you can already place the egg, so the egg is yours the moment you could place it - never only after placing.
+  if (carry.status === 'stolen' && form === 'human' && (chased ? (inOwnPen() || nearPen()) : !areaAt(pos.x, pos.z))) {
     carry.status = 'safe';
     carry.item.pending = false; carry.item.timer = CONFIG.eggs.respawn;
     netSend({ t: 'escaped', i: eggItems.indexOf(carry.item) });
-    say(chased ? 'You made it to your pen! Click a spot to place the egg.' : 'You escaped! The egg is in your inventory. Take it to Pen ' + (playerPen ? playerPen.num : '?') + '.', 5);
+    const eg = carry.egg;
+    banner('<small>You got it!</small><b>' + eg.type + ' egg <span style="font-size:.5em;opacity:.8">' + eg.mult.toFixed(1) + 'x</span></b><em>' + (chased ? 'Click a spot in your pen to place it' : 'Take it to your pen') + '</em>', '#7dff9a');
+    say(chased ? 'You got the egg! You made it to your pen - click a spot to place it.' : 'You escaped! The egg is in your inventory. Take it to Pen ' + (playerPen ? playerPen.num : '?') + '.', 5);
     log.info('Escaped with the egg');
   }
 }
@@ -2653,8 +2733,8 @@ function updateHud() {
     const showGiftPet = showGift && !!carry && !!giftItem('pet');          // carrying an egg AND holding a pet: the second button gifts the pet
     if (hudGiftPet !== showGiftPet) { hudGiftPet = showGiftPet; $('t-giftpet').style.display = showGiftPet ? 'flex' : 'none'; }
   }
-  if (hudStr !== train.strength) { hudStr = train.strength; $('str-val').textContent = String(+train.strength.toFixed(1)); $('str-sub').textContent = 'STRENGTH +' + Math.round(train.strength * CONFIG.gym.throwBonusPerStrength * 100) + '%'; }
-  if (hudSpeed !== speedStat) { hudSpeed = speedStat; dom.speedVal.textContent = String(+speedStat.toFixed(2)); }
+  if (hudStr !== train.strength) { hudStr = train.strength; $('str-val').textContent = train.strength >= 1e3 ? fmtBig(train.strength) : String(+train.strength.toFixed(1)); $('str-sub').textContent = 'STRENGTH +' + Math.round(train.strength * CONFIG.gym.throwBonusPerStrength * 100) + '%'; }
+  if (hudSpeed !== speedStat) { hudSpeed = speedStat; dom.speedVal.textContent = speedStat >= 1e3 ? fmtBig(speedStat) : String(+speedStat.toFixed(2)); }
   const here = areaAt(pos.x, pos.z);
   for (const a of areas) {
     a.el.style.display = here === a ? 'flex' : 'none';   // only the area you are standing in
@@ -2714,7 +2794,8 @@ function setupChickens(gltfs) {
     const mx = new THREE.AnimationMixer(model), actions = {};
     for (const clip of gltf.animations) actions[clip.name.toLowerCase()] = mx.clipAction(clip);
     const ch = { area, kind, cfg: E, root, mixer: mx, actions, anim: '', state: 'wander', target: null, wait: 1, yaw: 0, alert: 0, pos: new THREE.Vector3() };
-    let start = area.id === 'valley' && chickenStart && chickenOk(ch, chickenStart.x, chickenStart.z, E.margin) !== null ? chickenStart : null;
+    const gs = guardStarts[area.id];
+    let start = gs && chickenOk(ch, gs.x, gs.z, E.margin) !== null ? gs : null;
     if (!start) start = randomSpot(ch, E.margin) || area.box.getCenter(new THREE.Vector3());
     const gy = chickenOk(ch, start.x, start.z, 0);
     ch.pos.set(start.x, gy === null ? area.box.max.y : gy, start.z);
@@ -2805,7 +2886,7 @@ function chickenFollow(ch, dt) {                         // not the host: show t
   ch.state = chasingMe ? 'chase' : 'wander';
   ch.free = chasingMe && !!A.chaseAnywhere;
   if (chasingMe && Math.hypot(pos.x - p.x, pos.z - p.z) < ch.cfg.catchRadius + 0.6 && Math.abs(pos.y - p.y) < 2.5) {   // a little extra reach: the guard you see is a split second behind the real one
-    caughtBy(ch.kind);
+    caughtBy(ch.cfg.name || ch.kind);
     respawn();
   }
   chickenPlay(ch, anim);
@@ -2836,7 +2917,7 @@ function updateChicken(ch, dt) {
     else if (dist < C.catchRadius && Math.abs(tg.y - p.y) < 2.5) {
       if (tg.mine) {
         ch.state = 'wander'; ch.target = null; ch.wait = 1.5; ch.free = false; sendHome(ch);
-        caughtBy(ch.kind);
+        caughtBy(ch.cfg.name || ch.kind);
         respawn();                                           // caught = sent back to your pen
       }                                                      // someone else's thief: their own game sees the catch and sends them home
     } else if (dist > 1e-4) {
@@ -3727,7 +3808,7 @@ function tick() {
 
 if (CONFIG.debug) window.TAE = {   // test hook, only with ?debug=1
   get pos() { return pos; }, get yaw() { return yaw; }, set yaw(v) { yaw = v; }, get state() { return state; }, get form() { return form; }, get flight() { return flight; },
-  get carry() { return carry; }, steal, eggItems, areaAt, bat, rag, dropped, batSwing, equipBat, ragStart, caughtBy, tryThrow, throwFwd, zoneBox: () => zoneBox, NET, remotes, gymItems, startGym, stopGym, canTrain, inZone,
+  get carry() { return carry; }, steal, eggItems, netMessage, barrierBoxes, areas: () => areas, playerPen: () => playerPen, nearPen, inOwnPen, mapBox: () => mapBox, CONFIG, setSpeed: (v) => { speedStat = v; }, setCarrySafe: () => { if (carry) carry.status = 'safe'; }, areaAt, bat, rag, dropped, batSwing, equipBat, ragStart, caughtBy, tryThrow, throwFwd, zoneBox: () => zoneBox, NET, remotes, gymItems, startGym, stopGym, canTrain, inZone,
 };
 init().catch(fatal);
 </script>
