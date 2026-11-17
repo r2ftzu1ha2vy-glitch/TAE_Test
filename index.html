@@ -142,6 +142,15 @@
   #dex-btn:hover { filter: brightness(1.06); } #dex-btn:active { transform: translateY(calc(-50% + 2px)); box-shadow: 0 1px 0 #b8860b; }
   #shop-btn { position: fixed; left: 12px; top: calc(50% + 64px); z-index: 4; padding: 10px 14px; border: 3px solid #fff; border-radius: 16px; font: 700 17px var(--font); color: #0c3a12;
               background: linear-gradient(#9af59e, #3fc15a); box-shadow: 0 4px 0 #1f7a35, 0 8px 16px rgba(0,0,0,.4); cursor: pointer; pointer-events: auto; }
+  #stand-btn { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 4; display: none; padding: 10px 20px; border: 3px solid #fff; border-radius: 16px; font: 800 19px var(--font); color: #3a2a00;
+               background: linear-gradient(#ffe27a, #ffb82e); box-shadow: 0 4px 0 #a86d00, 0 8px 16px rgba(0,0,0,.4); cursor: pointer; pointer-events: auto; animation: standpulse 1.4s ease-in-out infinite; }
+  #stand-btn small { font: 700 12px var(--font); opacity: .65; } #stand-btn:active { transform: translateX(-50%) translateY(2px); }
+  body.touch #stand-btn { bottom: calc(84px + env(safe-area-inset-bottom)); font-size: 16px; padding: 8px 14px; }
+  @keyframes standpulse { 50% { filter: brightness(1.12); } }
+  #dex .tr-sw { width: 38px; height: 38px; border-radius: 50%; flex: none; border: 3px solid #fff; box-shadow: 0 0 12px var(--sw, #fff); background: var(--sw, #fff); }
+  #dex .up-buy.eq { background: linear-gradient(#ffe27a, #ffb82e); color: #3a2a00; box-shadow: 0 3px 0 #a86d00; } #dex .up-buy.own { background: linear-gradient(#8fd0ff, #3f93e0); color: #06264a; box-shadow: 0 3px 0 #1d5a9a; }
+  #dex .sell-all { width: 100%; margin-bottom: 10px; padding: 10px; border: 3px solid #fff; border-radius: 14px; font: 800 17px var(--font); color: #3a2a00; background: linear-gradient(#ffe27a, #ffb82e); box-shadow: 0 3px 0 #a86d00; cursor: pointer; } #dex .sell-all.no { filter: grayscale(.85) brightness(.75); cursor: not-allowed; }
+  #dex .sell-ic { width: 40px; height: 40px; flex: none; display: flex; align-items: center; justify-content: center; } #dex .sell-ic img, #dex .sell-ic svg { max-width: 100%; max-height: 100%; }
   #shop-btn:hover { filter: brightness(1.06); } #shop-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1f7a35; } #shop-btn small { font: 700 12px var(--font); opacity: .65; }
   #dex .dex-tabs { display: flex; gap: 6px; } #dex .dex-tab { border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff; border-radius: 12px; font: 700 16px var(--font); padding: 5px 12px; cursor: pointer; }
   #dex .dex-tab.on { background: var(--gold); color: #3a2a00; border-color: #fff; }
@@ -387,6 +396,7 @@
 </div></div>
 <button type="button" id="dex-btn">Index</button>
 <button type="button" id="shop-btn">Upgrades <small>[U]</small></button>
+<button type="button" id="stand-btn"></button>
 <div id="dex"></div>
 <div id="hotbar"></div>
 <div id="banner"></div>
@@ -433,6 +443,8 @@
       <li>Click a pet standing in your pen to <b>take it back</b> into your hotbar. Your pen holds 5 pets to start.</li>
       <li><b>Sign in</b> (email or Google) and your money, pets, pen, upgrades and training are saved. <b>Guests are not saved.</b></li>
       <li>Open <b>Upgrades</b> (button on the left, or press <b>U</b>) to upgrade the Pull-Up Bar, the Treadmill, and your pen (+1 pet slot each).</li>
+      <li>Walk up to the <b>Sell</b> stand next to the Throw Zone (press <b>E</b>) to sell pets from your hotbar for cash, and to the <b>Trail Shop</b> to buy trails that boost your Speed.</li>
+      <li><b>Win:</b> make it all the way to the end of the Candy Kingdom to get the egg! You need a huge throw (lots of Strength) to get that far.</li>
       <li>Open the <b>Index</b> button (or press <b>I</b>) to see every pet.</li>
       <li>Press <b>Enter</b> (touch: the chat button) to <b>chat</b> with the other players on your server.</li>
     </ol>
@@ -460,7 +472,8 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
+    sell: 'Sell.glb', trailshop: 'Trail_Shop.glb',
     gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb', 'Treadmill_Upgrade4.glb', 'Treadmill_Upgrade5.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb', 'PullUp_BarUpgrade4.glb', 'PullUp_BarUpgrade5.glb'] },   // index = upgrade level
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb',
              blue: 'Blue_Egg.glb', duck: 'Duck_Egg.glb', flower: 'Flower_Egg.glb', lily: 'Lily_Egg.glb', reed: 'Reed_Egg.glb',                                   // Bubble Bay
@@ -528,7 +541,7 @@ const CONFIG = {
   // Gym in your pen. Click the Pull-Up Bar (strength) or the Treadmill (speed) to start auto-training; click again to stop. reach = how close you must stand (metres from the machine's edge).
   // Auto-training: you are teleported onto the machine and locked in place; reps are counted by the timings of your machine's upgrade level (see gymTiers).
   // gripAlign: where the Training clip's raised arms sit on the bar (0 = lowest point of the pull, 1 = highest, 0.5 = middle).
-  // strength: every point adds throwBonusPerStrength to the launch speed (0.01 = +1%).
+  // strength: every point adds throwBonusPerStrength to the launch speed (0.004 = +0.4%). It was 0.01 and the free Pull-Up Bar alone reached the end of the map in ~13 minutes; now the end needs ~1000 Strength, i.e. real upgrades.
   // Gym upgrades (bought in the Upgrades panel, button on the left or press U). Index = level: level 1 is the base machine, then Upgrade 2 to Upgrade 5 (each has its own model).
   // cost = price of reaching that level. gain = Strength (bar) / Speed (treadmill) you get every `every` seconds (one rep). first = when the first rep of a session counts.
   // On the bar one pull-up is the 2s Training clip (barClipLength); with every < 2 the clip plays faster so a pull-up still lands on every rep.
@@ -536,10 +549,10 @@ const CONFIG = {
   pen: { base: 5, firstCost: 10000, growth: 3, max: 10 },
   petPickupReach: 6,   // how close you must be (metres) to click a pet in your pen and take it back
   gymTiers: {
-    bar:       [{ cost: 0, gain: 1,    every: 2,   first: 1    }, { cost: 1000000,  gain: 5,  every: 1,   first: 0.5 }, { cost: 15000000, gain: 20, every: 1,   first: 0.5 }, { cost: 150000000, gain: 40, every: 1,   first: 0.5 }, { cost: 2000000000, gain: 75, every: 1,   first: 0.5 }],
+    bar:       [{ cost: 0, gain: 0.5,  every: 2,   first: 1    }, { cost: 1000000,  gain: 5,  every: 1,   first: 0.5 }, { cost: 15000000, gain: 20, every: 1,   first: 0.5 }, { cost: 150000000, gain: 40, every: 1,   first: 0.5 }, { cost: 2000000000, gain: 75, every: 1,   first: 0.5 }],
     treadmill: [{ cost: 0, gain: 0.25, every: 0.5, first: 0.5  }, { cost: 850000,   gain: 15, every: 0.5, first: 0.5 }, { cost: 10000000, gain: 80, every: 0.5, first: 0.5 }, { cost: 100000000, gain: 160, every: 0.5, first: 0.5 }, { cost: 1000000000, gain: 240, every: 0.5, first: 0.5 }],
   },
-  gym: { reach: 2.2, gripAlign: 0.5, barClipLength: 2.0, throwBonusPerStrength: 0.01, barHeight: 3.7, treadmillLength: 4.1, wallInset: 3.5, spread: 4.5 },
+  gym: { reach: 2.2, gripAlign: 0.5, barClipLength: 2.0, throwBonusPerStrength: 0.004, barHeight: 3.7, treadmillLength: 4.1, wallInset: 3.5, spread: 4.5 },
   // Areas are islands ordered from nearest to furthest (the order below). Humans can never enter an area (only thrown eggs, and thieves with a stolen egg, are allowed in),
   // and you can only go to the island your egg landed on and the ones before it; anything further sends you back out.
   // Per-area rules. speed = recommended player speed (shown at the top of the screen), chase = how fast that area's chicken runs
@@ -552,7 +565,10 @@ const CONFIG = {
     candy:  { label: 'Candy Kingdom',   speed: 50000000, chase: 65000000, ptsMult: 8, enemy: 'gummy', chaseAnywhere: true, chicken: true, eggs: true },   // needs 50m speed
   },
   // Hatching: an egg placed in your pen hatches after hatch.min (smallest egg) .. hatch.max (biggest egg, eggs.maxMult) seconds.
-  hatch: { min: 10, max: 30 },
+  // Per area: the further the area, the longer the wait (smallest egg .. biggest egg of that area). Sands max 2 min, Bubble Bay max 18 min, Candy Kingdom max 30 min.
+  hatch: { min: 10, max: 30, areas: { valley: { min: 10, max: 30 }, sands: { min: 20, max: 120 }, bay: { min: 120, max: 1080 }, candy: { min: 300, max: 1800 } } },
+  // Secret code: type =1=1=1=1=1 (any time, not in a text box) to toggle instant hatching for testing. Set to '' to disable.
+  secretCode: '=1=1=1=1=1',
   // Pets. weight = chance when an egg hatches (chicken 70 : bunny 15 : ladybug 15), income = money per second while it stands in your pen (at a 1x egg; multiplied by the egg size it hatched from), height = placed size in metres.
   // area = which area's eggs can hatch it (valley / sands). weight = chance within that area's pool. lucky = affected by egg luck (default: every rarity except common).
   // fit:'max' = size the model by its longest side instead of its height (the snake is long and flat). yawOffset = PI for models that face -Z.
@@ -570,6 +586,7 @@ const CONFIG = {
     camel:     { name: 'Camel',     area: 'sands',  rarity: 'rare',     weight: 30, income: 60, height: 1.3, icon: '\u{1F42B}', lucky: true },
     scorpion:  { name: 'Scorpion',  area: 'sands',  rarity: 'epic',     weight: 15, income: 75, height: 0.7, icon: '\u{1F982}', lucky: true,  yawOffset: Math.PI },
     duck:      { name: 'Duck',      area: 'bay',    rarity: 'rare',     weight: 10,  income: 400, height: 0.9, icon: '\u{1F986}', lucky: false },
+    cottonsheep: { name: 'Cotton Candy Sheep', area: 'candy', rarity: 'epic', weight: 45, income: 3500, height: 1.3, icon: '\u{1F411}', lucky: true, yawOffset: -Math.PI / 2 },
     gummybear: { name: 'Gummy Bear', area: 'candy', rarity: 'epic',     weight: 100, income: 1500, height: 1.2, icon: '\u{1F9F8}', lucky: false },
   },
   rarities: { common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' }, rare: { label: 'Rare', color: '#5aa9ff' }, epic: { label: 'Epic', color: '#c77dff' } },
@@ -580,6 +597,22 @@ const CONFIG = {
   petSizeGain: 0.25,   // pet size = base height * (1 + (eggMult - 1) * petSizeGain): a pet of size m is 1 + (m - 1) * this times taller (a 25x pet = 7x taller)
   // range = how close you must be to an egg's edge to see Steal. carry* = size/height of the egg held over your head.
   steal: { dropSeconds: 10, penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
+  // WIN: reach the far end of the last island (Candy Kingdom) and you get the egg. The goal zone is the last `depth` metres of that island, full width.
+  // useMarker: true uses the map's own "Win" node instead (that node is a wall across the START of the map, so it is off by default). resetDelay = seconds before you are sent back to your pen.
+  win: { useMarker: false, depth: 18, resetDelay: 6, eggScale: 8 },
+  // SELL + TRAIL SHOP stands: they stand on the "Sell" and "Trail_Shop" marker cubes of the map. reach = how close (m) you must be to use one, height = model height in metres,
+  // yaw = turn the stand (radians) so its front faces the player.
+  stands: { reach: 9, height: 5, yaw: { sell: 0, trailshop: 0 } },
+  // A pet sells for income * size * seconds (about a minute and a half of what it would earn standing in your pen).
+  sell: { seconds: 90 },
+  // Trails: mult multiplies your Speed stat while the trail is equipped (it counts for the area speed requirements and for real walking speed). cost = price in the Trail Shop.
+  trails: [
+    { id: 'spark',   name: 'Spark Trail',   cost: 2500,       mult: 1.25, colors: ['#ffe27a', '#fff3b0'] },
+    { id: 'ember',   name: 'Ember Trail',   cost: 40000,      mult: 1.5,  colors: ['#ff7a1a', '#ffb02e', '#ff4a1a'] },
+    { id: 'frost',   name: 'Frost Trail',   cost: 750000,     mult: 2,    colors: ['#aef0ff', '#5ac8ff', '#ffffff'] },
+    { id: 'rainbow', name: 'Rainbow Trail', cost: 15000000,   mult: 3,    colors: null },
+    { id: 'galaxy',  name: 'Galaxy Trail',  cost: 500000000,  mult: 5,    colors: ['#b36bff', '#5a6bff', '#ff6bd6', '#ffffff'] },
+  ],
 };
 
 { // scale the body-size settings by playerScale (speeds are deliberately left alone) and keep the throw reach in step with the map size
@@ -768,6 +801,11 @@ const state = { mode: 'idle', power: CONFIG.power.min, t: 0, cooldown: 0 };
 let lastSpawnIdx = -1;
 let ready = false;
 let speedStat = CONFIG.player.speed;          // the player's speed stat; shown bottom-left
+const trails = { own: {}, eq: null };          // Trail Shop: trails bought (id -> true) and the one equipped
+let wins = 0;                                  // how many times you made it to the Win zone
+const trailById = (id) => CONFIG.trails.find((t) => t.id === id) || null;
+const trailMult = () => { const t = trails.eq && trailById(trails.eq); return t ? t.mult : 1; };
+const totalSpeed = () => speedStat * trailMult();   // speed stat x trail: used for walking, the HUD and the area speed requirements
 const lastOk = new THREE.Vector3(); let lastOkValid = false;   // last position that was allowed (outside every area, or inside one you may be in)
 let throwCap = 0;                              // furthest island you may be on: 1 = first area, 2 = second... (set where your egg lands; 0 = none)
 let areas = [];                               // [{ id, label, speed, chase, ptsMult, box, ... }]
@@ -858,6 +896,9 @@ async function init() {
   setupChickens({ chicken: chickGltf, scorpion: scorpGltf, duck: duckGltf, gummy: gummyGltf });
   setupPets({ chicken: chickGltf, scorpion: scorpGltf, duck: duckGltf, gummybear: gummyGltf, ...petGltfs });
   setupGym({ treadmill: treadGltfs, bar: barGltfs });
+  try { setupStands(await Promise.all([load(CONFIG.models.sell), load(CONFIG.models.trailshop)])); } catch (err) { log.warn('Sell / Trail Shop models failed to load:', err && err.message); }
+  setupWin();
+  setupTrailFx();
   buildHotbar(); buildDex(); refreshHotbar(); refreshMoney(false);
   setupEggSpawns();
   buildAreasBar();
@@ -1148,6 +1189,7 @@ function endEggForm() {
   playerRoot.visible = true; playerEggMesh.visible = false;
 }
 function respawn() {
+  winT = -1;                                            // a manual respawn cancels the post-win countdown
   stopGym();
   rag.t = 0; rag.tilt = 0; rag.imm = 0; if (playerRoot) playerRoot.rotation.x = 0;   // standing up again after a bat hit
   throwCap = 0; lastOkValid = false;
@@ -1354,14 +1396,26 @@ document.addEventListener('mousedown', (e) => {
   if (batSwing()) return;                                          // bat equipped: the click is a swing
   tryThrow();
 });
+let codeBuf = '';
+function secretCodeKey(e) {                          // watches the typed characters for CONFIG.secretCode
+  const C = CONFIG.secretCode; if (!C || !e.key || e.key.length !== 1) return;
+  codeBuf = (codeBuf + e.key).slice(-C.length);
+  if (codeBuf !== C) return;
+  codeBuf = ''; instantHatch = !instantHatch;
+  if (instantHatch) for (const h of hatching) h.left = 0;
+  say(instantHatch ? 'Secret code: instant hatching ON' : 'Secret code: instant hatching OFF', 4);
+  banner('<small>Secret code</small><b>Instant hatch ' + (instantHatch ? 'ON' : 'OFF') + '</b>', '#c77dff');
+}
 const typing = (e) => !!(e.target && e.target.closest && e.target.closest('#auth, #chat, #profile'));   // typing in the sign-in form / chat: no game keys
 window.addEventListener('keydown', (e) => {
   if (typing(e)) return;
+  secretCodeKey(e);
   if (e.code === 'Space') e.preventDefault();
   if (e.repeat) return;
   if (e.code === 'Enter' || e.code === 'NumpadEnter') { chatOpen(); return; }
   if (e.code === 'KeyI') { openPanel('index'); return; }
   if (e.code === 'KeyU') { openPanel('shop'); return; }
+  if (e.code === 'KeyE') { standKey(); return; }
   if (dexOpen) { if (e.code === 'Escape') setDex(false); return; }   // the index is a pause-style panel: no game keys while it is open
   keys[e.code] = true;
   if (e.code === 'Space' && state.mode === 'charging') tryThrow();
@@ -1449,7 +1503,7 @@ function updatePlayer(dt) {
   if (moving) {
     _mv.normalize();
     fxTarget = 0.85;
-    const speed = eggForm ? P.walk : effSpeed(speedStat) * CONFIG.speedUnit;
+    const speed = eggForm ? P.walk : effSpeed(totalSpeed()) * CONFIG.speedUnit;
     const mx = _mv.x * speed * dt, mz = _mv.z * speed * dt;
     const bh = eggForm ? CONFIG.eggs.baseHeight : CONFIG.player.height;
     gatherBarriers(Math.abs(mx) + Math.abs(mz));
@@ -2096,7 +2150,7 @@ let fxTarget = 0, fxLevel = 0, fxFeel = 0;              // fxTarget = how hard y
 const fxEl = document.getElementById('speedfx');
 function updateSpeedFx(dt) {
   const F = CONFIG.speedFx, K = CONFIG.speedCurve.knee;
-  fxLevel = F.strength > 0 && speedStat > K ? clampN(Math.log(speedStat / K) / Math.log(Math.max(F.statMax, K * 2) / K), 0, 1) * F.strength : 0;
+  fxLevel = F.strength > 0 && totalSpeed() > K ? clampN(Math.log(totalSpeed() / K) / Math.log(Math.max(F.statMax, K * 2) / K), 0, 1) * F.strength : 0;
   const want = form === 'human' && !gym.session ? fxTarget * fxLevel : 0;
   fxFeel += (want - fxFeel) * Math.min(1, F.ease * dt);
   if (fxFeel < 0.002) fxFeel = 0;
@@ -2673,7 +2727,7 @@ function startHatching(e, pt) {                          // the egg starts hatch
   mesh.position.set(pt.x, pt.y, pt.z);
   mesh.rotation.y = Math.random() * Math.PI * 2;
   scene.add(mesh);
-  const total = hatchSeconds(e.mult);
+  const total = hatchSeconds(e.mult, e.area);
   const el = document.createElement('div');
   el.className = 'egg-timer'; el.innerHTML = '<span class="t"></span><div class="bar"><i></i></div>';
   document.body.appendChild(el);
@@ -2821,11 +2875,12 @@ function updateHud() {
     if (hudGiftPet !== showGiftPet) { hudGiftPet = showGiftPet; $('t-giftpet').style.display = showGiftPet ? 'flex' : 'none'; }
   }
   if (hudStr !== train.strength) { hudStr = train.strength; $('str-val').textContent = train.strength >= 1e3 ? fmtBig(train.strength) : String(+train.strength.toFixed(1)); $('str-sub').textContent = 'STRENGTH +' + Math.round(train.strength * CONFIG.gym.throwBonusPerStrength * 100) + '%'; }
-  if (hudSpeed !== speedStat) { hudSpeed = speedStat; dom.speedVal.textContent = speedStat >= 1e3 ? fmtBig(speedStat) : String(+speedStat.toFixed(2)); }
+  const ts = totalSpeed();
+  if (hudSpeed !== ts) { hudSpeed = ts; dom.speedVal.textContent = ts >= 1e3 ? fmtBig(ts) : String(+ts.toFixed(2)); }
   const here = areaAt(pos.x, pos.z);
   for (const a of areas) {
     a.el.style.display = here === a ? 'flex' : 'none';   // only the area you are standing in
-    a.el.classList.toggle('low', speedStat < a.speed);
+    a.el.classList.toggle('low', ts < a.speed);
   }
   dom.areasWrap.style.display = here ? 'block' : 'none';
 }
@@ -3082,7 +3137,7 @@ const authEl = $('auth');
 function snapshot() {                                  // everything that is saved, as plain data
   const b = playerPen ? playerPen.box : null;
   const pets = b ? petsInPen.map((p) => ({ id: p.id, mult: p.mult, u: clampN((p.pos.x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((p.pos.z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) })) : pendingPets;
-  return { v: 2, lastSeen: Date.now(), money, dex, slots: inv.slots, train, up, pets, profile: { name: profile.name, parts: profile.parts } };
+  return { v: 2, lastSeen: Date.now(), money, dex, slots: inv.slots, train, up, pets, trails: { own: Object.keys(trails.own), eq: trails.eq }, wins, profile: { name: profile.name, parts: profile.parts } };
 }
 function resetState() {                                // back to a brand new game (in memory)
   stopGym();
@@ -3090,6 +3145,7 @@ function resetState() {                                // back to a brand new ga
   inv.slots.fill(null); inv.sel = 0;
   train.strength = 0; train.speed = 0; speedStat = CONFIG.player.speed;
   up.bar = 0; up.treadmill = 0; up.pen = 0;
+  trails.own = {}; trails.eq = null; wins = 0;
   for (const g of gymItems) setGymTier(g, 0);
   for (const pp of petsInPen) scene.remove(pp.root);
   petsInPen.length = 0; pendingPets = [];
@@ -3100,6 +3156,11 @@ function applySave(d) {                                // replace the current ga
   money = Math.max(0, +d.money || 0);
   if (d.train) { train.strength = Math.max(0, +d.train.strength || 0); train.speed = Math.max(0, +d.train.speed || 0); speedStat = CONFIG.player.speed + train.speed; }
   if (d.up) { up.bar = clampN(d.up.bar | 0, 0, CONFIG.gymTiers.bar.length - 1); up.treadmill = clampN(d.up.treadmill | 0, 0, CONFIG.gymTiers.treadmill.length - 1); up.pen = clampN(d.up.pen | 0, 0, CONFIG.pen.max); }
+  if (d.trails) {
+    for (const id of (Array.isArray(d.trails.own) ? d.trails.own : Object.values(d.trails.own || {}))) if (trailById(id)) trails.own[id] = true;
+    trails.eq = trails.own[d.trails.eq] ? d.trails.eq : null;
+  }
+  wins = Math.max(0, d.wins | 0);
   for (const id of Object.keys(CONFIG.pets)) if (d.dex && d.dex[id] > 0) dex[id] = d.dex[id] | 0;
   const slots = Array.isArray(d.slots) ? d.slots : Object.values(d.slots || {});
   slots.slice(0, CONFIG.hotbarSlots).forEach((sl, i) => {
@@ -3280,7 +3341,7 @@ function refreshHotbar() {
 function selectSlot(i) { if (bat.equipped) equipBat(false, true); const n = CONFIG.hotbarSlots; inv.sel = ((i % n) + n) % n; refreshHotbar(); }
 function heldPet() { if (bat.equipped) return null; const sl = inv.slots[inv.sel]; return sl ? sl.pet : null; }
 
-let dexTab = 'index';                                   // the panel has two tabs: 'index' (pets) and 'shop' (upgrades)
+let dexTab = 'index';                                   // tabs: 'index' (pets), 'shop' (upgrades) and, only next to their stand, 'trails' (Trail Shop) and 'sell' (Sell)
 const fmtBig = (n) => (n >= 1e9 ? +(n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? +(n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? +(n / 1e3).toFixed(1) + 'K' : String(n));
 const fmtTier = (k, t) => '+' + +t.gain.toFixed(2) + ' ' + GYM_INFO[k].stat + ' every ' + t.every + 's';
 function shopRows() {
@@ -3309,14 +3370,22 @@ function buyUpgrade(id) {
 }
 function buildDex() {
   const ids = Object.keys(CONFIG.pets), found = ids.filter((id) => dex[id] > 0).length, shop = dexTab === 'shop';
+  const tabs = [['index', 'Pet Index'], ['shop', 'Upgrades']];
+  for (const k of Object.keys(STAND_TAB)) if (dexTab === STAND_TAB[k] || nearStand(k)) tabs.push([STAND_TAB[k], STAND_LABEL[k]]);
   ui.dexBtn.innerHTML = 'Index <span class="cnt">' + found + '/' + ids.length + '</span><small>[I]</small>';
-  const head = '<div class="dex-h"><span class="dex-tabs"><button type="button" class="dex-tab' + (shop ? '' : ' on') + '" data-tab="index">Pet Index</button><button type="button" class="dex-tab' + (shop ? ' on' : '') + '" data-tab="shop">Upgrades</button></span>' +
-    '<b>' + (shop ? '<span class="shop-money">$' + Math.floor(money).toLocaleString() + '</span>' : found + '/' + ids.length + ' discovered') + '</b><button type="button" class="dex-x">Close</button></div>';
+  const head = '<div class="dex-h"><span class="dex-tabs">' + tabs.map(([t, l]) => '<button type="button" class="dex-tab' + (dexTab === t ? ' on' : '') + '" data-tab="' + t + '">' + l + '</button>').join('') + '</span>' +
+    '<b>' + (dexTab !== 'index' ? '<span class="shop-money">$' + Math.floor(money).toLocaleString() + '</span>' : found + '/' + ids.length + ' discovered') + '</b><button type="button" class="dex-x">Close</button></div>';
   let body, foot;
   if (shop) {
     body = '<div class="up-list">' + shopRows().map((r) => '<div class="up-row"><span class="up-ic">' + r.icon + '</span><span class="up-t"><b>' + r.title + '</b><small>' + r.level + '</small><em>' + r.now + '</em><i>' + (r.next || 'Maxed out!') + '</i></span>' +
       (r.cost !== null ? '<button type="button" class="up-buy' + (money >= r.cost ? '' : ' no') + '" data-id="' + r.id + '" data-cost="' + r.cost + '">Buy<br><b>$' + fmtBig(r.cost) + '</b></button>' : '<span class="up-buy max">MAX</span>') + '</div>').join('') + '</div>';
     foot = IS_TOUCH ? 'Tap outside to close' : 'Press U or Esc to close';
+  } else if (dexTab === 'trails') {
+    body = trailsHtml();
+    foot = 'Trails multiply your Speed. Click a trail you own to equip it, click it again to take it off. ' + (IS_TOUCH ? 'Tap outside to close' : 'Press E or Esc to close');
+  } else if (dexTab === 'sell') {
+    body = sellHtml();
+    foot = 'Pets in your pen: click one to take it back into your hotbar first. ' + (IS_TOUCH ? 'Tap outside to close' : 'Press E or Esc to close');
   } else {
     body = '<div class="dex-grid">' + ids.map((id) => {
       const P = CONFIG.pets[id], R = CONFIG.rarities[P.rarity], n = dex[id] || 0;
@@ -3354,6 +3423,8 @@ shopBtn.addEventListener('click', () => openPanel('shop'));
 if (IS_TOUCH) shopBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openPanel('shop'); }, { passive: false });
 ui.dex.addEventListener('click', (e) => {
   const t = e.target.closest('.dex-tab'); if (t) { dexTab = t.dataset.tab; buildDex(); return; }
+  const tr = e.target.closest('[data-trail]'); if (tr) { trailAction(tr.dataset.trail); return; }
+  const sl = e.target.closest('[data-sell]'); if (sl) { sellPets(sl.dataset.sell); return; }
   const b = e.target.closest('.up-buy'); if (b && b.dataset.id) buyUpgrade(b.dataset.id);
 });
 const dexClose = (e) => { if (e.target === ui.dex || e.target.closest('.dex-x')) { e.preventDefault(); setDex(false); } };
@@ -3407,7 +3478,7 @@ function updateIncome(dt) {                             // every pet standing in
 }
 function refreshMoney(bump) {
   ui.money.querySelector('b').textContent = Math.floor(money).toLocaleString();
-  if (dexOpen && dexTab === 'shop') {                    // keep the Buy buttons and the balance in the open Upgrades panel up to date
+  if (dexOpen && dexTab !== 'index') {                   // keep the Buy buttons and the balance in the open Upgrades panel up to date
     ui.dex.querySelectorAll('.up-buy[data-cost]').forEach((bt) => bt.classList.toggle('no', money < +bt.dataset.cost));
     const sm = ui.dex.querySelector('.shop-money'); if (sm) sm.textContent = '$' + Math.floor(money).toLocaleString();
   }
@@ -3465,7 +3536,7 @@ function grantOffline(since) {                          // since = ms timestamp 
 function refreshMenuStats() {
   refreshAcct();
   const ids = Object.keys(CONFIG.pets);
-  $('menu-stats').textContent = '$' + Math.floor(money).toLocaleString() + '  \u00b7  ' + ids.filter((id) => dex[id] > 0).length + '/' + ids.length + ' pets discovered';
+  $('menu-stats').textContent = '$' + Math.floor(money).toLocaleString() + '  \u00b7  ' + ids.filter((id) => dex[id] > 0).length + '/' + ids.length + ' pets discovered' + (wins ? '  \u00b7  \u{1F95A} ' + wins + ' win' + (wins > 1 ? 's' : '') : '');
 }
 function banner(html, color) {
   const el = ui.banner;
@@ -3484,9 +3555,12 @@ function popupAt(text, wp, color) {
 }
 
 /* Hatching */
-function hatchSeconds(mult) {                         // smallest egg (1x) = hatch.min, biggest (eggs.maxMult) = hatch.max, linear between
+let instantHatch = false;                              // toggled by the secret code
+function hatchSeconds(mult, area) {                   // smallest egg (1x) = min, biggest (eggs.maxMult) = max of the egg's area, linear between
+  if (instantHatch) return 0;
+  const H = CONFIG.hatch, A = (area && H.areas && H.areas[area]) || H;
   const f = clampN((mult - 1) / (CONFIG.eggs.maxMult - 1), 0, 1);
-  return CONFIG.hatch.min + (CONFIG.hatch.max - CONFIG.hatch.min) * f;
+  return A.min + (A.max - A.min) * f;
 }
 function fmtTime(sec) { const t = Math.max(0, Math.ceil(sec)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
 function pickPet(eggType, area) {                      // the pet comes from the pool of the area the egg was stolen from
@@ -3848,6 +3922,193 @@ function updateTraining(dt) {                           // rep counter for the r
 }
 
 /* ------------------------------------------------------------------ */
+/* Sell stand, Trail Shop, trails, Win                                 */
+/* ------------------------------------------------------------------ */
+const STAND_TAB = { sell: 'sell', trailshop: 'trails' }, STAND_LABEL = { sell: 'Sell', trailshop: 'Trail Shop' };
+const stands = {};                                      // 'sell' / 'trailshop' -> { root, pos }  (standing on the map's marker cubes)
+function labelSprite(text, color) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+  const g = c.getContext('2d');
+  g.font = '800 72px Inter, system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 14; g.strokeStyle = 'rgba(0,0,0,.75)'; g.strokeText(text, 256, 68);
+  g.fillStyle = color; g.fillText(text, 256, 68);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  sp.scale.set(4, 1, 1); sp.renderOrder = 10;
+  return sp;
+}
+function setupStands([sellGltf, trailGltf]) {
+  for (const [key, gltf, color] of [['sell', sellGltf, '#ffe27a'], ['trailshop', trailGltf, '#8fd0ff']]) {
+    const mk = mapMarkers[key];
+    if (!mk) { log.warn('Marker node missing in the map:', key); continue; }
+    const model = gltf.scene, bb = new THREE.Box3().setFromObject(model), size = bb.getSize(new THREE.Vector3());
+    const k = CONFIG.stands.height / Math.max(size.y, 1e-3);
+    model.scale.setScalar(k);
+    model.position.set(-(bb.min.x + bb.max.x) / 2 * k, -bb.min.y * k, -(bb.min.z + bb.max.z) / 2 * k);   // centred, base on the floor
+    model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    const root = new THREE.Group(); root.add(model);
+    const c = mk.getCenter(new THREE.Vector3());
+    const g = groundAt(c.x, mk.max.y + 2, c.z);
+    root.position.set(c.x, g === null ? mk.min.y : g, c.z);
+    root.rotation.y = (CONFIG.stands.yaw && CONFIG.stands.yaw[key]) || 0;
+    const sp = labelSprite(STAND_LABEL[key].toUpperCase(), color); sp.position.set(0, CONFIG.stands.height + 0.9, 0); root.add(sp);
+    scene.add(root);
+    stands[key] = { root, pos: root.position.clone() };
+  }
+  log.info('Stands placed:', Object.keys(stands).join(', ') || 'none');
+}
+function nearStand(only) {                              // which stand ('sell' / 'trailshop') you are close enough to use, or null
+  if (!ready || form !== 'human') return null;
+  for (const k of Object.keys(stands)) {
+    if (only && k !== only) continue;
+    const s = stands[k];
+    if (Math.hypot(pos.x - s.pos.x, pos.z - s.pos.z) <= CONFIG.stands.reach) return k;
+  }
+  return null;
+}
+function standKey() {                                   // E: open / close the stand you are next to
+  if (dexOpen && (dexTab === 'trails' || dexTab === 'sell')) { setDex(false); return; }
+  const k = nearStand(); if (k) openPanel(STAND_TAB[k]);
+}
+const standBtn = $('stand-btn');
+standBtn.addEventListener('click', () => standKey());
+if (IS_TOUCH) standBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); standKey(); }, { passive: false });
+let standShown = null;
+function updateStands(dt) {
+  const k = !dexOpen && !(gym.session) ? nearStand() : null;
+  if (k !== standShown) {
+    standShown = k;
+    standBtn.style.display = k ? 'block' : 'none';
+    if (k) standBtn.innerHTML = (k === 'sell' ? 'Sell Pets' : 'Trail Shop') + ' <small>' + (IS_TOUCH ? '' : '[E]') + '</small>';
+  }
+  if (dexOpen && (dexTab === 'sell' || dexTab === 'trails') && !nearStand(dexTab === 'sell' ? 'sell' : 'trailshop')) setDex(false);   // walked (or got knocked) away
+}
+
+/* Trail Shop */
+function trailsHtml() {
+  return '<div class="up-list">' + CONFIG.trails.map((t) => {
+    const own = !!trails.own[t.id], eq = trails.eq === t.id;
+    const sw = t.colors ? t.colors[0] : '#ff5a8a';
+    const swatch = '<span class="tr-sw" style="' + (t.colors ? '--sw:' + sw : 'background:conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red);--sw:#fff') + '"></span>';
+    const btn = eq ? '<button type="button" class="up-buy eq" data-trail="' + t.id + '">Equipped<br><b>Remove</b></button>'
+      : own ? '<button type="button" class="up-buy own" data-trail="' + t.id + '">Owned<br><b>Equip</b></button>'
+      : '<button type="button" class="up-buy' + (money >= t.cost ? '' : ' no') + '" data-trail="' + t.id + '" data-cost="' + t.cost + '">Buy<br><b>$' + fmtBig(t.cost) + '</b></button>';
+    return '<div class="up-row">' + swatch + '<span class="up-t"><b>' + t.name + '</b><small>Speed x' + t.mult + '</small><em>Your Speed ' + fmtBig(+(speedStat).toFixed(2)) + ' → ' + fmtBig(+(speedStat * t.mult).toFixed(2)) + '</em></span>' + btn + '</div>';
+  }).join('') + '</div>';
+}
+function trailAction(id) {
+  const t = trailById(id); if (!t) return;
+  if (!trails.own[id]) {
+    if (money < t.cost) { say('Not enough money - you need $' + fmtBig(t.cost), 3); return; }
+    money -= t.cost; trails.own[id] = true; trails.eq = id;
+    refreshMoney(true);
+    banner('<small>New trail!</small><b>' + t.name + '</b><em>Speed x' + t.mult + '</em>', '#8fd0ff');
+    log.info('Bought trail', id, 'for', t.cost);
+  } else trails.eq = trails.eq === id ? null : id;
+  saveGame(); buildDex();
+}
+
+/* Trail particles: little glowing dots left behind your feet while you walk with a trail equipped */
+const trailFx = { pool: [], n: 40, acc: 0, i: 0, hue: 0, last: new THREE.Vector3(), moved: 0 };
+function setupTrailFx() {
+  const geo = new THREE.SphereGeometry(1, 8, 6);
+  for (let i = 0; i < trailFx.n; i++) {
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false }));
+    m.visible = false; m.userData = { life: 0, max: 1, size: 0.2 }; scene.add(m); trailFx.pool.push(m);
+  }
+}
+function updateTrailFx(dt) {
+  const F = trailFx, T = trails.eq && trailById(trails.eq);
+  const sp = dt > 0 ? Math.hypot(pos.x - F.last.x, pos.z - F.last.z) / dt : 0;
+  F.last.copy(pos);
+  if (T && form === 'human' && sp > 0.6 && sp < 400 && !gym.session) {
+    F.acc += dt * 42;
+    while (F.acc >= 1) {
+      F.acc -= 1;
+      const p = F.pool[F.i++ % F.n], u = p.userData;
+      let col;
+      if (T.colors) col = T.colors[Math.floor(Math.random() * T.colors.length)]; else { F.hue = (F.hue + 0.045) % 1; col = new THREE.Color().setHSL(F.hue, 1, 0.55); }
+      p.material.color.set(col);
+      u.life = u.max = 0.55 + Math.random() * 0.35; u.size = (0.14 + Math.random() * 0.14) * CONFIG.playerScale;
+      p.position.set(pos.x + (Math.random() - 0.5) * 0.5, pos.y + 0.12 + Math.random() * 0.35, pos.z + (Math.random() - 0.5) * 0.5);
+      p.visible = true;
+    }
+  }
+  for (const p of F.pool) {
+    if (!p.visible) continue;
+    const u = p.userData; u.life -= dt;
+    if (u.life <= 0) { p.visible = false; continue; }
+    const k = u.life / u.max;
+    p.scale.setScalar(u.size * (0.4 + 0.6 * k)); p.material.opacity = k * 0.9; p.position.y += dt * 0.35;
+  }
+}
+
+/* Sell stand: pets in the hotbar turn into cash */
+const petValue = (id, mult) => Math.floor(CONFIG.pets[id].income * (mult || 1) * CONFIG.sell.seconds);
+const slotValue = (sl) => { let v = 0; for (let i = 0; i < sl.count; i++) v += petValue(sl.pet, sl.sizes && sl.sizes[i]); return v; };
+function sellHtml() {
+  const rows = []; let all = 0;
+  inv.slots.forEach((sl, i) => {
+    if (!sl || !sl.pet) return;
+    const v = slotValue(sl); all += v;
+    rows.push('<div class="up-row"><span class="sell-ic">' + petIcon(sl.pet) + '</span><span class="up-t"><b>' + CONFIG.pets[sl.pet].name + (sl.count > 1 ? ' ×' + sl.count : '') + '</b><small>Slot ' + (i + 1) + '</small>' +
+      '<em>' + (sl.sizes && sl.sizes.length ? sl.sizes.map((m) => m.toFixed(1) + 'x').join(', ') : '1x') + '</em></span>' +
+      '<button type="button" class="up-buy own" data-sell="' + i + '">Sell<br><b>$' + fmtBig(v) + '</b></button></div>');
+  });
+  if (!rows.length) return '<div class="up-list"><div class="up-row"><span class="up-t"><b>No pets to sell</b><em>Hatch some eggs first - pets in your hotbar show up here.</em></span></div></div>';
+  return '<button type="button" class="sell-all' + (all > 0 ? '' : ' no') + '" data-sell="all">Sell all pets · $' + fmtBig(all) + '</button><div class="up-list">' + rows.join('') + '</div>';
+}
+function sellPets(which) {
+  let gain = 0, n = 0;
+  const idxs = which === 'all' ? inv.slots.map((sl, i) => (sl && sl.pet ? i : -1)).filter((i) => i >= 0) : [+which];
+  for (const i of idxs) {
+    const sl = inv.slots[i]; if (!sl || !sl.pet) continue;
+    gain += slotValue(sl); n += sl.count; inv.slots[i] = null;
+  }
+  if (!n) return;
+  money += gain;
+  refreshHotbar(); refreshMoney(true); saveGame(); buildDex();
+  banner('<small>Sold ' + n + ' pet' + (n > 1 ? 's' : '') + '</small><b>+$' + fmtBig(gain) + '</b>', '#ffe27a');
+  log.info('Sold', n, 'pets for', gain);
+}
+
+/* Win: the far end of the last island. A big golden egg waits there. */
+let winBox = null, winEgg = null, winT = -1;
+function setupWin() {
+  const W = CONFIG.win;
+  if (W.useMarker && mapMarkers.win) winBox = mapMarkers.win.clone();
+  else {
+    const A = areas[areas.length - 1];
+    if (!A) { log.warn('No areas: the Win zone is disabled.'); return; }
+    winBox = new THREE.Box3(new THREE.Vector3(A.box.min.x, A.box.min.y - 30, A.box.max.z - W.depth), new THREE.Vector3(A.box.max.x, A.box.max.y + 60, A.box.max.z + 10));
+  }
+  if (eggTpl.golden) {
+    const A = areas[areas.length - 1], H = CONFIG.eggs.baseHeight * W.eggScale;
+    const x = (winBox.min.x + winBox.max.x) / 2, z = W.useMarker ? (winBox.min.z + winBox.max.z) / 2 : winBox.max.z - W.depth / 2;
+    const gy = groundAt(x, winBox.max.y, z);
+    const grp = new THREE.Group(); grp.position.set(x, gy === null ? A.box.max.y : gy, z);
+    winEgg = eggTpl.golden.make(); winEgg.scale.setScalar(H); grp.add(winEgg);          // pivot = the egg's base
+    winEgg.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); o.material.vertexColors = true; o.material.emissive = new THREE.Color(0xffb000); o.material.emissiveIntensity = 0.35; o.castShadow = false; } });   // own material: it glows, the other golden eggs do not
+    const sp = labelSprite('THE EGG', '#ffd34d'); sp.scale.set(6, 1.5, 1); sp.position.set(0, H + 1.5, 0); grp.add(sp);
+    scene.add(grp);
+  }
+  log.info('Win zone:', winBox.min.toArray().map((v) => +v.toFixed(1)), winBox.max.toArray().map((v) => +v.toFixed(1)));
+}
+function updateWin(dt) {
+  if (winEgg) winEgg.rotation.y += dt * 0.8;
+  if (winT >= 0) { winT -= dt; if (winT < 0) { winT = -1; respawn(); } return; }
+  if (!winBox || !ready || form === 'flying') return;
+  if (pos.x >= winBox.min.x && pos.x <= winBox.max.x && pos.z >= winBox.min.z && pos.z <= winBox.max.z && pos.y >= winBox.min.y && pos.y <= winBox.max.y) gotTheEgg();
+}
+function gotTheEgg() {
+  wins++; winT = CONFIG.win.resetDelay;
+  banner('<small>You made it to the end!</small><b>\u{1F95A} YOU GOT THE EGG! \u{1F95A}</b><em>You win! Back to your pen in ' + CONFIG.win.resetDelay + 's...</em>', '#ffd34d');
+  say('YOU GOT THE EGG! You win!', CONFIG.win.resetDelay);
+  saveGame(); refreshMenuStats();
+  log.info('WIN #' + wins);
+}
+
+/* ------------------------------------------------------------------ */
 /* Main loop                                                           */
 /* ------------------------------------------------------------------ */
 const clock = new THREE.Clock();
@@ -3868,6 +4129,9 @@ function tick() {
   updateEggItems(dt);
   updateChickens(dt);
   updateCarry();
+  updateStands(dt);
+  updateWin(dt);
+  updateTrailFx(dt);
   updateSpeedFx(dt);
   updateCamera();
   updateAim();
@@ -3903,7 +4167,7 @@ function tick() {
 
 if (CONFIG.debug) window.TAE = {   // test hook, only with ?debug=1
   get pos() { return pos; }, get yaw() { return yaw; }, set yaw(v) { yaw = v; }, get state() { return state; }, get form() { return form; }, get flight() { return flight; },
-  get carry() { return carry; }, steal, eggItems, netMessage, barrierBoxes, areas: () => areas, playerPen: () => playerPen, nearPen, inOwnPen, mapBox: () => mapBox, CONFIG, setSpeed: (v) => { speedStat = v; }, setCarrySafe: () => { if (carry) carry.status = 'safe'; }, areaAt, bat, rag, dropped, batSwing, equipBat, ragStart, caughtBy, tryThrow, throwFwd, zoneBox: () => zoneBox, NET, remotes, gymItems, startGym, stopGym, canTrain, inZone,
+  get carry() { return carry; }, steal, eggItems, netMessage, barrierBoxes, areas: () => areas, playerPen: () => playerPen, nearPen, inOwnPen, mapBox: () => mapBox, CONFIG, mapMarkers, areaBoxes, stands, trails, trailMult, totalSpeed, standKey, nearStand, sellPets, trailAction, openPanel, get winBox() { return winBox; }, get instantHatch() { return instantHatch; }, hatching, placePet, selectSlot, get wins() { return wins; }, get money() { return money; }, set money(v) { money = v; }, inv, train, penCapacity, addPet: (id, mult) => { const i = inv.slots.findIndex((x) => !x); inv.slots[i] = { pet: id, count: 1, sizes: [mult || 1] }; refreshHotbar(); }, setSpeed: (v) => { speedStat = v; }, setCarrySafe: () => { if (carry) carry.status = 'safe'; }, areaAt, bat, rag, dropped, batSwing, equipBat, ragStart, caughtBy, tryThrow, throwFwd, zoneBox: () => zoneBox, NET, remotes, gymItems, startGym, stopGym, canTrain, inZone,
 };
 init().catch(fatal);
 </script>
