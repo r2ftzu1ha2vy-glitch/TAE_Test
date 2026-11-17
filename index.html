@@ -607,9 +607,9 @@ const CONFIG = {
   // knock = launch speed in m/s (decays by `decay` per second), lift = upward hop, ragdoll = seconds on the floor, immune = extra seconds nobody can chain-hit you,
   // hitAt = seconds into the swing when the bat connects, swingSpeed = playback speed of the Bat Hit clip, cone = cos of the half-angle in front of you that counts.
   bat: { scale: 1.3, grip: 0.4, handY: 0.42, lean: 0.25, reach: 2.4, cone: 0.35, cooldown: 0.75, hitAt: 0.27, swingSpeed: 1.5, knock: 15, lift: 6, decay: 3, ragdoll: 1.8, immune: 1.0 },
-  // Held pet: the pet selected in the hotbar sits in your left hand (the Bat Hold / Bat Walk clips raise that arm). size = longest side of the pet in model units (every pet is fitted to it),
+  // Held pet: the pet selected in the hotbar sits in your left hand (the Bat Hold / Bat Walk clips raise that arm), at the same size it has when placed.
   // handY = how far along the arm the hand is, lift = how far the pet's feet sit above the palm.
-  petHold: { size: 0.55, handY: 0.42, lift: 0.04 },
+  petHold: { handY: 0.42, lift: 0.04, chainDepth: params.has('chain') ? Math.max(0, parseInt(params.get('chain'), 10) || 0) : 25 },   // held pets keep their PLACED size (no fitting). An admin pet holds another admin pet, which holds another ... chainDepth levels deep (?chain=N)
   // Gym in your pen. Click the Pull-Up Bar (strength) or the Treadmill (speed) to start auto-training; click again to stop. reach = how close you must stand (metres from the machine's edge).
   // Auto-training: you are teleported onto the machine and locked in place; reps are counted by the timings of your machine's upgrade level (see gymTiers).
   // gripAlign: where the Training clip's raised arms sit on the bar (0 = lowest point of the pull, 1 = highest, 0.5 = middle).
@@ -1212,16 +1212,39 @@ function makePetHolder(model) {
   model.add(h);
   return h;
 }
+const _hs = new THREE.Vector3();
+function petHolderClear(h) {
+  while (h.children.length) {
+    const c = h.children[0]; h.remove(c);
+    c.traverse((o) => { if (o.isMesh && o.userData.ownMat) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m.dispose()); });   // only the tinted copies, never the shared ones
+  }
+}
 function petHolderSet(h, id, mult) {                       // show pet `id` in the holder (null = empty hand); the model is only rebuilt when the pet or its size changes
   if (!h) return;
   const key = id && petTpl[id] ? id + ':' + (+mult || 1).toFixed(2) : '';
   if (key !== h.userData.key) {
     h.userData.key = key;
-    while (h.children.length) h.remove(h.children[0]);
+    petHolderClear(h);
     if (key) {
-      const m = makePetModel(id, mult), sz = new THREE.Box3().setFromObject(m.root).getSize(new THREE.Vector3());
-      m.root.scale.setScalar(CONFIG.petHold.size / Math.max(sz.x, sz.y, sz.z, 0.01));
-      h.add(m.root);
+      // Every pet is shown at the size it has when placed: the holder lives inside the player's scaled model, so cancel that scale out (world scale -> 1).
+      // An admin pet raises its arm (Bat Hold pose) and holds another admin pet in that hand, which does the same, chainDepth levels deep.
+      const isAdmin = !!CONFIG.pets[id].admin;
+      let parent = h;
+      for (let depth = 0; ; depth++) {
+        const m = makePetModel(id, mult);
+        parent.add(m.root);
+        parent.updateWorldMatrix(true, false);
+        m.root.scale.setScalar(1 / (parent.getWorldScale(_hs).x || 1));
+        if (!isAdmin || !m.model) break;
+        const hold = m.actions['bat hold'];
+        if (!hold) break;
+        hold.play(); m.mixer.update(0);                  // arm up, static pose
+        if (depth >= CONFIG.petHold.chainDepth) break;
+        const nh = makePetHolder(m.model);
+        if (!nh) break;
+        nh.visible = true; petFollow(nh);
+        parent = nh;
+      }
     }
   }
   h.visible = !!key;
@@ -4002,7 +4025,7 @@ function makePetModel(id, mult) {                       // a pet scaled by how b
   const model = SkeletonUtils.clone(T.gltf.scene);
   model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
   if (T.tint) {                                         // the User pet: own copy of the materials (they are shared with the real player), tinted with the player's colours
-    model.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); });
+    model.traverse((o) => { if (o.isMesh) { o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); o.userData.ownMat = true; } });
     applyBodyColor(model, profile.parts);
   }
   model.position.set(T.ox, T.oy, T.oz);
@@ -4013,7 +4036,7 @@ function makePetModel(id, mult) {                       // a pet scaled by how b
   const clips = T.gltf.animations;
   if (clips.length && !actions.walk) actions.walk = actions[clips[0].name.toLowerCase()];   // single-clip models (snake): that clip is the walk
   if (clips.length && !actions.idle) { const a = mixer.clipAction(clips[0].clone()); a.timeScale = 0.25; actions.idle = a; }          // no idle clip: the same clip, slowed right down
-  return { root, mixer, actions, anim: '' };
+  return { root, model, mixer, actions, anim: '' };
 }
 function spawnPet(id, pt, mult) {
   const m = makePetModel(id, mult);
