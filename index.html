@@ -1645,7 +1645,7 @@ function updatePlayer(dt) {
   const iz = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touch.y;
   _mv.set(0, 0, 0).addScaledVector(_f, iz).addScaledVector(_r, ix);
   const down = form === 'human' && rag.t > 0;               // ragdolled by a bat hit: no control until you get up
-  const frozen = (form === 'human' && !carry && inZone()) || down;   // standing in the Throw Zone: no walking, only look + throw
+  const frozen = (form === 'human' && !carry && inZone() && zoneArmed) || down;   // standing in the Throw Zone with the power bar armed: no walking, only look + throw (not after you came in with an egg: walk out freely)
   const moving = !frozen && _mv.lengthSq() > 0.04;     // small dead zone for the touch stick
   fxTarget = 0;
   if (moving) {
