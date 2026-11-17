@@ -1212,6 +1212,11 @@ function makePetHolder(model) {
   model.add(h);
   return h;
 }
+function cloneClean(src) {                              // SkeletonUtils.clone of a model WITHOUT the bat / held-pet holders hanging on the live player (they would be cloned with everything in them)
+  const held = src.children.filter((c) => c.userData && c.userData.arm);
+  held.forEach((c) => src.remove(c));
+  try { return SkeletonUtils.clone(src); } finally { held.forEach((c) => src.add(c)); }
+}
 const _hs = new THREE.Vector3();
 function petHolderClear(h) {
   while (h.children.length) {
@@ -2302,7 +2307,7 @@ function nameTag(text, color) {
 }
 function netAddRemote(o) {
   if (!playerGltfRef || !playerEgg || remotes.has(o.id)) return;
-  const model = SkeletonUtils.clone(playerGltfRef.scene);
+  const model = cloneClean(playerGltfRef.scene);
   model.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.frustumCulled = false; m.material = Array.isArray(m.material) ? m.material.map((x) => x.clone()) : m.material.clone(); } });   // own materials: each player has their own color
   applyBodyColor(model, cleanParts(o.color));
   model.position.y = modelBaseY;                          // the local model may be eased down while it holds an egg: start the copy from the plain pose
@@ -4022,7 +4027,7 @@ function petPlay(p, n) {
 }
 function makePetModel(id, mult) {                       // a pet scaled by how big its egg was
   const T = petTpl[id];
-  const model = SkeletonUtils.clone(T.gltf.scene);
+  const model = cloneClean(T.gltf.scene);
   model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
   if (T.tint) {                                         // the User pet: own copy of the materials (they are shared with the real player), tinted with the player's colours
     model.traverse((o) => { if (o.isMesh) { o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); o.userData.ownMat = true; } });
