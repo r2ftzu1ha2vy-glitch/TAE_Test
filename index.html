@@ -751,7 +751,7 @@ const CONFIG = {
     gummybear: { name: 'Gummy Bear', area: 'candy', rarity: 'epic',     weight: 100, income: 1500, height: 1.2, icon: '\u{1F9F8}', lucky: false },
     spaceoctopus: { name: 'Space Octopus', area: 'starfall', rarity: 'epic', weight: 45, income: 12000, height: 1.1, icon: '\u{1F419}', lucky: true },
     user:      { name: 'User',      area: 'admin', rarity: 'admin', admin: true, tint: true, weight: 0, income: 100000, height: 1.5, icon: '\u{1F9D1}' },   // ADMIN ONLY: never hatches, only the admin panel gives it. Uses the player model in the player's own colours.
-    tomato:    { name: 'Tomato',    area: 'admin', rarity: 'admin', admin: true, weight: 0, income: 100000, height: 1.0, icon: '\u{1F345}' },   // ADMIN ONLY (admin panel): never hatches. Uses the Idle / Walk animations that are in Tomato.glb
+    tomato:    { name: 'Tomato',    area: 'admin', rarity: 'admin', admin: true, weight: 0, income: 100000, height: 1.0, icon: '\u{1F345}', brighten: true },   // ADMIN ONLY (admin panel): never hatches. brighten: textured parts (the eyes) are metal=1 in the file, which renders black here, so they are made matte + self-lit. Uses the Idle / Walk animations that are in Tomato.glb
     alien:     { name: 'Alien',     area: 'starfall', rarity: 'epic',     weight: 100, income: 6000, height: 1.4, icon: '\u{1F47D}', lucky: false },
   },
   rarities: { admin: { label: 'Admin', color: '#ff4d4d' }, common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' }, rare: { label: 'Rare', color: '#5aa9ff' }, epic: { label: 'Epic', color: '#c77dff' } },
@@ -4128,6 +4128,17 @@ function updateEggLabels() {
 function setupPets(gltfs) {
   for (const id of Object.keys(CONFIG.pets)) {
     const g = gltfs[id];
+    if (CONFIG.pets[id].brighten) {                     // Tomato eyes: fully metallic with no environment map = pitch black. Make them matte and a bit self-lit (the dark pupil stays dark).
+      g.scene.traverse((o) => {
+        if (!o.isMesh) return;
+        for (const mt of (Array.isArray(o.material) ? o.material : [o.material])) {
+          if (!mt.map) continue;
+          mt.metalness = 0; mt.roughness = 0.6;
+          mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = 0.7;
+          mt.needsUpdate = true;
+        }
+      });
+    }
     const m = SkeletonUtils.clone(g.scene);
     const box = bindPoseBox(m), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
     const P = CONFIG.pets[id], ref = P.fit === 'max' ? Math.max(size.x, size.y, size.z) : size.y;   // long flat models (snake) are sized by their longest side
