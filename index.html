@@ -186,6 +186,7 @@
   #dex .dex-foot { margin-top: 12px; text-align: center; font: 500 13px var(--font); opacity: .6; }
   .pet-ic { pointer-events: none; display: block; } .slot .ic { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
   .slot .ic img { width: 46px; height: 46px; object-fit: contain; }
+  .slot .ic .egg-ic { width: 32px; height: 40px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
   .slot.get { animation: slotget .45s ease; } @keyframes slotget { 40% { transform: translateY(-10px) scale(1.18); border-color: var(--gold); } }
   #banner img.bn { display: inline-block; height: 1.15em; width: 1.15em; vertical-align: middle; object-fit: contain; margin-right: 6px; }
   /* strength (above the speed gauge) */
@@ -255,7 +256,7 @@
   body.touch #money { top: calc(12px + env(safe-area-inset-top)); right: calc(66px + env(safe-area-inset-right)); font-size: 17px; }
   body.touch #money .coin { width: 22px; height: 22px; font-size: 13px; }
   body.touch #dex-btn { left: calc(8px + env(safe-area-inset-left)); top: 56%; padding: 6px 10px; font-size: 14px; border-width: 2px; } body.touch #dex-btn small { display: none; }
-  body.touch .slot .ic img { width: 30px; height: 30px; } body.touch #dex .dex-ic { width: 72px; height: 72px; }
+  body.touch .slot .ic img { width: 30px; height: 30px; } body.touch .slot .ic .egg-ic { width: 22px; height: 28px; } body.touch #dex .dex-ic { width: 72px; height: 72px; }
   body.touch #strength { left: calc(12px + env(safe-area-inset-left)); bottom: calc(76px + env(safe-area-inset-bottom)); padding: 4px 12px 4px 6px; } body.touch #strength svg { width: 34px; height: 34px; } body.touch #strength .val { font-size: 22px; }
   body.touch #banner b { font-size: 32px; }
   body.touch #overlay { font-size: 16px; }
@@ -500,8 +501,8 @@ const CONFIG = {
     fence: /^Fence_?Pen(\d+)/i, spawnPen: /Pen(\d+)/i,
     gymBar: /^PullUp_?Bar_?Pen(\d+)/i, gymTread: /^Treadmill_?Pen(\d+)/i,   // marker cubes in the map: the machine for pen N stands where its marker is
     barrier: [/^Fence_?Pen/i, /^Wall/i],          // always solid at every height and from every side: never stepped on, never walked through
-    nonSolid: [/^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg(_\d+)?$/i, /^Chicken/i, /^Duck$/i, /^Gummy[ _]Bear$/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
-    hidden: [/^Player[ _]Spawn/i, /Egg(_\d+)?$/i, /^Chicken/i, /^Duck$/i, /^Gummy[ _]Bear$/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
+    nonSolid: [/^Win$/i, /^Sell$/i, /^Trail[ _]Shop$/i, /^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg(_\d+)?$/i, /^Chicken/i, /^Duck$/i, /^Gummy[ _]Bear$/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
+    hidden: [/^Win$/i, /^Sell$/i, /^Trail[ _]Shop$/i, /^Player[ _]Spawn/i, /Egg(_\d+)?$/i, /^Chicken/i, /^Duck$/i, /^Gummy[ _]Bear$/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
   },
   // speed = the player's speed stat (walk speed). Starts at 10. There is no sprint and no jump. Override with ?speed=N
   // speedUnit: metres per second per point of speed (player AND chickens), so "10" reads big but moves at a comfortable 5 m/s.
@@ -560,15 +561,15 @@ const CONFIG = {
     hamster:   { name: 'Hamster',   area: 'valley', rarity: 'common',   weight: 25, income: 12, height: 0.6, icon: '\u{1F439}' },
     squirrel:  { name: 'Squirrel',  area: 'valley', rarity: 'common',   weight: 25, income: 15, height: 0.8, icon: '\u{1F43F}' },
     bunny:     { name: 'Bunny',     area: 'valley', rarity: 'uncommon', weight: 15, income: 25, height: 1.0, icon: '\u{1F430}' },
-    ladybug:   { name: 'Ladybug',   area: 'valley', rarity: 'uncommon', weight: 15, income: 25, height: 0.5, icon: '\u{1F41E}' },
-    butterfly: { name: 'Butterfly', area: 'valley', rarity: 'uncommon', weight: 10, income: 30, height: 0.5, icon: '\u{1F98B}' },
-    toucan:    { name: 'Toucan',    area: 'valley', rarity: 'rare',     weight: 6,  income: 35, height: 0.8, icon: '\u{1F426}' },
-    crab:      { name: 'Crab',      area: 'valley', rarity: 'rare',     weight: 6,  income: 38, height: 0.5, icon: '\u{1F980}' },
-    starfish:  { name: 'Starfish',  area: 'valley', rarity: 'rare',     weight: 6,  income: 40, height: 0.45, icon: '\u2B50' },
-    snake:     { name: 'Snake',     area: 'sands',  rarity: 'rare',     weight: 65, income: 50, height: 0.9, icon: '\u{1F40D}', lucky: false, fit: 'max', yawOffset: Math.PI },
-    camel:     { name: 'Camel',     area: 'sands',  rarity: 'rare',     weight: 45, income: 60, height: 1.3, icon: '\u{1F42B}', lucky: true },
-    scorpion:  { name: 'Scorpion',  area: 'sands',  rarity: 'epic',     weight: 35, income: 75, height: 0.7, icon: '\u{1F982}', lucky: true,  yawOffset: Math.PI },
-    duck:      { name: 'Duck',      area: 'bay',    rarity: 'rare',     weight: 100, income: 400, height: 0.9, icon: '\u{1F986}', lucky: false },
+    ladybug:   { name: 'Ladybug',   area: 'bay',    rarity: 'uncommon', weight: 40, income: 25, height: 0.5, icon: '\u{1F41E}' },
+    butterfly: { name: 'Butterfly', area: 'bay',    rarity: 'uncommon', weight: 30, income: 30, height: 0.5, icon: '\u{1F98B}' },
+    toucan:    { name: 'Toucan',    area: 'bay',    rarity: 'rare',     weight: 20, income: 35, height: 0.8, icon: '\u{1F426}' },
+    crab:      { name: 'Crab',      area: 'sands',  rarity: 'rare',     weight: 55, income: 38, height: 0.5, icon: '\u{1F980}' },
+    starfish:  { name: 'Starfish',  area: 'sands',  rarity: 'rare',     weight: 55, income: 40, height: 0.45, icon: '\u2B50' },
+    snake:     { name: 'Snake',     area: 'sands',  rarity: 'rare',     weight: 45, income: 50, height: 0.9, icon: '\u{1F40D}', lucky: false, fit: 'max', yawOffset: Math.PI },
+    camel:     { name: 'Camel',     area: 'sands',  rarity: 'rare',     weight: 30, income: 60, height: 1.3, icon: '\u{1F42B}', lucky: true },
+    scorpion:  { name: 'Scorpion',  area: 'sands',  rarity: 'epic',     weight: 15, income: 75, height: 0.7, icon: '\u{1F982}', lucky: true,  yawOffset: Math.PI },
+    duck:      { name: 'Duck',      area: 'bay',    rarity: 'rare',     weight: 10,  income: 400, height: 0.9, icon: '\u{1F986}', lucky: false },
     gummybear: { name: 'Gummy Bear', area: 'candy', rarity: 'epic',     weight: 100, income: 1500, height: 1.2, icon: '\u{1F9F8}', lucky: false },
   },
   rarities: { common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' }, rare: { label: 'Rare', color: '#5aa9ff' }, epic: { label: 'Epic', color: '#c77dff' } },
@@ -753,6 +754,7 @@ let currentAnim = '';
 let spawnPoints = [];
 let zoneBox = null, zoneMesh = null;
 let mapBox = new THREE.Box3();
+const mapMarkers = {};                         // invisible marker nodes of the map: win / sell / trailshop -> Box3 (never solid, never drawn)
 const areaBoxes = {}, guardStarts = {};   // area id -> Box3 of its floor node / where its guard marker stands
 const eggSpawnBoxes = [], eggItems = [], eggTpl = {};
 let playerEgg = null, playerEggMesh = null, chicken = null, flight = null;
@@ -896,6 +898,8 @@ function setupMap(root) {
   mapBox.setFromObject(root);
   root.traverse((o) => {
     const box = () => new THREE.Box3().setFromObject(o);
+    const mk = /^(Win|Sell|Trail[ _]Shop)$/i.exec(o.name);
+    if (mk) mapMarkers[mk[1].toLowerCase().replace(/[ _]/g, '')] = box();
     const pen = CONFIG.match.fence.exec(o.name);
     if (pen) (penBoxes[pen[1]] ||= new THREE.Box3()).union(box());
     for (const [id, [floorRe, eggRe]] of Object.entries(CONFIG.match.areaNodes)) {
@@ -931,6 +935,7 @@ function setupMap(root) {
     log.warn('No Throw Zone node found; throwing is disabled.');
   }
 
+  log.info('Map markers:', Object.keys(mapMarkers).join(', ') || 'none');
   log.info('Pens found:', Object.keys(penBoxes).join(', ') || 'none');
   log.info('Map ready. scale:', CONFIG.mapScale, 'size:', mapBox.getSize(new THREE.Vector3()).toArray().map((v) => +v.toFixed(1)), 'solids:', solids.length, 'spawns:', spawnPoints.length, 'zone:', !!zoneBox);
   spawnPoints.forEach((s, i) => log.debug('spawn', i, s.name, s.center.toArray().map((v) => +v.toFixed(2))));
@@ -2540,14 +2545,15 @@ function giftTarget() {                                  // the nearest other pl
   }
   return best;
 }
-function giftItem(want) {                                // want = 'egg' | 'pet' | undefined (G: the safe egg you carry, otherwise the selected pet)
-  const egg = carry && carry.status === 'safe' ? { kind: 'egg', label: carry.egg.type + ' egg ' + carry.egg.mult.toFixed(1) + 'x' } : null;
+function giftItem(want) {                                // want = 'egg' | 'pet' | undefined (G: an egg - the safe one you carry or the one selected in your hotbar - otherwise the selected pet)
   const sl = inv.slots[inv.sel];
   const m = sl && sl.sizes && sl.sizes.length ? sl.sizes[sl.sizes.length - 1] : 1;
-  const pet = sl ? { kind: 'pet', label: CONFIG.pets[sl.pet].name + ' ' + m.toFixed(1) + 'x' } : null;
+  const slotEgg = sl && sl.egg ? { kind: 'egg', label: sl.egg + ' egg ' + m.toFixed(1) + 'x' } : null;
+  const egg = carry && carry.status === 'safe' ? { kind: 'egg', label: carry.egg.type + ' egg ' + carry.egg.mult.toFixed(1) + 'x' } : slotEgg;
+  const pet = sl && sl.pet ? { kind: 'pet', label: CONFIG.pets[sl.pet].name + ' ' + m.toFixed(1) + 'x' } : null;
   if (want === 'egg') return egg;
   if (want === 'pet') return pet;
-  return carry ? egg : pet;
+  return carry ? egg : (slotEgg || pet);
 }
 function giftToPlayer(want) {
   if (!ready || form !== 'human' || gym.session) return false;
@@ -2562,10 +2568,13 @@ function giftToPlayer(want) {
   if (now - giftArmed > 2500 || giftArmedKey !== key) { giftArmed = now; giftArmedKey = key; say('Press ' + (item.kind === 'pet' && carry ? 'H' : 'G') + ' again to gift your ' + item.label + ' to ' + to.name + '.', 2.5); return true; }
   giftArmed = 0; giftArmedKey = '';
   let payload;
-  if (item.kind === 'egg') {                              // it leaves your hands first, so it can never be in two places
+  if (item.kind === 'egg' && carry && carry.status === 'safe') {   // it leaves your hands first, so it can never be in two places
     const e = carry.egg;
     payload = { kind: 'egg', type: e.type, mult: Math.round(e.mult * 100) / 100, area: e.area || null };
     playerRoot.remove(carry.held); carry = null;
+  } else if (item.kind === 'egg') {                       // the egg selected in the hotbar
+    const eg = popEgg(inv.sel);
+    payload = { kind: 'egg', type: eg.type, mult: Math.round(eg.mult * 100) / 100, area: eg.area || null };
   } else {
     const sl = inv.slots[inv.sel], mult = sl.sizes && sl.sizes.length ? sl.sizes.pop() : 1;
     payload = { kind: 'pet', id: sl.pet, mult: Math.round(mult * 100) / 100 };
@@ -2578,7 +2587,7 @@ function giftToPlayer(want) {
 }
 function giftCanAccept(g) {
   if (!ready) return false;
-  if (g.kind === 'egg') return form === 'human' && !carry && !!eggTpl[g.type];
+  if (g.kind === 'egg') return !!eggTpl[g.type] && invCanTakeEgg(g.type);
   if (g.kind === 'pet') return !!CONFIG.pets[g.id] && invCanTake(g.id);
   return false;
 }
@@ -2587,6 +2596,11 @@ function giftReceive(g, from) {                          // from = the giver's n
   if (g.kind === 'egg') {
     const E = CONFIG.eggs, tpl = eggTpl[g.type], mult = clampN(+g.mult || 1, 1, E.maxMult);
     const e = { type: g.type, mult, area: CONFIG.areas[g.area] ? g.area : null, mesh: null, r: E.baseHeight * mult * 0.375, h: E.baseHeight * mult * tpl.h };
+    if (addEgg(e.type, mult, e.area)) {
+      banner('<small>' + (from ? 'Gift from ' + from : 'Gift returned') + '</small><b>' + g.type + ' egg <span style="font-size:.5em;opacity:.8">' + mult.toFixed(1) + 'x</span></b><em>It is in your hotbar</em>', '#7dff9a');
+      say(who + ' a ' + g.type + ' egg (' + mult.toFixed(1) + 'x). It is in your hotbar!', 5);
+      return;
+    }
     carry = { egg: e, item: { pending: false, egg: null, timer: 0, x: pos.x, z: pos.z, groundY: pos.y, area: e.area }, area: e.area, areaLabel: null, status: 'safe', held: makeHeld(e) };
     playerRoot.add(carry.held);
     banner('<small>' + (from ? 'Gift from ' + from : 'Gift returned') + '</small><b>' + g.type + ' egg <span style="font-size:.5em;opacity:.8">' + mult.toFixed(1) + 'x</span></b><em>Take it to your pen</em>', '#7dff9a');
@@ -2612,15 +2626,48 @@ function updateCarry() {
     carry.item.pending = false; carry.item.timer = CONFIG.eggs.respawn;
     netSend({ t: 'escaped', i: eggItems.indexOf(carry.item) });
     const eg = carry.egg;
-    banner('<small>You got it!</small><b>' + eg.type + ' egg <span style="font-size:.5em;opacity:.8">' + eg.mult.toFixed(1) + 'x</span></b><em>' + (chased ? 'Click a spot in your pen to place it' : 'Take it to your pen') + '</em>', '#7dff9a');
-    say(chased ? 'You got the egg! You made it to your pen - click a spot to place it.' : 'You escaped! The egg is in your inventory. Take it to Pen ' + (playerPen ? playerPen.num : '?') + '.', 5);
     log.info('Escaped with the egg');
+    if (addEgg(eg.type, eg.mult, eg.area)) {             // it goes into the hotbar: your hands are free again
+      playerRoot.remove(carry.held); carry = null; tut.step = 4;
+      banner('<small>You got it!</small><b>' + eg.type + ' egg <span style="font-size:.5em;opacity:.8">' + eg.mult.toFixed(1) + 'x</span></b><em>It is in your hotbar - take it to your pen</em>', '#7dff9a');
+      say('You escaped! The ' + eg.type + ' egg is in your hotbar. Take it to Pen ' + (playerPen ? playerPen.num : '?') + ', select it and click a spot to place it.', 5);
+    } else {
+      banner('<small>You got it!</small><b>' + eg.type + ' egg <span style="font-size:.5em;opacity:.8">' + eg.mult.toFixed(1) + 'x</span></b><em>' + (chased ? 'Click a spot in your pen to place it' : 'Take it to your pen') + '</em>', '#7dff9a');
+      say('Your hotbar is full, so you are still holding the egg. ' + (chased ? 'Click a spot in your pen to place it.' : 'Take it to your pen.'), 5);
+    }
   }
 }
-function placeEgg(pt) {                                  // pt = the spot in the pen you clicked; the egg starts hatching there
-  if (!carry || carry.status !== 'safe' || !pt) return;
-  if (hatching.length >= CONFIG.steal.penMax) { say('Your pen is full of eggs! Wait for one to hatch.'); return; }
-  const e = carry.egg, E = CONFIG.eggs;
+/* Eggs in the hotbar. When you escape with a stolen egg it goes into your hotbar (stacked per egg type) instead of staying over your head, so your hands are free
+   to steal again. Select it (keys 1-9) and click a spot in your pen to place it. slot = { egg: type, count, sizes: [mult...], areas: [area...] } (parallel arrays, last = next one used). */
+const EGG_COLORS = { normal: '#f2ead7', brown: '#b07a4a', cracked: '#cfc9bb', golden: '#ffd34d', rainbow: '#ff8ad8', cactus: '#6bbf59', bone: '#e8e2cf', sand: '#e0c27a', claw: '#b24a3a', scorpion: '#8a5cc0',
+                     blue: '#5aa9ff', duck: '#ffe066', flower: '#ff9ecb', lily: '#c9a6ff', reed: '#7fb069', candy: '#ff7eb6', chocolate: '#7b4a2b', strawberry: '#ff5470', lolipop: '#ff9f43', gummy: '#5de08a' };
+function eggIcon(type) {
+  const c = EGG_COLORS[type] || '#f2ead7';
+  return '<svg class="egg-ic" viewBox="0 0 40 50" aria-label="' + type + ' egg"><path d="M20 3C11 3 4 18 4 30c0 10 7 17 16 17s16-7 16-17C36 18 29 3 20 3z" fill="' + c + '" stroke="rgba(0,0,0,.45)" stroke-width="2"/><ellipse cx="14" cy="18" rx="4" ry="7" fill="rgba(255,255,255,.45)" transform="rotate(-20 14 18)"/></svg>';
+}
+const heldEggSlot = () => { if (bat.equipped) return null; const sl = inv.slots[inv.sel]; return sl && sl.egg ? sl : null; };
+function invCanTakeEgg(type) { return inv.slots.some((sl) => sl && sl.egg === type) || invCanTake(''); }   // a stack of that type, or a free slot (counting pets still flying to the hotbar)
+function addEgg(type, mult, area) {
+  mult = Math.round(clampN(+mult || 1, 1, CONFIG.eggs.maxMult) * 100) / 100;
+  let i = inv.slots.findIndex((sl) => sl && sl.egg === type);
+  if (i >= 0) { const sl = inv.slots[i]; sl.count++; (sl.sizes ||= []).push(mult); (sl.areas ||= []).push(area || null); }
+  else { i = inv.slots.findIndex((sl) => !sl); if (i < 0) return false; inv.slots[i] = { egg: type, count: 1, sizes: [mult], areas: [area || null] }; }
+  if (!inv.slots[inv.sel]) inv.sel = i;                 // nothing held: pick up the new egg
+  refreshHotbar(); saveGame();
+  const el = ui.slotEls[i]; if (el) { el.classList.remove('get'); void el.offsetWidth; el.classList.add('get'); }
+  return true;
+}
+function popEgg(idx) {                                  // take the last egg of a slot out of the hotbar -> { type, mult, area }
+  const sl = inv.slots[idx];
+  if (!sl || !sl.egg) return null;
+  const out = { type: sl.egg, mult: sl.sizes && sl.sizes.length ? sl.sizes.pop() : 1, area: sl.areas && sl.areas.length ? sl.areas.pop() : null };
+  sl.count--; if (sl.count <= 0) inv.slots[idx] = null;
+  refreshHotbar(); saveGame();
+  return out;
+}
+function startHatching(e, pt) {                          // the egg starts hatching at pt in your pen; false = it could not be placed
+  if (hatching.length >= CONFIG.steal.penMax) { say('Your pen is full of eggs! Wait for one to hatch.'); return false; }
+  const E = CONFIG.eggs;
   const mesh = eggTpl[e.type].make();
   mesh.scale.setScalar(E.baseHeight * e.mult);          // same size as when it sat in the valley / sands (no size cap)
   mesh.position.set(pt.x, pt.y, pt.z);
@@ -2631,9 +2678,24 @@ function placeEgg(pt) {                                  // pt = the spot in the
   el.className = 'egg-timer'; el.innerHTML = '<span class="t"></span><div class="bar"><i></i></div>';
   document.body.appendChild(el);
   hatching.push({ mesh, total, left: total, egg: e, size: mesh.scale.x, el, txt: '', wob: Math.random() * 6, pet: null, bar: el.querySelector('i'), t: el.querySelector('.t') });
+  say('Egg placed - it hatches in ' + fmtTime(total));
+  return true;
+}
+function placeEgg(pt) {                                  // a safe egg that is still held in your hands (hotbar was full)
+  if (!carry || carry.status !== 'safe' || !pt) return;
+  if (!startHatching(carry.egg, pt)) return;
   playerRoot.remove(carry.held);
   carry = null;
-  say('Egg placed - it hatches in ' + fmtTime(total));
+}
+function placeEggFromSlot(pt) {                          // the egg selected in your hotbar
+  const sl = heldEggSlot();
+  if (!sl || !pt) return;
+  if (hatching.length >= CONFIG.steal.penMax) { say('Your pen is full of eggs! Wait for one to hatch.'); return; }
+  const E = CONFIG.eggs, tpl = eggTpl[sl.egg];
+  if (!tpl) return;
+  const eg = popEgg(inv.sel);
+  const mult = eg.mult;
+  startHatching({ type: eg.type, mult, area: eg.area, mesh: null, r: E.baseHeight * mult * 0.375, h: E.baseHeight * mult * tpl.h }, pt);
 }
 
 /* Clicking: eggs are stolen by clicking them, and a stolen egg is placed by clicking a spot in your pen.
@@ -2658,6 +2720,7 @@ function nearPen() {
   return pos.x > b.min.x - m && pos.x < b.max.x + m && pos.z > b.min.z - m && pos.z < b.max.z + m && Math.abs(pos.y - playerPen.y) < 4;
 }
 function canPlaceNow() { return ready && form === 'human' && !!carry && carry.status === 'safe' && nearPen(); }
+function canPlaceEggSlotNow() { return ready && form === 'human' && !carry && !!heldEggSlot() && nearPen(); }
 function canPlacePetNow() { return ready && form === 'human' && !carry && !!heldPet() && nearPen(); }
 function pickSteal(ray, list) {                          // the in-reach egg the ray points at (with a forgiving margin)
   let best = null, bs = 1;
@@ -2692,6 +2755,12 @@ function worldClick(nx, ny) {
     say(IS_TOUCH ? 'Tap a spot inside your pen' : 'Aim at a spot inside your pen and click');
     return true;
   }
+  if (canPlaceEggSlotNow()) {
+    const pt = pickPlace(ray);
+    if (pt) { placeEggFromSlot(pt); return true; }
+    say(IS_TOUCH ? 'Tap a spot inside your pen' : 'Aim at a spot inside your pen and click');
+    return true;
+  }
   if (canPlacePetNow()) {
     const pt = pickPlace(ray);
     if (pt) { placePet(pt); return true; }
@@ -2704,11 +2773,12 @@ function updateAim() {
   aim.kind = null; aim.item = null; aim.point = null;
   const live = ready && dom.overlay.style.display === 'none' && form !== 'flying' && !gym.session && !(state.mode === 'charging' && !carry && form === 'human');
   const eggs = live ? reachEggs() : [];
-  const place = live && canPlaceNow(), petPlace = live && canPlacePetNow();
+  const place = live && canPlaceNow(), petPlace = live && canPlacePetNow(), eggPlace = live && canPlaceEggSlotNow();
   let hint = '';
   const verb = IS_TOUCH ? 'Tap' : 'Click';
   if (eggs.length) hint = verb + ' the egg to steal it';
   else if (place) hint = verb + ' a spot in your pen to place the egg';
+  else if (eggPlace) { const hs = heldEggSlot(); hint = verb + ' a spot in your pen to place your ' + hs.egg + ' egg (' + (hs.sizes && hs.sizes.length ? hs.sizes[hs.sizes.length - 1] : 1).toFixed(1) + 'x)'; }
   else if (petPlace) { const P = CONFIG.pets[heldPet()]; hint = petsInPen.length >= penCapacity() ? 'Pen full (' + petsInPen.length + '/' + penCapacity() + ') - press U to upgrade' : verb + ' a spot in your pen to place your ' + P.name + '  ($' + P.income + '/s at 1x)  [' + petsInPen.length + '/' + penCapacity() + ']'; }
   let gAim = null;
   if (live && !eggs.length && canTrain() && gymItems.length) {
@@ -2725,7 +2795,7 @@ function updateAim() {
   if (!IS_TOUCH && hint) {
     const ray = rayAt(0, 0);
     const it = eggs.length ? pickSteal(ray, eggs) : null;
-    const pt = !eggs.length && !gAim && !petAim && (place || petPlace) ? pickPlace(ray) : null;
+    const pt = !eggs.length && !gAim && !petAim && (place || petPlace || eggPlace) ? pickPlace(ray) : null;
     if (it) { aim.kind = 'steal'; aim.item = it; } else if (gAim) { aim.kind = 'train'; } else if (petAim) { aim.kind = 'take'; } else if (pt) { aim.kind = 'place'; aim.point = pt; }
   }
   if (!placeMarker) {
@@ -3033,6 +3103,14 @@ function applySave(d) {                                // replace the current ga
   for (const id of Object.keys(CONFIG.pets)) if (d.dex && d.dex[id] > 0) dex[id] = d.dex[id] | 0;
   const slots = Array.isArray(d.slots) ? d.slots : Object.values(d.slots || {});
   slots.slice(0, CONFIG.hotbarSlots).forEach((sl, i) => {
+    if (sl && sl.egg && CONFIG.eggs.types[sl.egg] && sl.count > 0) {                   // an egg stack
+      const n = sl.count | 0, sizes = Array.isArray(sl.sizes) ? sl.sizes.map((v) => clampN(+v || 1, 1, CONFIG.eggs.maxMult)).slice(0, n) : [];
+      const areas = Array.isArray(sl.areas) ? sl.areas.slice(0, n).map((a) => (CONFIG.areas[a] ? a : null)) : [];
+      while (sizes.length < n) sizes.push(1);
+      while (areas.length < n) areas.push(null);
+      inv.slots[i] = { egg: sl.egg, count: n, sizes, areas };
+      return;
+    }
     if (!sl || !CONFIG.pets[sl.pet] || !(sl.count > 0)) return;
     const n = sl.count | 0, sizes = Array.isArray(sl.sizes) ? sl.sizes.map((v) => clampN(+v || 1, 1, CONFIG.petMaxMult)).slice(0, n) : [];
     while (sizes.length < n) sizes.push(1);
@@ -3194,9 +3272,9 @@ function refreshHotbar() {
   inv.slots.forEach((sl, i) => {
     const el = ui.slotEls[i]; if (!el) return;
     el.classList.toggle('sel', i === inv.sel && !bat.equipped);
-    el.querySelector('.ic').innerHTML = sl ? petIcon(sl.pet) : '';
+    el.querySelector('.ic').innerHTML = sl ? (sl.egg ? eggIcon(sl.egg) : petIcon(sl.pet)) : '';
     el.querySelector('.n').textContent = sl && sl.count > 1 ? sl.count : '';
-    el.title = sl ? CONFIG.pets[sl.pet].name + (sl.sizes && sl.sizes.length ? '  (' + sl.sizes.map((v) => v.toFixed(1) + 'x').join(', ') + ')' : '') : '';
+    el.title = sl ? (sl.egg ? sl.egg + ' egg' : CONFIG.pets[sl.pet].name) + (sl.sizes && sl.sizes.length ? '  (' + sl.sizes.map((v) => v.toFixed(1) + 'x').join(', ') + ')' : '') : '';
   });
 }
 function selectSlot(i) { if (bat.equipped) equipBat(false, true); const n = CONFIG.hotbarSlots; inv.sel = ((i % n) + n) % n; refreshHotbar(); }
@@ -3422,7 +3500,7 @@ function pickPet(eggType, area) {                      // the pet comes from the
   return ids[0];
 }
 function invCanTake(id) {                           // counts pets that are still flying to the hotbar so two hatches never fight over the last slot
-  const sim = inv.slots.map((sl) => (sl ? sl.pet : null));
+  const sim = inv.slots.map((sl) => (sl ? (sl.pet || 'egg:' + sl.egg) : null));
   for (const f of flyers) { if (sim.includes(f.id)) continue; const i = sim.indexOf(null); if (i < 0) return false; sim[i] = f.id; }
   return sim.includes(id) || sim.includes(null);
 }
