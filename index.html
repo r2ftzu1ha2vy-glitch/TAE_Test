@@ -58,7 +58,7 @@
 <link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade3.glb">
 <link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade4.glb">
 <link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade5.glb">
-<link rel="preload" as="fetch" crossorigin href="Tomato_1.glb">
+<link rel="preload" as="fetch" crossorigin href="Tomato.glb">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -604,7 +604,7 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', alien: 'Alien.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb', spaceoctopus: 'Space_Octopus.glb', tomato: 'Tomato_1.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', alien: 'Alien.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb', spaceoctopus: 'Space_Octopus.glb', tomato: 'Tomato.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
     sell: 'Sell.glb', trailshop: 'Trail_Shop.glb',
     gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb', 'Treadmill_Upgrade4.glb', 'Treadmill_Upgrade5.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb', 'PullUp_BarUpgrade4.glb', 'PullUp_BarUpgrade5.glb'] },   // index = upgrade level
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb',
@@ -751,7 +751,7 @@ const CONFIG = {
     gummybear: { name: 'Gummy Bear', area: 'candy', rarity: 'epic',     weight: 100, income: 1500, height: 1.2, icon: '\u{1F9F8}', lucky: false },
     spaceoctopus: { name: 'Space Octopus', area: 'starfall', rarity: 'epic', weight: 45, income: 12000, height: 1.1, icon: '\u{1F419}', lucky: true },
     user:      { name: 'User',      area: 'admin', rarity: 'admin', admin: true, tint: true, weight: 0, income: 100000, height: 1.5, icon: '\u{1F9D1}' },   // ADMIN ONLY: never hatches, only the admin panel gives it. Uses the player model in the player's own colours.
-    tomato:    { name: 'Tomato',    area: 'admin', rarity: 'admin', admin: true, weight: 0, income: 100000, height: 1.0, icon: '\u{1F345}' },   // ADMIN ONLY (admin panel): never hatches. Uses the Idle / Walk animations that are in Tomato_1.glb
+    tomato:    { name: 'Tomato',    area: 'admin', rarity: 'admin', admin: true, weight: 0, income: 100000, height: 1.0, icon: '\u{1F345}' },   // ADMIN ONLY (admin panel): never hatches. Uses the Idle / Walk animations that are in Tomato.glb
     alien:     { name: 'Alien',     area: 'starfall', rarity: 'epic',     weight: 100, income: 6000, height: 1.4, icon: '\u{1F47D}', lucky: false },
   },
   rarities: { admin: { label: 'Admin', color: '#ff4d4d' }, common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' }, rare: { label: 'Rare', color: '#5aa9ff' }, epic: { label: 'Epic', color: '#c77dff' } },
