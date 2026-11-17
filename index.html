@@ -614,6 +614,9 @@ const CONFIG = {
     bar:       [{ cost: 0, gain: 0.5,  every: 2,   first: 1    }, { cost: 1000000,  gain: 5,  every: 1,   first: 0.5 }, { cost: 15000000, gain: 20, every: 1,   first: 0.5 }, { cost: 150000000, gain: 40, every: 1,   first: 0.5 }, { cost: 2000000000, gain: 75, every: 1,   first: 0.5 }],
     treadmill: [{ cost: 0, gain: 0.25, every: 0.5, first: 0.5  }, { cost: 850000,   gain: 15, every: 0.5, first: 0.5 }, { cost: 10000000, gain: 80, every: 0.5, first: 0.5 }, { cost: 100000000, gain: 160, every: 0.5, first: 0.5 }, { cost: 1000000000, gain: 240, every: 0.5, first: 0.5 }],
   },
+  // Strength curve: up to `knee` strength the throw gets +throwBonusPerStrength per point (linear, so the early islands feel as before). Above the knee the growth is compressed (a power law)
+  // so that `reach` strength is exactly what it takes to land on the near edge of `area` (x `margin` safety). The curve is worked out from the real zone / island distances when the map loads, so it follows ?mapscale.
+  strengthCurve: { area: 'starfall', reach: 50000000, knee: 700, margin: 1.02 },
   gym: { reach: 2.2, gripAlign: 0.5, barClipLength: 2.0, throwBonusPerStrength: 0.004, barHeight: 3.7, treadmillLength: 4.1, wallInset: 3.5, spread: 4.5 },
   // Areas are islands ordered from nearest to furthest (the order below). Humans can never enter an area (only thrown eggs, and thieves with a stolen egg, are allowed in),
   // and you can only go to the island your egg landed on and the ones before it; anything further sends you back out.
@@ -984,6 +987,7 @@ async function init() {
   scene.add(playerEggMesh);
   buildAreas();
   updateThrowFwd();
+  initStrengthCurve();
   setupChickens({ chicken: chickGltf, scorpion: scorpGltf, duck: duckGltf, gummy: gummyGltf, alien: alienGltf });
   setupPets({ chicken: chickGltf, scorpion: scorpGltf, duck: duckGltf, gummybear: gummyGltf, alien: alienGltf, user: playerGltf, ...petGltfs });
   setupGym({ treadmill: treadGltfs, bar: barGltfs });
@@ -2526,7 +2530,28 @@ function updatePowerBar() {
   dom.bar.classList.toggle('locked', state.mode === 'cooldown');
 }
 
-const strengthMult = () => 1 + train.strength * CONFIG.gym.throwBonusPerStrength;
+let strCurve = null;                                    // { knee, mk, q } once initStrengthCurve() has run; null = plain linear
+function strengthMult(st = train.strength) {            // launch-speed multiplier from Strength (see CONFIG.strengthCurve)
+  const B = CONFIG.gym.throwBonusPerStrength;
+  if (!strCurve || st <= strCurve.knee) return 1 + st * B;
+  return strCurve.mk * Math.pow(st / strCurve.knee, strCurve.q);
+}
+function initStrengthCurve() {
+  const C = CONFIG.strengthCurve, B = CONFIG.gym.throwBonusPerStrength, T = CONFIG.throwing;
+  strCurve = null;
+  const a = C && areas.find((x) => x.id === C.area);
+  if (!a || !zoneBox) { log.warn('Strength curve off (area or Throw Zone missing): linear strength'); return; }
+  const c = zoneBox.getCenter(new THREE.Vector3());
+  const dx = Math.max(a.box.min.x - c.x, 0, c.x - a.box.max.x), dz = Math.max(a.box.min.z - c.z, 0, c.z - a.box.max.z);
+  const dist = Math.hypot(dx, dz);                                              // metres from the Throw Zone to the near edge of the island
+  const vMax = CONFIG.power.max * T.powerScale;                                 // launch speed at full power with no Strength
+  const range1 = vMax * vMax * Math.sin(2 * THREE.MathUtils.degToRad(T.elevationDeg)) / T.gravity;   // flat-ground range at multiplier 1
+  const need = Math.sqrt(dist / range1) * (C.margin || 1);                      // multiplier that lands you on that island
+  const mk = 1 + C.knee * B;
+  if (!(need > mk) || !(C.reach > C.knee)) { log.warn('Strength curve not needed (island is closer than the knee): linear strength'); return; }
+  strCurve = { knee: C.knee, mk, q: Math.log(need / mk) / Math.log(C.reach / C.knee) };
+  log.info('Strength curve: ' + a.label + ' is ' + dist.toFixed(0) + ' m away, needs x' + need.toFixed(2) + ' launch speed = ' + fmtBig(C.reach) + ' Strength (knee ' + C.knee + ', power ' + strCurve.q.toFixed(4) + ')');
+}
 function tryThrow() {
   if (state.mode !== 'charging' || rag.t > 0 || isNight()) return;
   const power = state.power, T = CONFIG.throwing;
@@ -3075,7 +3100,7 @@ function updateHud() {
     const showGiftPet = showGift && !!carry && !!giftItem('pet');          // carrying an egg AND holding a pet: the second button gifts the pet
     if (hudGiftPet !== showGiftPet) { hudGiftPet = showGiftPet; $('t-giftpet').style.display = showGiftPet ? 'flex' : 'none'; }
   }
-  if (hudStr !== train.strength) { hudStr = train.strength; $('str-val').textContent = train.strength >= 1e3 ? fmtBig(train.strength) : String(+train.strength.toFixed(1)); $('str-sub').textContent = 'STRENGTH +' + Math.round(train.strength * CONFIG.gym.throwBonusPerStrength * 100) + '%'; }
+  if (hudStr !== train.strength) { hudStr = train.strength; $('str-val').textContent = train.strength >= 1e3 ? fmtBig(train.strength) : String(+train.strength.toFixed(1)); $('str-sub').textContent = 'STRENGTH +' + Math.round((strengthMult() - 1) * 100) + '%'; }
   const ts = totalSpeed();
   if (hudSpeed !== ts) { hudSpeed = ts; dom.speedVal.textContent = ts >= 1e3 ? fmtBig(ts) : String(+ts.toFixed(2)); }
   const here = areaAt(pos.x, pos.z);
