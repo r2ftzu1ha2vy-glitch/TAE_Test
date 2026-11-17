@@ -585,7 +585,9 @@ const CONFIG = {
   speedUnit: 0.5,
   // Speed curve: the speed STAT keeps growing (and still gates the areas), but real movement slows its growth above `knee`: moved = knee * (stat / knee) ^ power.
   // Players AND chasers use the same curve, so the chase stays as fair as before. power 1 = old linear behaviour.
-  speedCurve: { knee: 20, power: 0.4 },
+  // Top end: above `knee2` the curve flattens so the speed stat can climb into the billions without you teleporting. The tail is worked out so that a stat of `goal` moves at exactly `goalMps`
+  // metres per second (Starfall is ~770 m deep, so 100 m/s crosses it in about 8 s). More stat past that still adds a little. Chasers use the same curve, so a chaser at 1.3x your stat is still level with you.
+  speedCurve: { knee: 20, power: 0.4, knee2: 1000, goal: 1000000000, goalMps: 100 },
   // normalSpeed: the speed stat you actually WALK at whenever you are not stealing (so 16 = 8 m/s). Your real speed stat only kicks in while you carry a stolen egg (status 'stolen'), when you need it to escape.
   // The stat itself still counts for the area requirements and the HUD; this only changes how fast you move and how strong the speed effects are.
   normalSpeed: 16,
@@ -2364,8 +2366,13 @@ function netTick(dt) {
 }
 
 function effSpeed(v) {                                  // speed stat -> speed used for real movement (see CONFIG.speedCurve)
-  const K = CONFIG.speedCurve.knee;
-  return v <= K ? v : K * Math.pow(v / K, CONFIG.speedCurve.power);
+  const C = CONFIG.speedCurve, K = C.knee;
+  if (v <= K) return v;
+  const e1 = K * Math.pow(Math.min(v, C.knee2) / K, C.power);      // the original power curve, up to knee2
+  if (v <= C.knee2 || !(C.goal > C.knee2)) return v <= C.knee2 ? e1 : K * Math.pow(v / K, C.power);
+  const e2 = K * Math.pow(C.knee2 / K, C.power);                   // value at knee2
+  const tail = Math.log(Math.max(C.goalMps / CONFIG.speedUnit, e2) / e2) / Math.log(C.goal / C.knee2);   // exponent that lands exactly on goalMps at the goal
+  return e2 * Math.pow(v / C.knee2, tail);
 }
 let fxTarget = 0, fxLevel = 0, fxFeel = 0;              // fxTarget = how hard you are moving (0..1), fxLevel = how fast your stat is (0..1), fxFeel = the smoothed product
 const fxEl = document.getElementById('speedfx');
