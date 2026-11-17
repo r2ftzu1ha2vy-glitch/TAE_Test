@@ -587,7 +587,9 @@ const CONFIG = {
   // Players AND chasers use the same curve, so the chase stays as fair as before. power 1 = old linear behaviour.
   speedCurve: { knee: 20, power: 0.4 },
   // Speed feel: the faster your stat, the more the camera sells it while you move: FOV widens, camera pulls back, speed lines, faster leg animation. strength 0 = off.
-  speedFx: { strength: 1, fovMax: 24, pullBack: 0.3, lines: 0.8, animBoost: 0.6, statMax: 1000, ease: 4 },
+  // statMax = the stat where the effects peak (the 1B goal, so every order of magnitude on the way still feels faster). curve = reverse exponential on the log scale: the effects rise quickly
+  // at first and ease in towards the peak (0 = straight line on the log scale, higher = faster start).
+  speedFx: { strength: 1, fovMax: 24, pullBack: 0.3, lines: 0.8, animBoost: 0.6, statMax: 1000000000, curve: 3, ease: 4 },
   player: { speed: params.has('speed') ? parseFloat(params.get('speed')) : 10, radius: 0.35, stepHeight: 1.0, gravity: 22, probeHeights: [1.05, 1.45, 1.75], height: 1.7, turnSpeed: 12 },
   camera: { distance: 4.5, sens: 0.0025, touchSens: 0.006, minPitch: -0.2, maxPitch: 1.3, height: 1.5 },
   power: { min: 5, max: 20, period: 1.1 },        // period = seconds for one full up-and-down sweep
@@ -605,15 +607,21 @@ const CONFIG = {
   // gripAlign: where the Training clip's raised arms sit on the bar (0 = lowest point of the pull, 1 = highest, 0.5 = middle).
   // strength: every point adds throwBonusPerStrength to the launch speed (0.004 = +0.4%). It was 0.01 and the free Pull-Up Bar alone reached the end of the map in ~13 minutes; now the end needs ~1000 Strength, i.e. real upgrades.
   // Gym upgrades (bought in the Upgrades panel, button on the left or press U). Index = level: level 1 is the base machine, then Upgrade 2 to Upgrade 5 (each has its own model).
-  // cost = price of reaching that level. gain = Strength (bar) / Speed (treadmill) you get every `every` seconds (one rep). first = when the first rep of a session counts.
+  // cost = price of reaching that level. Every `every` seconds is one rep that gives Strength (bar) / Speed (treadmill), sized by gymCurve and the level's `hours`. first = when the first rep of a session counts.
   // On the bar one pull-up is the 2s Training clip (barClipLength); with every < 2 the clip plays faster so a pull-up still lands on every rep.
   // Pen upgrades: you start with pen.base pet slots, every upgrade adds one. Price = firstCost * growth^(upgrades bought so far), up to pen.max upgrades.
   pen: { base: 5, firstCost: 10000, growth: 3, max: 10 },
   petPickupReach: 6,   // how close you must be (metres) to click a pet in your pen and take it back
   gymTiers: {
-    bar:       [{ cost: 0, gain: 0.5,  every: 2,   first: 1    }, { cost: 1000000,  gain: 5,  every: 1,   first: 0.5 }, { cost: 15000000, gain: 20, every: 1,   first: 0.5 }, { cost: 150000000, gain: 40, every: 1,   first: 0.5 }, { cost: 2000000000, gain: 75, every: 1,   first: 0.5 }],
-    treadmill: [{ cost: 0, gain: 0.25, every: 0.5, first: 0.5  }, { cost: 850000,   gain: 15, every: 0.5, first: 0.5 }, { cost: 10000000, gain: 80, every: 0.5, first: 0.5 }, { cost: 100000000, gain: 160, every: 0.5, first: 0.5 }, { cost: 1000000000, gain: 240, every: 0.5, first: 0.5 }],
+    bar:       [{ cost: 0, hours: 36, every: 2,   first: 1    }, { cost: 1000000,  hours: 15,  every: 1,   first: 0.5 }, { cost: 15000000, hours: 6,   every: 1,   first: 0.5 }, { cost: 150000000, hours: 2.5, every: 1,   first: 0.5 }, { cost: 2000000000, hours: 1,   every: 1,   first: 0.5 }],
+    treadmill: [{ cost: 0, hours: 48, every: 0.5, first: 0.5  }, { cost: 850000,   hours: 18,  every: 0.5, first: 0.5 }, { cost: 10000000, hours: 7,   every: 0.5, first: 0.5 }, { cost: 100000000, hours: 3,   every: 0.5, first: 0.5 }, { cost: 1000000000, hours: 1.2, every: 0.5, first: 0.5 }],
   },
+  // Training curve ("reverse exponential"). Progress is measured on a log scale, L = ln(stat / from) / ln(goal / from): 0 at the start, 1 at the goal (1B Speed, 50M Strength).
+  // Every rep moves L by  dL/dt = rate * e^(-taper * L)  : big, fast level-ups at the start that taper off towards the goal, while the numbers you see still snowball (the stat is exponential in L).
+  // Each machine level has `hours` = how long that level alone would take to carry you from the start to the goal (wall-clock, training non-stop), so the upgrades are what speed the grind up.
+  // taper: higher = faster start and a longer tail (k = ln(goal/from) would be a straight line). floor = flat stat per rep so the very first reps (and ?speed= lowered starts) never crawl.
+  // You keep growing past the goal (slowly), the goal is just where the area requirements are met. Saves store the stat itself, so old saves and the Admin panel keep working.
+  gymCurve: { taper: 5, speed: { from: 10, goal: 1000000000, floor: 0.25 }, strength: { from: 1, goal: 50000000, floor: 0.5 } },
   // Strength curve: up to `knee` strength the throw gets +throwBonusPerStrength per point (linear, so the early islands feel as before). Above the knee the growth is compressed (a power law)
   // so that `reach` strength is exactly what it takes to land on the near edge of `area` (x `margin` safety). The curve is worked out from the real zone / island distances when the map loads, so it follows ?mapscale.
   strengthCurve: { area: 'starfall', reach: 50000000, knee: 700, margin: 1.02 },
@@ -2345,7 +2353,8 @@ let fxTarget = 0, fxLevel = 0, fxFeel = 0;              // fxTarget = how hard y
 const fxEl = document.getElementById('speedfx');
 function updateSpeedFx(dt) {
   const F = CONFIG.speedFx, K = CONFIG.speedCurve.knee;
-  fxLevel = F.strength > 0 && totalSpeed() > K ? clampN(Math.log(totalSpeed() / K) / Math.log(Math.max(F.statMax, K * 2) / K), 0, 1) * F.strength : 0;
+  const fxPos = totalSpeed() > K ? clampN(Math.log(totalSpeed() / K) / Math.log(Math.max(F.statMax, K * 2) / K), 0, 1) : 0;      // 0..1 on a log scale, K -> statMax
+  fxLevel = F.strength > 0 ? (F.curve > 0 ? (1 - Math.exp(-F.curve * fxPos)) / (1 - Math.exp(-F.curve)) : fxPos) * F.strength : 0;
   const want = form === 'human' && !gym.session ? fxTarget * fxLevel : 0;
   fxFeel += (want - fxFeel) * Math.min(1, F.ease * dt);
   if (fxFeel < 0.002) fxFeel = 0;
@@ -3573,13 +3582,13 @@ function heldPet() { if (bat.equipped) return null; const sl = inv.slots[inv.sel
 
 let dexTab = 'index';                                   // tabs: 'index' (pets), 'shop' (upgrades) and, only next to their stand, 'trails' (Trail Shop) and 'sell' (Sell)
 const fmtBig = (n) => (n >= 1e9 ? +(n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? +(n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? +(n / 1e3).toFixed(1) + 'K' : String(n));
-const fmtTier = (k, t) => '+' + +t.gain.toFixed(2) + ' ' + GYM_INFO[k].stat + ' every ' + t.every + 's';
+const fmtTier = (k, i) => { const T = CONFIG.gymTiers[k]; return '+' + fmtGain(gymNext(k, i) - gymStat(k)) + ' ' + GYM_INFO[k].stat + ' every ' + T[i].every + 's (x' + +(T[0].hours / T[i].hours).toFixed(1) + ' training speed)'; };
 function shopRows() {
   const rows = [];
   for (const k of ['bar', 'treadmill']) {
     const T = CONFIG.gymTiers[k], lv = up[k], nx = T[lv + 1];
     rows.push({ id: k, icon: k === 'bar' ? '\u{1F3CB}' : '\u{1F3C3}', title: GYM_INFO[k].name, level: 'Level ' + (lv + 1) + ' / ' + T.length,
-      now: 'Now: ' + fmtTier(k, T[lv]), next: nx ? 'Upgrade ' + (lv + 2) + ': ' + fmtTier(k, nx) : null, cost: nx ? nx.cost : null });
+      now: 'Now: ' + fmtTier(k, lv), next: nx ? 'Upgrade ' + (lv + 2) + ': ' + fmtTier(k, lv + 1) : null, cost: nx ? nx.cost : null });
   }
   const pc = penUpgradeCost();
   rows.push({ id: 'pen', icon: '\u{1F3E0}', title: 'Pen Slots', level: penCapacity() + ' slots (' + up.pen + '/' + CONFIG.pen.max + ' upgrades)', now: 'Now: ' + petsInPen.length + ' / ' + penCapacity() + ' pets placed',
@@ -4129,12 +4138,22 @@ function stopGym() {
   if (actions.training) actions.training.timeScale = 1;
   vy = 0; grounded = false;                             // physics takes over again (you drop to the floor if you were hanging)
 }
+function gymStat(kind) { return kind === 'bar' ? train.strength : CONFIG.player.speed + train.speed; }   // the number the curve works on (Speed includes the base 10)
+function gymNext(kind, tier, dt = CONFIG.gymTiers[kind][tier].every) {   // the stat after one rep on machine level `tier` (see CONFIG.gymCurve)
+  const C = CONFIG.gymCurve, G = kind === 'bar' ? C.strength : C.speed, k = C.taper;
+  const s = gymStat(kind), flat = s + G.floor;
+  if (s < G.from) return flat;                                         // below the curve's start: plain flat reps
+  const span = Math.log(G.goal / G.from);
+  const rate = (Math.exp(k) - 1) / (k * CONFIG.gymTiers[kind][tier].hours * 3600);   // dL/dt at L = 0
+  const L = Math.log(s / G.from) / span;
+  return Math.max(G.from * Math.pow(Math.exp(k * L) + k * rate * dt, span / k), flat);   // exact solution of dL/dt = rate * e^(-k L) over dt seconds
+}
+const fmtGain = (n) => (n >= 1000 ? fmtBig(n) : String(+n.toFixed(n < 10 ? 2 : 1)));
 function gymRep(g) {
-  const T = CONFIG.gymTiers[g.kind][up[g.kind]];         // an upgraded machine gives more per rep
-  let txt;
-  if (g.kind === 'bar') { train.strength += T.gain; txt = '+' + +T.gain.toFixed(2) + ' Strength'; }
-  else { train.speed += T.gain; speedStat = CONFIG.player.speed + train.speed; txt = '+' + +T.gain.toFixed(2) + ' Speed'; }
-  popupAt(txt, new THREE.Vector3(pos.x, pos.y + 2.2, pos.z), '#7dff9a');
+  const kind = g.kind, next = gymNext(kind, up[kind]), gain = next - gymStat(kind);   // an upgraded machine trains faster
+  if (kind === 'bar') train.strength = next;
+  else { train.speed = next - CONFIG.player.speed; speedStat = next; }
+  popupAt('+' + fmtGain(gain) + (kind === 'bar' ? ' Strength' : ' Speed'), new THREE.Vector3(pos.x, pos.y + 2.2, pos.z), '#7dff9a');
   saveGame();
 }
 function updateGymPlayer(dt) {                          // player side of a session: frozen in place, Training (bar) or Walk (treadmill) clip
