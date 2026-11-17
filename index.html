@@ -460,7 +460,7 @@ const CONFIG = {
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
   models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
-    gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb'] },   // index = upgrade level
+    gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb', 'Treadmill_Upgrade4.glb', 'Treadmill_Upgrade5.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb', 'PullUp_BarUpgrade4.glb', 'PullUp_BarUpgrade5.glb'] },   // index = upgrade level
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb',
              blue: 'Blue_Egg.glb', duck: 'Duck_Egg.glb', flower: 'Flower_Egg.glb', lily: 'Lily_Egg.glb', reed: 'Reed_Egg.glb',                                   // Bubble Bay
              candy: 'Candy_Egg.glb', chocolate: 'Chocolate_Egg.glb', gummy: 'Gummy_Egg.glb', lolipop: 'Lolipop_Egg.glb', strawberry: 'Strawberry_Egg.glb' } },   // Candy Kingdom
@@ -528,15 +528,15 @@ const CONFIG = {
   // Auto-training: you are teleported onto the machine and locked in place; reps are counted by the timings of your machine's upgrade level (see gymTiers).
   // gripAlign: where the Training clip's raised arms sit on the bar (0 = lowest point of the pull, 1 = highest, 0.5 = middle).
   // strength: every point adds throwBonusPerStrength to the launch speed (0.01 = +1%).
-  // Gym upgrades (bought in the Upgrades panel, button on the left or press U). Index = level: level 1 is the base machine, then Upgrade 2 and Upgrade 3 (each has its own model).
+  // Gym upgrades (bought in the Upgrades panel, button on the left or press U). Index = level: level 1 is the base machine, then Upgrade 2 to Upgrade 5 (each has its own model).
   // cost = price of reaching that level. gain = Strength (bar) / Speed (treadmill) you get every `every` seconds (one rep). first = when the first rep of a session counts.
   // On the bar one pull-up is the 2s Training clip (barClipLength); with every < 2 the clip plays faster so a pull-up still lands on every rep.
   // Pen upgrades: you start with pen.base pet slots, every upgrade adds one. Price = firstCost * growth^(upgrades bought so far), up to pen.max upgrades.
   pen: { base: 5, firstCost: 10000, growth: 3, max: 10 },
   petPickupReach: 6,   // how close you must be (metres) to click a pet in your pen and take it back
   gymTiers: {
-    bar:       [{ cost: 0, gain: 1,    every: 2,   first: 1    }, { cost: 1000000,  gain: 5,  every: 1,   first: 0.5 }, { cost: 15000000, gain: 20, every: 1,   first: 0.5 }],
-    treadmill: [{ cost: 0, gain: 0.25, every: 0.5, first: 0.5  }, { cost: 850000,   gain: 15, every: 0.5, first: 0.5 }, { cost: 10000000, gain: 80, every: 0.5, first: 0.5 }],
+    bar:       [{ cost: 0, gain: 1,    every: 2,   first: 1    }, { cost: 1000000,  gain: 5,  every: 1,   first: 0.5 }, { cost: 15000000, gain: 20, every: 1,   first: 0.5 }, { cost: 150000000, gain: 40, every: 1,   first: 0.5 }, { cost: 2000000000, gain: 75, every: 1,   first: 0.5 }],
+    treadmill: [{ cost: 0, gain: 0.25, every: 0.5, first: 0.5  }, { cost: 850000,   gain: 15, every: 0.5, first: 0.5 }, { cost: 10000000, gain: 80, every: 0.5, first: 0.5 }, { cost: 100000000, gain: 160, every: 0.5, first: 0.5 }, { cost: 1000000000, gain: 240, every: 0.5, first: 0.5 }],
   },
   gym: { reach: 2.2, gripAlign: 0.5, barClipLength: 2.0, throwBonusPerStrength: 0.01, barHeight: 3.7, treadmillLength: 4.1, wallInset: 3.5, spread: 4.5 },
   // Areas are islands ordered from nearest to furthest (the order below). Humans can never enter an area (only thrown eggs, and thieves with a stolen egg, are allowed in),
@@ -2290,21 +2290,38 @@ function tryThrow() {
 }
 
 const _n = new THREE.Vector3(), _seg = new THREE.Vector3(), _next = new THREE.Vector3();
-/* A thrown egg can never leave the map: when it would cross the outer edge (sideways or past the far end of the last area) it bounces back,
-   like off an invisible wall - the sideways speed is flipped and damped by CONFIG.throwing.bounce, the rest of the flight carries on. */
+/* A thrown egg can never leave the playable area. The map has TWO regions: the wide pen yard (back of the map, where the Throw Zone is) and the narrow
+   island corridor behind it (Cluck Valley ... Candy Kingdom). The old code only bounced off the bounding box of the whole map, which is as wide as the
+   pen yard, so an egg thrown over a corridor wall was still "inside the map" and fell into the void. Now the corridor has its own, narrower limits
+   (taken from the island floors, so they follow the map file) and the egg bounces off its walls: the sideways speed is flipped and damped by
+   CONFIG.throwing.bounce, the rest of the flight carries on. Over the low dividing wall between yard and corridor it bounces back into the yard. */
+let flightRegion = null;
+function getFlightRegion() {
+  if (flightRegion) return flightRegion;
+  const m = CONFIG.eggForm.radius + 0.3 + 0.8;                       // egg radius + a little air + the thickness of the wall caps
+  const yard = { x0: mapBox.min.x + m, x1: mapBox.max.x - m, z0: mapBox.min.z + m, z1: mapBox.max.z - m };
+  const floors = Object.values(areaBoxes);
+  if (!floors.length) return (flightRegion = { yard, cor: null, split: 0 });
+  const u = new THREE.Box3(); floors.forEach((b) => u.union(b));
+  return (flightRegion = { yard, cor: { x0: u.min.x + m, x1: u.max.x - m, z1: u.max.z - m }, split: u.min.z });
+}
 function bounceAtMapEdge(next, fl) {
-  const m = CONFIG.eggForm.radius + 0.3, B = CONFIG.throwing.bounce;
+  const R = getFlightRegion(), B = CONFIG.throwing.bounce;
   let hit = false;
-  for (const ax of ['x', 'z']) {
-    const lo = mapBox.min[ax] + m, hi = mapBox.max[ax] - m;
+  const reflect = (ax, lo, hi) => {
     for (let k = 0; k < 8 && (next[ax] > hi || next[ax] < lo); k++) {       // a huge step can overshoot more than once
       if (next[ax] > hi) { next[ax] = 2 * hi - next[ax]; fl.vel[ax] = -Math.abs(fl.vel[ax]) * B; }
       else { next[ax] = 2 * lo - next[ax]; fl.vel[ax] = Math.abs(fl.vel[ax]) * B; }
       hit = true;
     }
     next[ax] = clampN(next[ax], lo, hi);
-  }
-  if (hit) { fl.bounces = (fl.bounces || 0) + 1; if (fl.bounces === 1) say('Bounced off the edge of the map!', 2.5); }
+  };
+  reflect('z', R.yard.z0, R.cor ? R.cor.z1 : R.yard.z1);                   // back wall of the yard / far wall of the last island
+  if (R.cor && next.z >= R.split) {                                         // the egg is (about to be) in the corridor
+    if (fl.c.z < R.split && (next.x < R.cor.x0 || next.x > R.cor.x1)) reflect('z', R.yard.z0, R.split - 0.4);   // came over the dividing wall, beside the gap
+    else reflect('x', R.cor.x0, R.cor.x1);                                  // corridor side walls
+  } else reflect('x', R.yard.x0, R.yard.x1);                                // yard side walls
+  if (hit) { fl.bounces = (fl.bounces || 0) + 1; if (fl.bounces === 1) say('Bounced back in!', 2.5); }
 }
 function updateFlight(dt) {
   if (form !== 'flying' || !flight) return;
