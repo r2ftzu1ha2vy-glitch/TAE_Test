@@ -446,6 +446,23 @@
   #admin .ad-chip:hover { background: rgba(199,125,255,.45); }
   #admin .ad-row .ad-num { width: 70px; flex: none; }
   #admin .ad-sec { background: rgba(255,255,255,.03); border-radius: 10px; padding: 8px 10px; margin-top: 8px; border-top: 0; }
+  #dex .shop-sub { display: flex; gap: 6px; margin: 0 0 10px; }
+  #dex .shop-sub-b { border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff; border-radius: 10px; font: 700 14px var(--font); padding: 6px 14px; cursor: pointer; }
+  #dex .shop-area { font: 700 13px var(--font); opacity: .8; letter-spacing: .06em; text-transform: uppercase; margin: 10px 2px 2px; }
+  #dex .shop-sub-b.on { background: var(--gold); color: #3a2a00; border-color: #fff; }
+  #admin-btn { position: fixed; top: 62px; left: 14px; z-index: 8; font: 700 12px var(--font); color: #1b1030; background: #c77dff; border: 0; border-radius: 10px; padding: 5px 11px; cursor: pointer; box-shadow: 0 2px 0 #7a43a8; }
+  #admin-btn[hidden] { display: none; }
+  body.touch #admin-btn { top: calc(52px + env(safe-area-inset-top)); left: calc(12px + env(safe-area-inset-left)); padding: 6px 12px; }
+  /* phones / small windows: the panel becomes a full-width sheet that scrolls */
+  @media (max-width: 640px), (max-height: 560px) {
+    #admin { top: calc(8px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left)); right: calc(8px + env(safe-area-inset-right)); width: auto; max-height: calc(100% - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+    #admin .ad-grid { max-height: 150px; touch-action: pan-y; }
+    #admin input[type=number], #admin select { font-size: 16px; }
+    #admin .ad-x { font-size: 28px; padding: 0 8px; }
+    #admin .ad-btn, #admin .ad-chip { min-height: 36px; }
+  }
+  body.touch #admin { top: calc(8px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left)); right: calc(8px + env(safe-area-inset-right)); width: auto; max-height: calc(100% - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overscroll-behavior: contain; touch-action: pan-y; }
+  body.touch #admin input[type=number], body.touch #admin select { font-size: 16px; }
 
   /* day / night indicator */
   #daynight { position: fixed; top: 12px; left: 14px; display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 10px; border-radius: 18px; color: #fff; pointer-events: none;
@@ -545,8 +562,8 @@
   <div class="ad-sec"><small>Give pets</small>
     <div class="ad-sel" id="ad-sel"></div>
     <div class="ad-grid" id="ad-grid"></div>
-    <div class="ad-row"><span>Size (1-25x)</span><input type="number" class="ad-num" id="ad-petmult" value="1" min="1" max="25" step="0.5">
-      <div class="ad-chips"><button class="ad-chip" type="button" data-set="ad-petmult" data-val="1">1x</button><button class="ad-chip" type="button" data-set="ad-petmult" data-val="10">10x</button><button class="ad-chip" type="button" data-set="ad-petmult" data-val="25">25x</button></div></div>
+    <div class="ad-row"><span>Size (0.1-25x)</span><input type="number" class="ad-num" id="ad-petmult" value="1" min="0.1" max="25" step="0.1">
+      <div class="ad-chips"><button class="ad-chip" type="button" data-set="ad-petmult" data-val="0.1">0.1x</button><button class="ad-chip" type="button" data-set="ad-petmult" data-val="1">1x</button><button class="ad-chip" type="button" data-set="ad-petmult" data-val="10">10x</button><button class="ad-chip" type="button" data-set="ad-petmult" data-val="25">25x</button></div></div>
     <div class="ad-row"><span>Amount</span><input type="number" class="ad-num" id="ad-petcount" value="1" min="1" max="50" step="1">
       <div class="ad-chips"><button class="ad-chip" type="button" data-set="ad-petcount" data-val="1">1</button><button class="ad-chip" type="button" data-set="ad-petcount" data-val="5">5</button><button class="ad-chip" type="button" data-set="ad-petcount" data-val="9">9</button></div></div>
     <div class="ad-row"><button class="ad-btn" type="button" data-give="pet" style="flex:1;padding:8px 12px;font-size:14px">Give selected pet</button></div>
@@ -563,7 +580,7 @@
   <div class="ad-sec"><small>Day / night (shared with everyone in the room)</small>
     <div class="ad-row"><span id="ad-dn">Day</span><button class="ad-btn" type="button" data-give="daynight">Skip to next</button></div>
   </div>
-  <div class="ad-note">Negative numbers take it away. After the first code, press ` (backtick, under Esc) to open / close this panel. Esc also closes it. The cursor stays free while it is open.</div>
+  <div class="ad-note">Negative numbers take it away. Open / close with the Admin button (or ` backtick on a keyboard). Esc also closes it. Only the admin accounts can open this panel.</div>
 </div>
 <div id="offline" role="dialog" aria-modal="true" aria-label="Offline earnings"><div class="off-card">
   <p class="off-title">You Got</p>
@@ -572,6 +589,7 @@
   <p class="off-sub" id="off-sub"></p>
   <button type="button" id="off-ok">Collect</button>
 </div></div>
+<button type="button" id="admin-btn" hidden>Admin</button>
 <button type="button" id="dex-btn">Index</button>
 <button type="button" id="music-btn" aria-label="Toggle music"><svg class="ic" aria-hidden="true"><use href="#i-music"/></svg> Music <small>[M]</small></button>
 <button type="button" id="shop-btn">Upgrades <small>[U]</small></button>
@@ -622,7 +640,7 @@
       <li>Click a pet standing in your pen to <b>take it back</b> into your hotbar. Your pen holds 5 pets to start.</li>
       <li><b>Sign in</b> (email or Google) and your money, pets, pen, upgrades and training are saved. <b>Guests are not saved.</b></li>
       <li>Open <b>Upgrades</b> (button on the left, or press <b>U</b>) to upgrade the Pull-Up Bar, the Treadmill, and your pen (+1 pet slot each).</li>
-      <li>Walk up to the <b>Sell</b> stand next to the Throw Zone (press <b>E</b>) to sell pets from your hotbar for cash, and to the <b>Trail Shop</b> to buy trails that boost your Speed.</li>
+      <li>Walk up to the <b>Sell</b> stand next to the Throw Zone (press <b>E</b>) to sell pets from your hotbar for cash, and to the <b>Shop</b> to buy trails that boost your Speed and egg skins for the egg you throw.</li>
       <li><b>Win:</b> steal an egg and bring it back across the <b>Win line</b> at the front of the islands - when you touch it, the game knows you made it and you got the egg!</li>
       <li>Open the <b>Index</b> button (or press <b>I</b>) to see every pet.</li>
       <li>Press <b>Enter</b> (touch: the chat button) to <b>chat</b> with the other players on your server.</li>
@@ -778,7 +796,9 @@ const CONFIG = {
   // Secret code: type =1=1=1=1=1 (any time, not in a text box) to toggle instant hatching for testing. Set to '' to disable.
   secretCode: '=1=1=1=1=1',
   // Admin code: type it any time (not in a text box) to open / close the Admin Panel (fly, pets, speed, strength, money). Set to '' to disable.
-  adminCode: '=1=1=1-2-2-2030303949494',
+  adminCode: '',   // the typed code is gone: the Admin Panel belongs to the accounts in adminEmails (signed in with a verified email)
+  adminEmails: ['yeo45736@gmail.com', 'r2ftzu1ha2vy@gmail.com'],
+  petMinMult: 0.1,     // smallest pet size (admin panel only: hatched pets start at 1x)
   // Pets. weight = chance when an egg hatches (chicken 70 : bunny 15 : ladybug 15), income = money per second while it stands in your pen (at a 1x egg; multiplied by the egg size it hatched from), height = placed size in metres.
   // area = which area's eggs can hatch it (valley / sands). weight = chance within that area's pool. lucky = affected by egg luck (default: every rarity except common).
   // fit:'max' = size the model by its longest side instead of its height (the snake is long and flat). yawOffset = PI for models that face -Z.
@@ -820,6 +840,7 @@ const CONFIG = {
   // A pet sells for income * size * seconds (about a minute and a half of what it would earn standing in your pen).
   sell: { seconds: 90 },
   // Trails: mult multiplies your Speed stat while the trail is equipped (it counts for the area speed requirements and for real walking speed). cost = price in the Trail Shop.
+  eggSkinCostPerPt: 250,   // Egg skins = every egg type that grows in an area (Shop > Egg Skins). Price = the egg's points (eggs.types pts) x this. They are generated below, after the config.
   trails: [
     // optional per trail: rate = particles per second (default 42), size = particle size x, rise = how fast they float up (default 0.35), life = lifetime x
     { id: 'spark',   name: 'Spark Trail',   cost: 2500,       mult: 1.25, colors: ['#ffe27a', '#fff3b0'] },
@@ -853,6 +874,12 @@ for (const [mk, M] of Object.entries(CONFIG.mutations)) {
     if (P.admin || P.mutOf) continue;
     CONFIG.pets[mk + '_' + pk] = Object.assign({}, P, { name: M.label + ' ' + P.name, income: P.income * M.mult, weight: 0, mut: mk, mutOf: pk });
   }
+}
+CONFIG.eggSkins = [];                                    // one skin per spawning egg type: the egg you throw looks like that area egg (Bubble Bay Blue Egg, Starfall Ring Egg ...)
+for (const [tk, T] of Object.entries(CONFIG.eggs.types)) {
+  if (T.mut || !(T.w > 0) || tk === 'normal') continue;
+  const raw = T.pts * CONFIG.eggSkinCostPerPt, mag = Math.pow(10, Math.max(0, Math.floor(Math.log10(raw)) - 1));
+  CONFIG.eggSkins.push({ id: tk, name: tk.charAt(0).toUpperCase() + tk.slice(1) + ' Egg', cost: Math.max(mag, Math.round(raw / mag) * mag), model: tk, area: (T.areas && T.areas[0]) || 'any' });
 }
 const mutMat = new Map();                                // one tinted copy of each material per mutation, shared by every egg / pet of that look
 function mutateLook(root, key) {
@@ -1094,6 +1121,8 @@ let ready = false;
 let speedStat = CONFIG.player.speed;          // the player's speed stat; shown bottom-left
 const trails = { own: {}, eq: null };          // Trail Shop: trails bought (id -> true) and the one equipped
 let wins = 0;                                  // how many times you made it to the Win zone
+const skins = { own: {}, eq: null };               // Shop > Egg Skins: skins bought (id -> true) and the one equipped
+const skinById = (id) => CONFIG.eggSkins.find((k) => k.id === id) || null;
 const trailById = (id) => CONFIG.trails.find((t) => t.id === id) || null;
 const trailMult = () => { const t = trails.eq && trailById(trails.eq); return t ? t.mult : 1; };
 const stealing = () => !!carry && carry.status === 'stolen';
@@ -1168,7 +1197,7 @@ async function init() {
   const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, duckGltf, gummyGltf, alienGltf, batGltf, standGltfs, ...restGltfs0] = await Promise.all([
     load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.chicken), load(CONFIG.models.scorpion), load(CONFIG.models.duck), load(CONFIG.models.gummy), load(CONFIG.models.alien),
     load(CONFIG.models.bat).catch((err) => { log.warn('Baseball bat model failed to load:', err && err.message); return null; }),
-    Promise.all([load(CONFIG.models.sell), load(CONFIG.models.trailshop)]).catch((err) => { log.warn('Sell / Trail Shop models failed to load:', err && err.message); return null; }),
+    Promise.all([load(CONFIG.models.sell), load(CONFIG.models.trailshop)]).catch((err) => { log.warn('Sell / Shop models failed to load:', err && err.message); return null; }),
     ...petIds.map((id) => load(CONFIG.models.pets[id])),
     ...GM.treadmill.map((f) => load(f)), ...GM.bar.map((f) => load(f)),
     ...names.map((n) => load(CONFIG.models.eggs[n])),
@@ -1189,20 +1218,17 @@ async function init() {
     const base = eggTpl[n]; eggTpl[mk + '_' + n] = Object.assign({}, base, { make: () => mutateLook(base.make(), mk) });
   }
   playerEgg = bakeEgg(eggGltf.scene, eggTpl.normal.refH);
-  const body = playerEgg.make();
-  body.scale.setScalar(CONFIG.eggs.baseHeight);
-  body.position.y = -CONFIG.eggs.baseHeight * 0.5;      // pivot = egg centre, so it rotates about its middle
   playerEggMesh = new THREE.Group();
-  playerEggMesh.add(body);
   playerEggMesh.visible = false;
   scene.add(playerEggMesh);
+  refreshSkin();
   buildAreas();
   updateThrowFwd();
   initStrengthCurve();
   setupChickens({ chicken: chickGltf, scorpion: scorpGltf, duck: duckGltf, gummy: gummyGltf, alien: alienGltf });
   setupPets({ chicken: chickGltf, scorpion: scorpGltf, duck: duckGltf, gummybear: gummyGltf, alien: alienGltf, user: playerGltf, ...petGltfs });
   setupGym({ treadmill: treadGltfs, bar: barGltfs });
-  if (standGltfs) { try { setupStands(standGltfs); } catch (err) { log.warn('Sell / Trail Shop setup failed:', err && err.message); } }
+  if (standGltfs) { try { setupStands(standGltfs); } catch (err) { log.warn('Sell / Shop setup failed:', err && err.message); } }
   setupTrailFx();
   buildHotbar(); buildDex(); refreshHotbar(); refreshMoney(false);
   setupEggSpawns();
@@ -1472,6 +1498,49 @@ function eggInHand() {
   return sl && sl.egg && eggTpl[sl.egg] ? sl : null;
 }
 const handEggInfo = () => { const sl = eggInHand(); return sl ? { type: sl.egg, mult: sl.sizes && sl.sizes.length ? sl.sizes[sl.sizes.length - 1] : 1 } : null; };
+function makeSkinEgg() {                                 // a fresh egg mesh (pivot = its base, normal size) wearing the equipped skin
+  const S = skinById(skins.eq);
+  let m;
+  if (S && S.model && eggTpl[S.model]) m = eggTpl[S.model].make();
+  else { m = playerEgg.make(); if (S && S.look) mutateLook(m, S.look); }
+  return m;
+}
+function refreshSkin() {                                 // the egg you throw / roll as: rebuilt whenever the skin changes
+  if (!playerEggMesh || !playerEgg) return;
+  playerEggMesh.clear();
+  const body = makeSkinEgg();
+  body.scale.setScalar(CONFIG.eggs.baseHeight);
+  body.position.y = -CONFIG.eggs.baseHeight * 0.5;      // pivot = egg centre, so it rotates about its middle
+  playerEggMesh.add(body);
+}
+/* While the power bar is up you hold the egg you are about to throw (with your skin), between your hands */
+let throwHeld = null, throwHeldKey = '';
+const _tb = new THREE.Box3(), _tp = new THREE.Vector3(), _ts = new THREE.Vector3(), _th = [new THREE.Vector3(), new THREE.Vector3()];
+const _armNodes = [];
+function throwHeldUpdate(on) {
+  const key = on ? (skins.eq || '-') : '';
+  if (key !== throwHeldKey) {
+    if (throwHeld) { playerRoot.remove(throwHeld); throwHeld = null; }
+    if (on) { throwHeld = makeSkinEgg(); throwHeld.scale.setScalar(CONFIG.eggs.baseHeight); playerRoot.add(throwHeld); }
+    throwHeldKey = key;
+  }
+  if (!throwHeld) return;
+  if (!_armNodes.length) for (const re of [/^Right[ _]Arm$/i, /^Left[ _]Arm$/i]) { const n = findNode(playerModel, re); if (n) _armNodes.push(n); }
+  playerRoot.updateMatrixWorld(true);
+  let n = 0; _tp.set(0, 0, 0);
+  for (const a of _armNodes) {                          // the hand = the corner of the arm that is farthest from its shoulder
+    a.getWorldPosition(_ts); _tb.setFromObject(a);
+    if (_tb.isEmpty()) continue;
+    let best = -1;
+    for (let i = 0; i < 8; i++) {
+      _th[1].set(i & 1 ? _tb.max.x : _tb.min.x, i & 2 ? _tb.max.y : _tb.min.y, i & 4 ? _tb.max.z : _tb.min.z);
+      const d = _th[1].distanceToSquared(_ts); if (d > best) { best = d; _th[0].copy(_th[1]); }
+    }
+    _tp.add(_th[0]); n++;
+  }
+  if (n) { _tp.multiplyScalar(1 / n); playerRoot.worldToLocal(_tp); _tp.y -= CONFIG.eggs.baseHeight * 0.5; throwHeld.position.copy(_tp); }
+  else throwHeld.position.set(0, 0.8, 0.4);             // arms not found: in front of the chest
+}
 function updateHeldEgg() {
   const e = handEggInfo(), key = e ? e.type + ':' + e.mult : '';
   if (key === handEggKey) return;
@@ -1795,11 +1864,14 @@ let codeBuf = '';
    so it is saved with the account like normal progress. */
 const admin = { open: false, unlocked: false, fly: false, flySpeed: 30, pet: 'user', el: $('admin'), flyBox: $('ad-fly') };
 let adminBuf = '';
+const isAdminUser = () => { const u = acct.user, e = u && u.email ? String(u.email).trim().toLowerCase() : ''; return !!e && u.emailVerified !== false && CONFIG.adminEmails.includes(e); };   // only the accounts in CONFIG.adminEmails (a verified email, e.g. Google sign-in)
+function updateAdminBtn() { const b = $('admin-btn'); if (b) b.hidden = !isAdminUser(); if (!isAdminUser() && admin.open) setAdmin(false); }
 const adminHist = [];                                   // bat + hotbar state before each recent key: typing the code presses hotbar / bat keys, we undo that
 function adminNum(id, dflt) { const v = parseFloat($(id).value); return Number.isFinite(v) ? clampN(v, -1e15, 1e15) : dflt; }
 function setAdmin(open) {
   if (open === admin.open) return;
-  if (open && (!ready || dom.overlay.style.display !== 'none')) { say('Start the game first, then enter the code.', 3); return; }
+  if (open && !isAdminUser()) return;                   // not an admin account
+  if (open && (!ready || dom.overlay.style.display !== 'none')) { say('Start the game first, then open the Admin Panel.', 3); return; }
   admin.open = open; admin.el.hidden = !open;
   if (open) {
     adminBuildPets();                                  // the pet icons are rendered by now
@@ -1838,7 +1910,7 @@ function adminFlyStep(dt) {                             // free flight: no gravi
   fxTarget = horiz ? 0.85 : 0;
 }
 function adminGive(kind) {
-  if (!admin.open) return;
+  if (!admin.open || !isAdminUser()) return;
   if (kind === 'money') {
     const n = adminNum('ad-money', 0);
     money = Math.max(0, money + n); refreshMoney(true); saveGame();
@@ -1856,7 +1928,7 @@ function adminGive(kind) {
   } else if (kind === 'pet') {
     const id = admin.pet, P = CONFIG.pets[id];
     if (!P) return;
-    const mult = clampN(adminNum('ad-petmult', 1), 1, CONFIG.petMaxMult);
+    const mult = clampN(adminNum('ad-petmult', 1), CONFIG.petMinMult, CONFIG.petMaxMult);
     const want = clampN(Math.floor(adminNum('ad-petcount', 1)), 1, 50);
     let given = 0;
     for (let i = 0; i < want; i++) { if (!invCanTake(id)) break; addPet(id, mult); given++; }
@@ -1896,7 +1968,8 @@ function adminBuildPets() {
   admin.flyBox.addEventListener('change', () => setAdminFly(admin.flyBox.checked));
   $('ad-flyspd').addEventListener('input', () => { admin.flySpeed = clampN(adminNum('ad-flyspd', 30), 1, 2000); });
   admin.el.addEventListener('click', (e) => { const b = e.target.closest('[data-give]'); if (b) adminGive(b.dataset.give); });
-  for (const ev of ['wheel', 'contextmenu']) admin.el.addEventListener(ev, (e) => e.stopPropagation());
+  for (const ev of ['wheel', 'contextmenu', 'touchstart', 'touchmove', 'touchend', 'pointerdown']) admin.el.addEventListener(ev, (e) => e.stopPropagation());   // touching the panel never steers the game
+  $('admin-btn').addEventListener('click', () => setAdmin(!admin.open));
 })();
 
 function adminCodeKey(e) {                              // true when the admin code was just completed
@@ -1921,11 +1994,11 @@ function secretCodeKey(e) {                          // watches the typed charac
 const typing = (e) => !!(e.target && e.target.closest && e.target.closest('#auth, #chat, #profile, #admin'));   // typing in the sign-in form / chat: no game keys
 window.addEventListener('keydown', (e) => {
   if (typing(e)) {                                      // typing in the admin panel: Esc or ` closes it
-    if (admin.open && e.target.closest && e.target.closest('#admin') && (e.code === 'Escape' || (admin.unlocked && e.code === 'Backquote'))) { e.preventDefault(); setAdmin(false); }
+    if (admin.open && e.target.closest && e.target.closest('#admin') && (e.code === 'Escape' || (isAdminUser() && e.code === 'Backquote'))) { e.preventDefault(); setAdmin(false); }
     return;
   }
   if (adminCodeKey(e)) return;
-  if (admin.unlocked && e.code === 'Backquote') { e.preventDefault(); setAdmin(!admin.open); return; }
+  if (isAdminUser() && e.code === 'Backquote') { e.preventDefault(); setAdmin(!admin.open); return; }
   if (admin.open) { if (e.code === 'Escape') setAdmin(false); return; }   // panel open: the cursor is free, no game keys
   secretCodeKey(e);
   if (e.code === 'Space') e.preventDefault();
@@ -2007,6 +2080,7 @@ function updatePlayer(dt) {
   const eggForm = form === 'egg';
   const P = eggForm ? { ...CONFIG.player, ...CONFIG.eggForm } : CONFIG.player;
   curP = P;
+  if (throwHeld && !(state.mode === 'charging' && form === 'human' && rag.t <= 0 && !carry)) throwHeldUpdate(false);   // thrown, hit, or left the zone: the egg leaves your hands
   if (admin.fly && !eggForm) { adminFlyStep(dt); return; }   // admin free flight
   if (gym.session && !eggForm) { updateGymPlayer(dt); return; }   // auto-training: no walking, no gravity, the clip plays in place
   const px = pos.x, pz = pos.z;
@@ -2093,6 +2167,7 @@ function updatePlayer(dt) {
   mixer.update(dt);
   if (batHolder) { batHolder.visible = bat.equipped; if (bat.equipped) batFollow(batHolder); }
   updateHeldPet();
+  throwHeldUpdate(state.mode === 'charging' && !carry && !bat.equipped);   // power bar up: the egg you are about to throw is in your hands
 
   // The Steal clips are authored with the feet well off the floor. While holding an egg, ease the model down so the feet stay on the ground.
   if (legMeshes.length) {
@@ -3089,7 +3164,7 @@ function announceMutations() {
   found.sort((a, b) => (b.mut === 'diamond') - (a.mut === 'diamond'));
   found.forEach((f, i) => {
     try { chatAdd('', f.text, true, false); } catch (e) { /* chat not ready */ }
-    if (i < 8) setTimeout(() => say((f.mut === 'diamond' ? '\u{1F48E} ' : '\u{2728} ') + f.text + '!', 4), i * 2200);
+    setTimeout(() => say((f.mut === 'diamond' ? '\u{1F48E} ' : '\u{2728} ') + f.text + '!', 2.6), i * 1800);   // every mutation gets its own toast, one after another (no cap)
   });
   if (found.length) log.info('Mutation eggs:', found.map((f) => f.text).join(', '));
 }
@@ -3293,7 +3368,7 @@ function giftReceive(g, from) {                          // from = the giver's n
     banner('<small>' + (from ? 'Gift from ' + from : 'Gift returned') + '</small><b>' + g.type + ' egg <span style="font-size:.5em;opacity:.8">' + mult.toFixed(1) + 'x</span></b><em>Take it to your pen</em>', '#7dff9a');
     say(who + ' a ' + g.type + ' egg (' + mult.toFixed(1) + 'x). Take it to your pen!', 5);
   } else {
-    const P = CONFIG.pets[g.id], mult = clampN(+g.mult || 1, 1, CONFIG.petMaxMult);
+    const P = CONFIG.pets[g.id], mult = clampN(+g.mult || 1, CONFIG.petMinMult, CONFIG.petMaxMult);
     if (!(dex[g.id] > 0)) { dex[g.id] = 1; buildDex(); }
     addPet(g.id, mult);
     banner('<small>' + (from ? 'Gift from ' + from : 'Gift returned') + '</small><b>' + petIcon(g.id, 'bn') + P.name + ' <span style="font-size:.5em;opacity:.8">' + mult.toFixed(1) + 'x</span></b><em>It is in your hotbar</em>', '#7dff9a');
@@ -3779,7 +3854,7 @@ function snapshot() {                                  // everything that is sav
   const uv = (x, z) => (b ? { u: clampN((x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) } : { u: 0.5, v: 0.5 });
   const eggs = b ? hatching.map((h) => ({ type: h.egg.type, mult: h.egg.mult, area: h.egg.area || null, left: h.left, ...uv(h.mesh.position.x, h.mesh.position.z) }))
     : pendingEggs.map((q) => ({ type: q.type, mult: q.mult, area: q.area, left: Math.max(0, (q.until - Date.now()) / 1000), u: q.u, v: q.v }));
-  return { v: 2, lastSeen: Date.now(), money, dex, slots: inv.slots, train, up, pets, eggs, trails: { own: Object.keys(trails.own), eq: trails.eq }, wins, profile: { name: profile.name, parts: profile.parts } };
+  return { v: 2, lastSeen: Date.now(), money, dex, slots: inv.slots, train, up, pets, eggs, trails: { own: Object.keys(trails.own), eq: trails.eq }, skins: { own: Object.keys(skins.own), eq: skins.eq }, wins, profile: { name: profile.name, parts: profile.parts } };
 }
 function resetState() {                                // back to a brand new game (in memory)
   stopGym();
@@ -3787,7 +3862,7 @@ function resetState() {                                // back to a brand new ga
   inv.slots.fill(null); inv.sel = 0;
   train.strength = 0; train.speed = 0; speedStat = CONFIG.player.speed;
   up.bar = 0; up.treadmill = 0; up.pen = 0;
-  trails.own = {}; trails.eq = null; wins = 0;
+  trails.own = {}; trails.eq = null; skins.own = {}; skins.eq = null; wins = 0;
   for (const g of gymItems) setGymTier(g, 0);
   for (const pp of petsInPen) scene.remove(pp.root);
   petsInPen.length = 0; pendingPets = [];
@@ -3804,6 +3879,11 @@ function applySave(d) {                                // replace the current ga
     for (const id of (Array.isArray(d.trails.own) ? d.trails.own : Object.values(d.trails.own || {}))) if (trailById(id)) trails.own[id] = true;
     trails.eq = trails.own[d.trails.eq] ? d.trails.eq : null;
   }
+  if (d.skins) {
+    for (const id of (Array.isArray(d.skins.own) ? d.skins.own : Object.values(d.skins.own || {}))) if (skinById(id)) skins.own[id] = true;
+    skins.eq = skins.own[d.skins.eq] ? d.skins.eq : null;
+  }
+  refreshSkin();
   wins = Math.max(0, d.wins | 0);
   for (const id of Object.keys(CONFIG.pets)) if (d.dex && d.dex[id] > 0) dex[id] = d.dex[id] | 0;
   const slots = Array.isArray(d.slots) ? d.slots : Object.values(d.slots || {});
@@ -3817,12 +3897,12 @@ function applySave(d) {                                // replace the current ga
       return;
     }
     if (!sl || !CONFIG.pets[sl.pet] || !(sl.count > 0)) return;
-    const n = sl.count | 0, sizes = Array.isArray(sl.sizes) ? sl.sizes.map((v) => clampN(+v || 1, 1, CONFIG.petMaxMult)).slice(0, n) : [];
+    const n = sl.count | 0, sizes = Array.isArray(sl.sizes) ? sl.sizes.map((v) => clampN(+v || 1, CONFIG.petMinMult, CONFIG.petMaxMult)).slice(0, n) : [];
     while (sizes.length < n) sizes.push(1);
     inv.slots[i] = { pet: sl.pet, count: n, sizes };
   });
   pendingPets = (Array.isArray(d.pets) ? d.pets : []).filter((q) => q && CONFIG.pets[q.id]).slice(0, penCapacity())
-    .map((q) => ({ id: q.id, mult: clampN(+q.mult || 1, 1, CONFIG.petMaxMult), u: clampN(+q.u || 0, 0, 1), v: clampN(+q.v || 0, 0, 1) }));
+    .map((q) => ({ id: q.id, mult: clampN(+q.mult || 1, CONFIG.petMinMult, CONFIG.petMaxMult), u: clampN(+q.u || 0, 0, 1), v: clampN(+q.v || 0, 0, 1) }));
   const lastSeen = +d.lastSeen || Date.now(), now = Date.now();
   const awaySec = Math.max(0, Math.min((now - lastSeen) / 1000, 7 * 86400));           // time spent away counts for the hatch timers too
   pendingEggs = (Array.isArray(d.eggs) ? d.eggs : []).filter((q) => q && CONFIG.eggs.types[q.type]).slice(0, CONFIG.steal.penMax)
@@ -3959,7 +4039,7 @@ async function initAccounts() {
   for (const id of ['auth-email', 'auth-pass']) $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') $('auth-in').click(); });
   A.onAuthStateChanged(auth, async (user) => {
     clearTimeout(guestTimer);
-    acct.user = user; acct.loaded = false; acct.status = 'ready';
+    acct.user = user; acct.loaded = false; acct.status = 'ready'; updateAdminBtn();
     if (user) {
       acct.guest = false;
       authShow('Loading your save...', false, false, false);
@@ -4048,8 +4128,8 @@ function buildDex() {
       (r.cost !== null ? '<button type="button" class="up-buy' + (money >= r.cost ? '' : ' no') + '" data-id="' + r.id + '" data-cost="' + r.cost + '">Buy<br><b>$' + fmtBig(r.cost) + '</b></button>' : '<span class="up-buy max">MAX</span>') + '</div>').join('') + '</div>';
     foot = IS_TOUCH ? 'Tap outside to close' : 'Press U or Esc to close';
   } else if (dexTab === 'trails') {
-    body = trailsHtml();
-    foot = 'Trails multiply your Speed. Click a trail you own to equip it, click it again to take it off. ' + (IS_TOUCH ? 'Tap outside to close' : 'Press E or Esc to close');
+    body = shopHtml();
+    foot = (shopSub === 'skins' ? 'Egg skins change the egg you throw. Click a skin you own to equip it, click it again to take it off. ' : 'Trails multiply your Speed. Click a trail you own to equip it, click it again to take it off. ') + (IS_TOUCH ? 'Tap outside to close' : 'Press E or Esc to close');
   } else if (dexTab === 'sell') {
     body = sellHtml();
     foot = 'Pets in your pen: click one to take it back into your hotbar first. ' + (IS_TOUCH ? 'Tap outside to close' : 'Press E or Esc to close');
@@ -4090,6 +4170,8 @@ shopBtn.addEventListener('click', () => openPanel('shop'));
 if (IS_TOUCH) shopBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openPanel('shop'); }, { passive: false });
 ui.dex.addEventListener('click', (e) => {
   const t = e.target.closest('.dex-tab'); if (t) { dexTab = t.dataset.tab; buildDex(); return; }
+  const sb = e.target.closest('[data-sub]'); if (sb) { shopSub = sb.dataset.sub; buildDex(); return; }
+  const sk = e.target.closest('[data-skin]'); if (sk) { skinAction(sk.dataset.skin); return; }
   const tr = e.target.closest('[data-trail]'); if (tr) { trailAction(tr.dataset.trail); return; }
   const sl = e.target.closest('[data-sell]'); if (sl) { sellPets(sl.dataset.sell); return; }
   const b = e.target.closest('.up-buy'); if (b && b.dataset.id) buyUpgrade(b.dataset.id);
@@ -4254,7 +4336,7 @@ function invCanTake(id) {                           // counts pets that are stil
   return sim.includes(id) || sim.includes(null);
 }
 function addPet(id, mult) {
-  mult = Math.round(clampN(mult || 1, 1, CONFIG.petMaxMult) * 100) / 100;
+  mult = Math.round(clampN(mult || 1, CONFIG.petMinMult, CONFIG.petMaxMult) * 100) / 100;
   let i = inv.slots.findIndex((sl) => sl && sl.pet === id);
   if (i >= 0) { inv.slots[i].count++; (inv.slots[i].sizes ||= []).push(mult); }
   else { i = inv.slots.findIndex((sl) => !sl); inv.slots[i] = { pet: id, count: 1, sizes: [mult] }; }
@@ -4262,7 +4344,7 @@ function addPet(id, mult) {
   refreshHotbar(); saveGame();
   const el = ui.slotEls[i]; if (el) { el.classList.remove('get'); void el.offsetWidth; el.classList.add('get'); }
 }
-const petSizeFactor = (mult) => 1 + (clampN(mult || 1, 1, CONFIG.petMaxMult) - 1) * CONFIG.petSizeGain;
+const petSizeFactor = (mult) => { const m = clampN(mult || 1, CONFIG.petMinMult, CONFIG.petMaxMult); return m < 1 ? m : 1 + (m - 1) * CONFIG.petSizeGain; };   // below 1x the pet shrinks 1:1 (0.1x = a tenth of the size)
 const petMultFromEgg = (eggMult) => 1 + (clampN(eggMult || 1, 1, CONFIG.eggs.maxMult) - 1) * (CONFIG.petMaxMult - 1) / (CONFIG.eggs.maxMult - 1);   // 1x egg -> 1x pet ... 10x egg -> 25x pet
 
 /* Hatch sequence: the egg pops, the pet rises out of it, flies into the player and vanishes into the hotbar */
@@ -4653,7 +4735,7 @@ function updateTraining(dt) {                           // rep counter for the r
 /* ------------------------------------------------------------------ */
 /* Sell stand, Trail Shop, trails, Win                                 */
 /* ------------------------------------------------------------------ */
-const STAND_TAB = { sell: 'sell', trailshop: 'trails' }, STAND_LABEL = { sell: 'Sell', trailshop: 'Trail Shop' };
+const STAND_TAB = { sell: 'sell', trailshop: 'trails' }, STAND_LABEL = { sell: 'Sell', trailshop: 'Shop' };
 const stands = {};                                      // 'sell' / 'trailshop' -> { root, pos }  (standing on the map's marker cubes)
 function labelSprite(text, color) {
   const c = document.createElement('canvas'); c.width = 512; c.height = 128;
@@ -4708,12 +4790,43 @@ function updateStands(dt) {
   if (k !== standShown) {
     standShown = k;
     standBtn.style.display = k ? 'block' : 'none';
-    if (k) standBtn.innerHTML = (k === 'sell' ? 'Sell Pets' : 'Trail Shop') + ' <small>' + (IS_TOUCH ? '' : '[E]') + '</small>';
+    if (k) standBtn.innerHTML = (k === 'sell' ? 'Sell Pets' : 'Shop') + ' <small>' + (IS_TOUCH ? '' : '[E]') + '</small>';
   }
   if (dexOpen && (dexTab === 'sell' || dexTab === 'trails') && !nearStand(dexTab === 'sell' ? 'sell' : 'trailshop')) setDex(false);   // walked (or got knocked) away
 }
 
 /* Trail Shop */
+let shopSub = 'trails';                                 // inside the Shop: 'trails' or 'skins'
+function shopHtml() {
+  const tabs = [['trails', 'Trails'], ['skins', 'Egg Skins']];
+  return '<div class="shop-sub">' + tabs.map(([k, l]) => '<button type="button" class="shop-sub-b' + (shopSub === k ? ' on' : '') + '" data-sub="' + k + '">' + l + '</button>').join('') + '</div>' + (shopSub === 'skins' ? skinsHtml() : trailsHtml());
+}
+function skinsHtml() {
+  const row = (k) => {
+    const own = !!skins.own[k.id], eq = skins.eq === k.id;
+    const btn = eq ? '<button type="button" class="up-buy eq" data-skin="' + k.id + '">Equipped<br><b>Remove</b></button>'
+      : own ? '<button type="button" class="up-buy own" data-skin="' + k.id + '">Owned<br><b>Equip</b></button>'
+      : '<button type="button" class="up-buy' + (money >= k.cost ? '' : ' no') + '" data-skin="' + k.id + '" data-cost="' + k.cost + '">Buy<br><b>$' + fmtBig(k.cost) + '</b></button>';
+    return '<div class="up-row"><span class="up-ic">\u{1F95A}</span><span class="up-t"><b>' + k.name + '</b><small>' + (k.area === 'any' ? 'Every area' : CONFIG.areas[k.area].label) + '</small><em>The egg you hold and throw</em></span>' + btn + '</div>';
+  };
+  let out = '<div class="up-list">';
+  for (const a of Object.keys(CONFIG.areas).concat('any')) {
+    const list = CONFIG.eggSkins.filter((k) => k.area === a);
+    if (list.length) out += '<div class="shop-area">' + (a === 'any' ? 'Rare finds' : CONFIG.areas[a].label) + '</div>' + list.map(row).join('');
+  }
+  return out + '</div>';
+}
+function skinAction(id) {
+  const k = skinById(id); if (!k) return;
+  if (!skins.own[id]) {
+    if (money < k.cost) { say('Not enough money - you need $' + fmtBig(k.cost), 3); return; }
+    money -= k.cost; skins.own[id] = true; skins.eq = id;
+    refreshMoney(true);
+    banner('<small>New egg skin!</small><b>' + k.name + '</b><em>Equipped</em>', '#ffd34d');
+    log.info('Bought egg skin', id, 'for', k.cost);
+  } else skins.eq = skins.eq === id ? null : id;
+  refreshSkin(); saveGame(); buildDex();
+}
 function trailsHtml() {
   return '<div class="up-list">' + CONFIG.trails.map((t) => {
     const own = !!trails.own[t.id], eq = trails.eq === t.id;
