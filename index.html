@@ -202,6 +202,10 @@
              border-radius: 16px; font: 700 17px var(--font); color: #3a2a00; background: linear-gradient(#ffe27a, #ffbf2e); box-shadow: 0 4px 0 #b8860b, 0 8px 16px rgba(0,0,0,.4);
              cursor: pointer; pointer-events: auto; }
   #dex-btn:hover { filter: brightness(1.06); } #dex-btn:active { transform: translateY(calc(-50% + 2px)); box-shadow: 0 1px 0 #b8860b; }
+  #music-btn { position: fixed; left: 12px; top: calc(50% + 128px); z-index: 4; padding: 10px 14px; border: 3px solid #fff; border-radius: 16px; font: 700 17px var(--font); color: #3a0c4a;
+               background: linear-gradient(#e2a8ff, #a85cf0); box-shadow: 0 4px 0 #6a2aa8, 0 8px 16px rgba(0,0,0,.4); cursor: pointer; pointer-events: auto; }
+  #music-btn.off { filter: grayscale(.85) brightness(.85); text-decoration: line-through; } #music-btn small { font: 700 12px var(--font); opacity: .65; }
+  #music-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #6a2aa8; }
   #shop-btn { position: fixed; left: 12px; top: calc(50% + 64px); z-index: 4; padding: 10px 14px; border: 3px solid #fff; border-radius: 16px; font: 700 17px var(--font); color: #0c3a12;
               background: linear-gradient(#9af59e, #3fc15a); box-shadow: 0 4px 0 #1f7a35, 0 8px 16px rgba(0,0,0,.4); cursor: pointer; pointer-events: auto; }
   #stand-btn { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 4; display: none; padding: 10px 20px; border: 3px solid #fff; border-radius: 16px; font: 800 19px var(--font); color: #3a2a00;
@@ -530,6 +534,7 @@
   <button type="button" id="off-ok">Collect</button>
 </div></div>
 <button type="button" id="dex-btn">Index</button>
+<button type="button" id="music-btn" aria-label="Toggle music">&#9835; Music <small>[M]</small></button>
 <button type="button" id="shop-btn">Upgrades <small>[U]</small></button>
 <button type="button" id="stand-btn"></button>
 <div id="dex"></div>
@@ -715,7 +720,7 @@ const CONFIG = {
   // Strength curve: up to `knee` strength the throw gets +throwBonusPerStrength per point (linear, so the early islands feel as before). Above the knee the growth is compressed (a power law)
   // so that `reach` strength is exactly what it takes to land on the near edge of `area` (x `margin` safety). The curve is worked out from the real zone / island distances when the map loads, so it follows ?mapscale.
   strengthCurve: { area: 'starfall', reach: 50000000, knee: 700, margin: 1.02 },
-  gym: { reach: 2.2, gripAlign: 0.5, barClipLength: 2.0, throwBonusPerStrength: 0.004, barHeight: 3.7, treadmillLength: 4.1, wallInset: 3.5, spread: 4.5 },
+  gym: { reach: 3.2, gripAlign: 0.5, barClipLength: 2.0, throwBonusPerStrength: 0.004, barHeight: 6.4, treadmillLength: 7.0, wallInset: 3.5, spread: 4.5 },
   // Areas are islands ordered from nearest to furthest (the order below). Humans can never enter an area (only thrown eggs, and thieves with a stolen egg, are allowed in),
   // and you can only go to the island your egg landed on and the ones before it; anything further sends you back out.
   // Per-area rules. speed = recommended player speed (shown at the top of the screen), chase = how fast that area's chicken runs
@@ -776,11 +781,18 @@ const CONFIG = {
   sell: { seconds: 90 },
   // Trails: mult multiplies your Speed stat while the trail is equipped (it counts for the area speed requirements and for real walking speed). cost = price in the Trail Shop.
   trails: [
+    // optional per trail: rate = particles per second (default 42), size = particle size x, rise = how fast they float up (default 0.35), life = lifetime x
     { id: 'spark',   name: 'Spark Trail',   cost: 2500,       mult: 1.25, colors: ['#ffe27a', '#fff3b0'] },
+    { id: 'bubble',  name: 'Bubble Trail',  cost: 12000,      mult: 1.35, colors: ['#bdf2ff', '#8fe0ff', '#ffffff'], size: 1.3, rise: 1.2, life: 1.3 },
     { id: 'ember',   name: 'Ember Trail',   cost: 40000,      mult: 1.5,  colors: ['#ff7a1a', '#ffb02e', '#ff4a1a'] },
+    { id: 'leaf',    name: 'Leaf Trail',    cost: 200000,     mult: 1.75, colors: ['#5fd35f', '#a6f07a', '#2f9e44'], size: 1.2, rise: 0.1, life: 1.2 },
     { id: 'frost',   name: 'Frost Trail',   cost: 750000,     mult: 2,    colors: ['#aef0ff', '#5ac8ff', '#ffffff'] },
+    { id: 'candy',   name: 'Candy Trail',   cost: 3000000,    mult: 2.5,  colors: ['#ff8fc8', '#8ff0d0', '#fff08f', '#ffffff'], size: 1.2 },
     { id: 'rainbow', name: 'Rainbow Trail', cost: 15000000,   mult: 3,    colors: null },
+    { id: 'gold',    name: 'Golden Trail',  cost: 80000000,   mult: 3.5,  colors: ['#ffd34d', '#fff0a0', '#ffb300'], rate: 60, size: 1.1 },
+    { id: 'shadow',  name: 'Shadow Trail',  cost: 200000000,  mult: 4,    colors: ['#2a1a3a', '#4a2a6a', '#8a5ad0', '#d8c0ff'], size: 1.5, rise: 0.2, life: 1.4 },
     { id: 'galaxy',  name: 'Galaxy Trail',  cost: 500000000,  mult: 5,    colors: ['#b36bff', '#5a6bff', '#ff6bd6', '#ffffff'] },
+    { id: 'plasma',  name: 'Plasma Trail',  cost: 2500000000, mult: 6,    colors: ['#00fff0', '#ff00e6', '#7a5cff', '#ffffff'], rate: 80, size: 1.3, rise: 0.6 },
   ],
 };
 
@@ -3181,20 +3193,20 @@ function popEgg(idx) {                                  // take the last egg of 
   refreshHotbar(); saveGame();
   return out;
 }
-function startHatching(e, pt) {                          // the egg starts hatching at pt in your pen; false = it could not be placed
-  if (hatching.length >= CONFIG.steal.penMax) { say('Your pen is full of eggs! Wait for one to hatch.'); return false; }
+function startHatching(e, pt, leftSec) {                 // the egg starts hatching at pt in your pen; false = it could not be placed. leftSec = restored from a save (seconds still to go)
+  if (hatching.length >= CONFIG.steal.penMax) { if (leftSec == null) say('Your pen is full of eggs! Wait for one to hatch.'); return false; }
   const E = CONFIG.eggs;
   const mesh = eggTpl[e.type].make();
   mesh.scale.setScalar(E.baseHeight * e.mult);          // same size as when it sat in the valley / sands (no size cap)
   mesh.position.set(pt.x, pt.y, pt.z);
   mesh.rotation.y = Math.random() * Math.PI * 2;
   scene.add(mesh);
-  const total = hatchSeconds(e.mult, e.area);
+  const total = hatchSeconds(e.mult, e.area), restored = leftSec != null;
   const el = document.createElement('div');
   el.className = 'egg-timer'; el.innerHTML = '<span class="t"></span><div class="bar"><i></i></div>';
   document.body.appendChild(el);
-  hatching.push({ mesh, total, left: total, egg: e, size: mesh.scale.x, el, txt: '', wob: Math.random() * 6, pet: null, bar: el.querySelector('i'), t: el.querySelector('.t') });
-  say('Egg placed - it hatches in ' + fmtTime(total));
+  hatching.push({ mesh, total, left: restored ? clampN(leftSec, 0, total) : total, egg: e, size: mesh.scale.x, el, txt: '', wob: Math.random() * 6, pet: null, bar: el.querySelector('i'), t: el.querySelector('.t') });
+  if (!restored) { say('Egg placed - it hatches in ' + fmtTime(total)); saveGame(); }
   return true;
 }
 function placeEgg(pt) {                                  // a safe egg that is still held in your hands (hotbar was full)
@@ -3597,13 +3609,17 @@ const FIREBASE_VER = '10.14.1';
 let fbResolve = null;
 const fbReady = new Promise((r) => { fbResolve = r; });   // resolves with { A, D, auth, db } once Firebase has loaded, or null if it could not
 const acct = { fb: null, user: null, guest: false, loaded: false, status: 'loading' };   // loaded = this account's cloud data has been read, so saving is safe
+let pendingEggs = [];                                  // saved hatching eggs waiting for the pen / egg models: { type, mult, area, until (ms timestamp it hatches), u, v }
 let pendingPets = [];                                  // saved pets waiting for the pen / models to exist: { id, mult, u, v }
 const authEl = $('auth');
 
 function snapshot() {                                  // everything that is saved, as plain data
   const b = playerPen ? playerPen.box : null;
   const pets = b ? petsInPen.map((p) => ({ id: p.id, mult: p.mult, u: clampN((p.pos.x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((p.pos.z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) })) : pendingPets;
-  return { v: 2, lastSeen: Date.now(), money, dex, slots: inv.slots, train, up, pets, trails: { own: Object.keys(trails.own), eq: trails.eq }, wins, profile: { name: profile.name, parts: profile.parts } };
+  const uv = (x, z) => (b ? { u: clampN((x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) } : { u: 0.5, v: 0.5 });
+  const eggs = b ? hatching.map((h) => ({ type: h.egg.type, mult: h.egg.mult, area: h.egg.area || null, left: h.left, ...uv(h.mesh.position.x, h.mesh.position.z) }))
+    : pendingEggs.map((q) => ({ type: q.type, mult: q.mult, area: q.area, left: Math.max(0, (q.until - Date.now()) / 1000), u: q.u, v: q.v }));
+  return { v: 2, lastSeen: Date.now(), money, dex, slots: inv.slots, train, up, pets, eggs, trails: { own: Object.keys(trails.own), eq: trails.eq }, wins, profile: { name: profile.name, parts: profile.parts } };
 }
 function resetState() {                                // back to a brand new game (in memory)
   stopGym();
@@ -3615,6 +3631,8 @@ function resetState() {                                // back to a brand new ga
   for (const g of gymItems) setGymTier(g, 0);
   for (const pp of petsInPen) scene.remove(pp.root);
   petsInPen.length = 0; pendingPets = [];
+  for (const h of hatching) { scene.remove(h.mesh); h.el.remove(); }
+  hatching.length = 0; pendingEggs = [];
 }
 function applySave(d) {                                // replace the current game with saved data
   resetState();
@@ -3645,11 +3663,29 @@ function applySave(d) {                                // replace the current ga
   });
   pendingPets = (Array.isArray(d.pets) ? d.pets : []).filter((q) => q && CONFIG.pets[q.id]).slice(0, penCapacity())
     .map((q) => ({ id: q.id, mult: clampN(+q.mult || 1, 1, CONFIG.petMaxMult), u: clampN(+q.u || 0, 0, 1), v: clampN(+q.v || 0, 0, 1) }));
+  const lastSeen = +d.lastSeen || Date.now(), now = Date.now();
+  const awaySec = Math.max(0, Math.min((now - lastSeen) / 1000, 7 * 86400));           // time spent away counts for the hatch timers too
+  pendingEggs = (Array.isArray(d.eggs) ? d.eggs : []).filter((q) => q && CONFIG.eggs.types[q.type]).slice(0, CONFIG.steal.penMax)
+    .map((q) => ({ type: q.type, mult: clampN(+q.mult || 1, 1, CONFIG.eggs.maxMult), area: CONFIG.areas[q.area] ? q.area : null, until: now + Math.max(0, (+q.left || 0) - awaySec) * 1000, u: clampN(+q.u || 0, 0, 1), v: clampN(+q.v || 0, 0, 1) }));
   for (const g of gymItems) setGymTier(g, up[g.kind]);
   spawnSavedPets();
   refreshHotbar(); buildDex(); refreshMoney(false); refreshMenuStats();
 }
+function spawnSavedEggs() {                            // put the saved hatching eggs back into the pen with their remaining time
+  if (!playerPen || !pendingEggs.length) return;
+  const b = playerPen.box, keep = [];
+  for (const q of pendingEggs) {
+    if (!eggTpl[q.type]) { keep.push(q); continue; }
+    if (hatching.length >= CONFIG.steal.penMax) break;
+    const x = THREE.MathUtils.lerp(b.min.x + 1, b.max.x - 1, q.u), z = THREE.MathUtils.lerp(b.min.z + 1, b.max.z - 1, q.v);
+    const h = castRayIn(walkSolids, new THREE.Vector3(x, playerPen.y + 3, z), DOWN, 20);
+    const E = CONFIG.eggs, tpl = eggTpl[q.type];
+    startHatching({ type: q.type, mult: q.mult, area: q.area, mesh: null, r: E.baseHeight * q.mult * 0.375, h: E.baseHeight * q.mult * tpl.h }, new THREE.Vector3(x, h ? h.point.y : playerPen.y, z), Math.max(0, (q.until - Date.now()) / 1000));
+  }
+  pendingEggs = keep;
+}
 function spawnSavedPets() {                            // put the saved pets back into the pen (called when both the pen and the pet models exist)
+  spawnSavedEggs();
   if (!playerPen || !pendingPets.length) return;
   const b = playerPen.box, keep = [];
   for (const sv of pendingPets) {
@@ -3681,7 +3717,12 @@ async function flushSave() {
 let hiddenAt = 0;
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { hiddenAt = Date.now(); saveDirty = true; flushSave(); }   // saveDirty: stamps lastSeen
-  else if (hiddenAt) { const since = hiddenAt; hiddenAt = 0; if (acct.user && acct.loaded) grantOffline(since); }   // the loop is paused while the tab is hidden, so pay for that time here
+  else if (hiddenAt) {
+    const since = hiddenAt; hiddenAt = 0;
+    const gone = (Date.now() - since) / 1000;                                       // eggs keep hatching while the tab is hidden (the game loop is paused then)
+    if (gone > 0 && gone < 7 * 86400) for (const h of hatching) h.left = Math.max(0, h.left - gone);
+    if (acct.user && acct.loaded) grantOffline(since);
+  }   // the loop is paused while the tab is hidden, so pay for that time here
 });
 window.addEventListener('pagehide', () => { saveDirty = true; flushSave(); });
 
@@ -4062,7 +4103,7 @@ const EMERGE_T = 1.1, FLY_T = 1.0;
 const easeOutBack = (t) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
 function startHatch(h) {
   hatching.splice(hatching.indexOf(h), 1);
-  h.el.remove();
+  h.el.remove(); saveGame();
   h.mesh.rotation.z = 0;
   const pm = petMultFromEgg(h.egg.mult);                // the pet grows beyond its egg: up to petMaxMult (25x) from a 10x egg
   const m = makePetModel(h.pet, pm);
@@ -4108,6 +4149,7 @@ function updateFlyers(dt) {
   }
 }
 function updateHatching(dt) {
+  if (pendingEggs.length) spawnSavedEggs();             // models / pen were not ready when the save was loaded
   for (let i = hatching.length - 1; i >= 0; i--) {
     const h = hatching[i];
     h.left = Math.max(0, h.left - dt * (isNight() ? DN.hatchMult : 1));   // night: eggs hatch DN.hatchMult times faster
@@ -4253,6 +4295,32 @@ function stepPet(p, b, dt) {                           // one pet wandering abou
 }
 
 /* ------------------------------------------------------------------ */
+/* Background music: loops Music.ogg (falls back to the GitHub copy). Browsers only allow sound after a click / key press, so it starts on the first one. M or the Music button toggles it. */
+const MUSIC = { src: ['Music.ogg', 'https://raw.githubusercontent.com/r2ftzu1ha2vy-glitch/TAE_Test/main/Music.ogg'], volume: 0.3, key: 'tae_music_off' };
+const music = { el: null, off: false, tried: 0, playing: false };
+try { music.off = localStorage.getItem(MUSIC.key) === '1'; } catch (e) { /* storage blocked: music defaults to on */ }
+function musicLabel() { const b = $('music-btn'); if (b) b.classList.toggle('off', music.off); }
+function musicStart() {
+  if (music.off || document.hidden) return;
+  if (!music.el) {
+    const a = new Audio(); a.loop = true; a.preload = 'auto'; a.volume = MUSIC.volume; a.src = MUSIC.src[0];
+    a.addEventListener('error', () => { if (++music.tried < MUSIC.src.length) { a.src = MUSIC.src[music.tried]; musicStart(); } else log.warn('Music could not be loaded'); });
+    music.el = a;
+  }
+  try { const r = music.el.play(); if (r && r.then) r.then(() => { music.playing = true; }).catch(() => { music.playing = false; }); } catch (e) { /* needs a user gesture: retried on the next one */ }
+}
+function musicToggle() {
+  music.off = !music.off;
+  try { localStorage.setItem(MUSIC.key, music.off ? '1' : '0'); } catch (e) { /* not remembered */ }
+  if (music.off) { if (music.el) music.el.pause(); music.playing = false; } else musicStart();
+  musicLabel(); say(music.off ? 'Music off' : 'Music on', 2);
+}
+for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListener(ev, () => { if (!music.playing) musicStart(); }, { passive: true });
+document.addEventListener('visibilitychange', () => { if (!music.el) return; if (document.hidden) music.el.pause(); else if (!music.off) musicStart(); });
+window.addEventListener('keydown', (e) => { if (e.code === 'KeyM' && !e.ctrlKey && !e.metaKey && !e.altKey && !typing(e)) musicToggle(); });
+$('music-btn').addEventListener('click', (e) => { e.stopPropagation(); musicToggle(); });
+musicLabel();
+
 /* Gym: Pull-Up Bar (strength) and Treadmill (speed) standing in your pen */
 /* ------------------------------------------------------------------ */
 const gymTpl = {}, gymItems = [], gym = { session: null };      // session = { g, t, next } while auto-training
@@ -4339,7 +4407,7 @@ function placeGym(sp) {                                  // the map has a marker
     gymItems.push(makeGym('treadmill', tx, floor(tx, tz), tz, Math.atan2(toCenter.x, toCenter.z)));
     log.info('No gym markers in the map: gym placed against the far wall of Pen', playerPen.num);
   }
-  penSlots = penSlots.filter((s) => gymItems.every((g) => Math.hypot(s.x - g.x, s.z - g.z) > 5.5));
+  penSlots = penSlots.filter((s) => gymItems.every((g) => Math.hypot(s.x - g.x, s.z - g.z) > 8.5));
 }
 const canTrain = () => ready && form === 'human' && !carry && dom.overlay.style.display === 'none';
 const gymDist = (g) => Math.hypot(Math.max(g.hit.min.x - pos.x, 0, pos.x - g.hit.max.x), Math.max(g.hit.min.z - pos.z, 0, pos.z - g.hit.max.z));   // metres from you to the machine's edge
@@ -4501,12 +4569,12 @@ function trailAction(id) {
 }
 
 /* Trail particles: little glowing dots left behind your feet while you walk with a trail equipped */
-const trailFx = { pool: [], n: 40, acc: 0, i: 0, hue: 0, last: new THREE.Vector3(), moved: 0 };
+const trailFx = { pool: [], n: 160, acc: 0, i: 0, hue: 0, last: new THREE.Vector3(), moved: 0 };
 function setupTrailFx() {
   const geo = new THREE.SphereGeometry(1, 8, 6);
   for (let i = 0; i < trailFx.n; i++) {
     const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false }));
-    m.visible = false; m.userData = { life: 0, max: 1, size: 0.2 }; scene.add(m); trailFx.pool.push(m);
+    m.visible = false; m.userData = { life: 0, max: 1, size: 0.2, rise: 0.35 }; scene.add(m); trailFx.pool.push(m);
   }
 }
 function updateTrailFx(dt) {
@@ -4514,14 +4582,14 @@ function updateTrailFx(dt) {
   const sp = dt > 0 ? Math.hypot(pos.x - F.last.x, pos.z - F.last.z) / dt : 0;
   F.last.copy(pos);
   if (T && form === 'human' && sp > 0.6 && sp < 400 && !gym.session) {
-    F.acc += dt * 42;
+    F.acc += dt * (T.rate || 42);
     while (F.acc >= 1) {
       F.acc -= 1;
       const p = F.pool[F.i++ % F.n], u = p.userData;
       let col;
       if (T.colors) col = T.colors[Math.floor(Math.random() * T.colors.length)]; else { F.hue = (F.hue + 0.045) % 1; col = new THREE.Color().setHSL(F.hue, 1, 0.55); }
       p.material.color.set(col);
-      u.life = u.max = 0.55 + Math.random() * 0.35; u.size = (0.14 + Math.random() * 0.14) * CONFIG.playerScale;
+      u.life = u.max = (0.55 + Math.random() * 0.35) * (T.life || 1); u.size = (0.14 + Math.random() * 0.14) * CONFIG.playerScale * (T.size || 1); u.rise = T.rise != null ? T.rise : 0.35;
       p.position.set(pos.x + (Math.random() - 0.5) * 0.5, pos.y + 0.12 + Math.random() * 0.35, pos.z + (Math.random() - 0.5) * 0.5);
       p.visible = true;
     }
@@ -4531,7 +4599,7 @@ function updateTrailFx(dt) {
     const u = p.userData; u.life -= dt;
     if (u.life <= 0) { p.visible = false; continue; }
     const k = u.life / u.max;
-    p.scale.setScalar(u.size * (0.4 + 0.6 * k)); p.material.opacity = k * 0.9; p.position.y += dt * 0.35;
+    p.scale.setScalar(u.size * (0.4 + 0.6 * k)); p.material.opacity = k * 0.9; p.position.y += dt * u.rise;
   }
 }
 
@@ -4632,6 +4700,7 @@ function tick() {
 }
 
 if (CONFIG.debug) window.TAE = {   // test hook, only with ?debug=1
+  snapshot, applySave, startHatching, spawnSavedEggs, get pendingEggs() { return pendingEggs; }, musicToggle, music,
   get pos() { return pos; }, get yaw() { return yaw; }, set yaw(v) { yaw = v; }, get state() { return state; }, get form() { return form; }, get flight() { return flight; },
   get carry() { return carry; }, steal, eggItems, netMessage, barrierBoxes, areas: () => areas, playerPen: () => playerPen, nearPen, inOwnPen, mapBox: () => mapBox, CONFIG, mapMarkers, areaBoxes, stands, trails, trailMult, totalSpeed, standKey, nearStand, sellPets, trailAction, openPanel, crossedWin, get instantHatch() { return instantHatch; }, hatching, placePet, selectSlot, get wins() { return wins; }, get money() { return money; }, set money(v) { money = v; }, inv, train, penCapacity, addPet: (id, mult) => { const i = inv.slots.findIndex((x) => !x); inv.slots[i] = { pet: id, count: 1, sizes: [mult || 1] }; refreshHotbar(); }, setSpeed: (v) => { speedStat = v; }, setCarrySafe: () => { if (carry) carry.status = 'safe'; }, areaAt, bat, rag, dropped, batSwing, equipBat, ragStart, caughtBy, tryThrow, throwFwd, zoneBox: () => zoneBox, NET, remotes, gymItems, startGym, stopGym, canTrain, inZone,
 };
