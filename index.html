@@ -813,7 +813,7 @@ const CONFIG = {
   gift: { range: 6 },  // metres: how close another player must be to gift them an egg or pet (scaled with the player below)
   petSizeGain: 0.25,   // pet size = base height * (1 + (eggMult - 1) * petSizeGain): a pet of size m is 1 + (m - 1) * this times taller (a 25x pet = 7x taller)
   // range = how close you must be to an egg's edge to see Steal. carry* = size/height of the egg held over your head.
-  steal: { dropSeconds: 10, penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
+  steal: { dropSeconds: 0,   /* 0 = a dropped egg stays where it fell until someone picks it up */ penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
   // SELL + TRAIL SHOP stands: they stand on the "Sell" and "Trail_Shop" marker cubes of the map. reach = how close (m) you must be to use one, height = model height in metres,
   // yaw = turn the stand (radians) so its front faces the player.
   stands: { reach: 9, height: 5, yaw: { sell: 0, trailshop: 0 } },
@@ -835,6 +835,43 @@ const CONFIG = {
     { id: 'plasma',  name: 'Plasma Trail',  cost: 2500000000, mult: 6,    colors: ['#00fff0', '#ff00e6', '#7a5cff', '#ffffff'], rate: 80, size: 1.3, rise: 0.6 },
   ],
 };
+
+/* Mutations: after every night (sunrise) the egg spawners reset, and each new egg has a chance to be a mutation (cheaper to read than to explain: diamond is rolled first).
+   A mutation is a copy of the egg type / pet with a prefix ('gold_ring', 'gold_spacewhale') so saves, hotbar, pens, gifts and multiplayer all handle it without extra fields.
+   chance = per egg at sunrise (diamond 5%, gold 25%, the rest normal). mult = income multiplier of the pet it hatches (and the egg's points). They never spawn or hatch outside the sunrise reset. */
+CONFIG.mutations = {
+  diamond: { label: 'Diamond', chance: 0.05, mult: 5, color: 0x9eeeff, emissive: 0x1b9bc0 },
+  gold:    { label: 'Gold',    chance: 0.25, mult: 2, color: 0xffc83d, emissive: 0x8a5a00 },
+};
+for (const [mk, M] of Object.entries(CONFIG.mutations)) {
+  for (const [tk, T] of Object.entries(CONFIG.eggs.types)) {
+    if (T.mut || !(T.w > 0)) continue;                   // only egg types that really spawn
+    CONFIG.eggs.types[mk + '_' + tk] = { w: 0, pts: Math.round(T.pts * M.mult), areas: T.areas, mut: mk, base: tk };
+    CONFIG.eggLuck[mk + '_' + tk] = CONFIG.eggLuck[tk] != null ? CONFIG.eggLuck[tk] : 1;
+  }
+  for (const [pk, P] of Object.entries(CONFIG.pets)) {
+    if (P.admin || P.mutOf) continue;
+    CONFIG.pets[mk + '_' + pk] = Object.assign({}, P, { name: M.label + ' ' + P.name, income: P.income * M.mult, weight: 0, mut: mk, mutOf: pk });
+  }
+}
+const mutMat = new Map();                                // one tinted copy of each material per mutation, shared by every egg / pet of that look
+function mutateLook(root, key) {
+  const M = CONFIG.mutations[key];
+  if (!M) return root;
+  const tint = (m) => {
+    if (!m || !m.color) return m;
+    const k = key + m.uuid; let c = mutMat.get(k);
+    if (!c) { c = m.clone(); c.vertexColors = false; c.color.set(M.color); c.metalness = 0.35; c.roughness = 0.25; c.emissive = new THREE.Color(M.emissive); c.emissiveIntensity = 0.6; mutMat.set(k, c); }
+    return c;
+  };
+  root.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(tint) : tint(o.material); });
+  return root;
+}
+const capWord = (w) => String(w).charAt(0).toUpperCase() + String(w).slice(1);
+function eggTypeName(type) {                             // 'diamond_ring' -> 'Diamond Ring'
+  const T = CONFIG.eggs.types[type] || {};
+  return (T.mut ? CONFIG.mutations[T.mut].label + ' ' : '') + capWord(T.base || type);
+}
 
 { // scale the body-size settings by playerScale (speeds are deliberately left alone) and keep the throw reach in step with the map size
   const S = CONFIG.playerScale, P = CONFIG.player;
@@ -910,6 +947,8 @@ const isNight = () => dnT() >= DN.day;
 const DN_COL = { skyD: new THREE.Color(0x9ad1ff), skyN: new THREE.Color(0x0a0e2e), hemD: new THREE.Color(0xffffff), hemN: new THREE.Color(0x8a9cff), grdD: new THREE.Color(0x667788), grdN: new THREE.Color(0x151a3a), sunD: new THREE.Color(0xffffff), sunN: new THREE.Color(0x8fa6ff) };
 function updateDayNight(dt) {
   const t = dnT(), night = t >= DN.day, left = (night ? DN.cycle : DN.day) - t;
+  if (DN.wasNight === true && !night) sunriseReset();             // night -> day: the eggs reset (and may mutate)
+  DN.wasNight = night;
   DN.k += ((night ? 1 : 0) - DN.k) * Math.min(1, dt * 0.8);       // eases over a few seconds at sunrise / sunset
   const k = DN.k;
   scene.background.copy(DN_COL.skyD).lerp(DN_COL.skyN, k);
@@ -1145,6 +1184,10 @@ async function init() {
   setupBat();
   eggTpl.normal = bakeEgg(typeGltfs[names.indexOf('normal')].scene);
   names.forEach((n, i) => { if (n !== 'normal') eggTpl[n] = bakeEgg(typeGltfs[i].scene, eggTpl.normal.refH); });
+  for (const mk of Object.keys(CONFIG.mutations)) for (const n of names) {          // gold_ring, diamond_ring ...: the same egg, tinted
+    if (!eggTpl[n] || !CONFIG.eggs.types[mk + '_' + n]) continue;
+    const base = eggTpl[n]; eggTpl[mk + '_' + n] = Object.assign({}, base, { make: () => mutateLook(base.make(), mk) });
+  }
   playerEgg = bakeEgg(eggGltf.scene, eggTpl.normal.refH);
   const body = playerEgg.make();
   body.scale.setScalar(CONFIG.eggs.baseHeight);
@@ -1301,10 +1344,10 @@ function caughtBy(kind) {
       const e = carry.egg, home = carry.item;
       const g = groundAt(pos.x, pos.y + 2, pos.z), gy = g === null ? pos.y : g;
       e.mesh.position.set(pos.x, gy, pos.z); e.mesh.visible = true; scene.add(e.mesh);
-      dropped.push({ x: pos.x, z: pos.z, groundY: gy, egg: e, area: carry.area, home, drop: true, life: CONFIG.steal.dropSeconds, pending: true });
+      dropped.push({ x: pos.x, z: pos.z, groundY: gy, egg: e, area: carry.area, home, drop: true, life: CONFIG.steal.dropSeconds > 0 ? CONFIG.steal.dropSeconds : Infinity, pending: true });
       playerRoot.remove(carry.held);
       carry = null;
-      say('The ' + kind + ' caught you! The egg dropped where you were caught - it stays for ' + CONFIG.steal.dropSeconds + 's.', 5);
+      say('The ' + kind + ' caught you! The egg dropped where you were caught - it stays there until it is picked up.', 5);
       return;
     }
   }
@@ -2992,8 +3035,9 @@ function pickType(area) {                              // only egg types allowed
   for (const k of keys) { r -= t[k].w; if (r <= 0) return k; }
   return keys[keys.length - 1];
 }
-function rollEgg(area) {                                // a random egg type + size for an area
-  const E = CONFIG.eggs, type = pickType(area);
+function rollEgg(area, sunrise) {                      // a random egg type + size for an area. sunrise = the reset after a night: it may be a mutation (diamond first, then gold)
+  const E = CONFIG.eggs; let type = pickType(area);
+  if (sunrise) { let r = Math.random(); for (const mk of ['diamond', 'gold']) { r -= CONFIG.mutations[mk].chance; if (r < 0) { if (E.types[mk + '_' + type]) type = mk + '_' + type; break; } } }
   let tr = Math.random() * E.sizeTiers.reduce((a, t) => a + t.w, 0), tier = E.sizeTiers[0];
   for (const t of E.sizeTiers) { tr -= t.w; tier = t; if (tr <= 0) break; }
   return { type, mult: Math.min(E.maxMult, tier.min + Math.random() * (tier.max - tier.min)) };
@@ -3021,6 +3065,33 @@ function setupEggSpawns() {
     spawnEgg(item);
   }
   log.info('Egg spawners:', eggItems.length, '(' + Object.keys(CONFIG.areas).map((id) => eggItems.filter((i) => i.area === id).length + ' ' + CONFIG.areas[id].label).join(', ') + ')');
+}
+function fbSunrise() {                                  // multiplayer: every client tries, the transaction only lets the first one win (it must still see the egg it saw before)
+  for (let i = 0; i < eggItems.length; i++) {
+    const e = FB.eggs[i];
+    if (!e || e.k !== 'egg') continue;                    // an egg somebody holds (or that is regrowing) is left alone
+    const r = rollEgg(eggItems[i].area, true), next = { k: 'egg', type: r.type, mult: fbRound(r.mult) }, ot = e.type, om = e.mult;
+    FB.D.runTransaction(fbRef('eggs/' + i), (cur) => ((cur == null || (cur.k === 'egg' && cur.type === ot && cur.mult === om)) ? next : undefined)).catch(() => {});
+  }
+}
+function sunriseReset() {
+  if (!eggItems.length) return;
+  if (NET.on && NET.fb === FB) fbSunrise();
+  else if (!NET.on) for (const it of eggItems) {         // solo: every standing egg is replaced (a stolen egg's spawner is left alone)
+    if (!it.egg || it.pending) continue;
+    scene.remove(it.egg.mesh); it.egg = null; spawnEgg(it, rollEgg(it.area, true));
+  }
+  setTimeout(announceMutations, NET.on ? 3500 : 300);     // multiplayer: give the new eggs a moment to arrive
+}
+function announceMutations() {
+  const found = [];
+  for (const it of eggItems) { const T = it.egg && CONFIG.eggs.types[it.egg.type]; if (T && T.mut) found.push({ mut: T.mut, text: eggTypeName(it.egg.type) + ' Egg At ' + ((CONFIG.areas[it.area] && CONFIG.areas[it.area].label) || it.area) }); }
+  found.sort((a, b) => (b.mut === 'diamond') - (a.mut === 'diamond'));
+  found.forEach((f, i) => {
+    try { chatAdd('', f.text, true, false); } catch (e) { /* chat not ready */ }
+    if (i < 8) setTimeout(() => say((f.mut === 'diamond' ? '\u{1F48E} ' : '\u{2728} ') + f.text + '!', 4), i * 2200);
+  });
+  if (found.length) log.info('Mutation eggs:', found.map((f) => f.text).join(', '));
 }
 function updateEggItems(dt) {
   if (NET.on) return;                                  // multiplayer: the server decides when eggs (re)spawn
@@ -3395,7 +3466,7 @@ function updateAim() {
   const verb = IS_TOUCH ? 'Tap' : 'Click';
   if (eggs.length) hint = verb + ' the egg to steal it';
   else if (place) hint = verb + ' a spot in your pen to place the egg';
-  else if (eggPlace) { const hs = heldEggSlot(); hint = verb + ' a spot in your pen to place your ' + hs.egg + ' egg (' + (hs.sizes && hs.sizes.length ? hs.sizes[hs.sizes.length - 1] : 1).toFixed(1) + 'x)'; }
+  else if (eggPlace) { const hs = heldEggSlot(); hint = verb + ' a spot in your pen to place your ' + eggTypeName(hs.egg) + ' egg (' + (hs.sizes && hs.sizes.length ? hs.sizes[hs.sizes.length - 1] : 1).toFixed(1) + 'x)'; }
   else if (petPlace) { const P = CONFIG.pets[heldPet()]; hint = petsInPen.length >= penCapacity() ? 'Pen full (' + petsInPen.length + '/' + penCapacity() + ') - press U to upgrade' : verb + ' a spot in your pen to place your ' + P.name + '  ($' + P.income + '/s at 1x)  [' + petsInPen.length + '/' + penCapacity() + ']'; }
   let gAim = null;
   if (live && !eggs.length && canTrain() && gymItems.length) {
@@ -3931,7 +4002,7 @@ function refreshHotbar() {
     el.classList.toggle('sel', i === inv.sel && !bat.equipped);
     el.querySelector('.ic').innerHTML = sl ? (sl.egg ? eggIcon(sl.egg) : petIcon(sl.pet)) : '';
     el.querySelector('.n').textContent = sl && sl.count > 1 ? sl.count : '';
-    el.title = sl ? (sl.egg ? sl.egg + ' egg' : CONFIG.pets[sl.pet].name) + (sl.sizes && sl.sizes.length ? '  (' + sl.sizes.map((v) => v.toFixed(1) + 'x').join(', ') + ')' : '') : '';
+    el.title = sl ? (sl.egg ? eggTypeName(sl.egg) + ' egg' : CONFIG.pets[sl.pet].name) + (sl.sizes && sl.sizes.length ? '  (' + sl.sizes.map((v) => v.toFixed(1) + 'x').join(', ') + ')' : '') : '';
   });
 }
 function selectSlot(i) { if (bat.equipped) equipBat(false, true); const n = CONFIG.hotbarSlots; inv.sel = ((i % n) + n) % n; refreshHotbar(); }
@@ -3965,7 +4036,7 @@ function buyUpgrade(id) {
   log.info('Bought upgrade', id, 'for', cost);
 }
 function buildDex() {
-  const ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].admin || dex[id] > 0), found = ids.filter((id) => dex[id] > 0).length, shop = dexTab === 'shop';   // admin pets stay out of the index
+  const ids = Object.keys(CONFIG.pets).filter((id) => (!CONFIG.pets[id].admin && !CONFIG.pets[id].mutOf) || dex[id] > 0), found = ids.filter((id) => dex[id] > 0).length, shop = dexTab === 'shop';   // admin pets stay out of the index
   const tabs = [['index', 'Pet Index'], ['shop', 'Upgrades']];
   for (const k of Object.keys(STAND_TAB)) if (dexTab === STAND_TAB[k] || nearStand(k)) tabs.push([STAND_TAB[k], STAND_LABEL[k]]);
   ui.dexBtn.innerHTML = 'Index <span class="cnt">' + found + '/' + ids.length + '</span><small>[I]</small>';
@@ -4046,6 +4117,7 @@ function renderPetIcons() {
       try {
         const T = petTpl[id], model = SkeletonUtils.clone(T.gltf.scene);
         model.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
+        if (CONFIG.pets[id].mut) mutateLook(model, CONFIG.pets[id].mut);
         model.position.set(T.ox, T.oy, T.oz);
         const inner = new THREE.Group(); inner.scale.setScalar(T.scale); inner.rotation.y = T.yaw; inner.add(model);
         const root = new THREE.Group(); root.add(inner); sc.add(root);
@@ -4131,7 +4203,7 @@ function grantOffline(since) {                          // since = ms timestamp 
 }
 function refreshMenuStats() {
   refreshAcct();
-  const ids = Object.keys(CONFIG.pets);
+  const ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].mutOf);
   const chip = (icon, text, tip) => '<span class="chip" title="' + tip + '"><svg class="ic" aria-hidden="true"><use href="#i-' + icon + '"/></svg>' + text + '</span>';
   $('menu-stats').innerHTML = chip('coin', '$' + Math.floor(money).toLocaleString(), 'Money')
     + chip('paw', ids.filter((id) => dex[id] > 0).length + '/' + ids.length, 'Pets discovered')
@@ -4162,15 +4234,19 @@ function hatchSeconds(mult, area) {                   // smallest egg (1x) = min
   return A.min + (A.max - A.min) * f;
 }
 function fmtTime(sec) { const t = Math.max(0, Math.ceil(sec)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
-function pickPet(eggType, area) {                      // the pet comes from the pool of the area the egg was stolen from
+function pickPetBase(eggType, area) {                      // the pet comes from the pool of the area the egg was stolen from
   const luck = CONFIG.eggLuck[eggType] != null ? CONFIG.eggLuck[eggType] : 1;
-  let ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].admin && (!area || CONFIG.pets[id].area === area));   // admin pets never hatch
-  if (!ids.length) ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].admin);
+  let ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].admin && !CONFIG.pets[id].mutOf && (!area || CONFIG.pets[id].area === area));   // admin pets never hatch
+  if (!ids.length) ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].admin && !CONFIG.pets[id].mutOf);
   const lucky = (id) => (CONFIG.pets[id].lucky !== undefined ? CONFIG.pets[id].lucky : CONFIG.pets[id].rarity !== 'common');
   const w = ids.map((id) => CONFIG.pets[id].weight * (lucky(id) ? luck : 1));
   let r = Math.random() * w.reduce((a, b) => a + b, 0);
   for (let i = 0; i < ids.length; i++) { r -= w[i]; if (r <= 0) return ids[i]; }
   return ids[0];
+}
+function pickPet(eggType, area) {                      // a mutation egg hatches the mutated version of whatever pet the egg rolls
+  const id = pickPetBase(eggType, area), mk = (CONFIG.eggs.types[eggType] || {}).mut;
+  return mk && CONFIG.pets[mk + '_' + id] ? mk + '_' + id : id;
 }
 function invCanTake(id) {                           // counts pets that are still flying to the hotbar so two hatches never fight over the last slot
   const sim = inv.slots.map((sl) => (sl ? (sl.pet || 'egg:' + sl.egg) : null));
@@ -4268,7 +4344,7 @@ function updateEggLabels() {
 /* Pet models */
 function setupPets(gltfs) {
   for (const id of Object.keys(CONFIG.pets)) {
-    const g = gltfs[id];
+    const g = gltfs[CONFIG.pets[id].mutOf || id];
     if (CONFIG.pets[id].brighten) {                     // Tomato eyes: fully metallic with no environment map = pitch black. Make them matte and a bit self-lit (the dark pupil stays dark).
       g.scene.traverse((o) => {
         if (!o.isMesh) return;
@@ -4299,6 +4375,7 @@ function makePetModel(id, mult) {                       // a pet scaled by how b
   const T = petTpl[id];
   const model = cloneClean(T.gltf.scene);
   model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  if (CONFIG.pets[id].mut) mutateLook(model, CONFIG.pets[id].mut);
   if (T.tint) {                                         // the User pet: own copy of the materials (they are shared with the real player), tinted with the player's colours
     model.traverse((o) => { if (o.isMesh) { o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); o.userData.ownMat = true; } });
     applyBodyColor(model, profile.parts);
