@@ -145,6 +145,8 @@
              background: #ffd34d; color: #3a2a00; font-size: 17px; animation: actpulse 1s ease-in-out infinite; }
   #t-giftpet { right: calc(14px + env(safe-area-inset-right)); bottom: calc(224px + env(safe-area-inset-bottom)); width: 64px; height: 64px; display: none; font-size: 13px; line-height: 1.1; text-align: center; background: rgba(30,90,140,.85); }
   #t-gift { right: calc(14px + env(safe-area-inset-right)); bottom: calc(150px + env(safe-area-inset-bottom)); width: 64px; height: 64px; display: none; font-size: 15px; background: rgba(30,120,70,.8); }
+  #t-up, #t-down { right: calc(222px + env(safe-area-inset-right)); width: 64px; height: 64px; font-size: 26px; display: none; background: rgba(120,60,180,.75); user-select: none; -webkit-user-select: none; }   /* admin fly on a phone: hold to rise / sink */
+  #t-up { bottom: calc(128px + env(safe-area-inset-bottom)); } #t-down { bottom: calc(52px + env(safe-area-inset-bottom)); }
   #t-respawn { right: calc(12px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width: 44px; height: 44px; font-size: 22px; }
   body.touch #hud { top: calc(62px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); font-size: 11px; line-height: 1.4; max-width: 46vw; }
   body.touch #hud .kb, body:not(.touch) #hud .tc { display: none; }
@@ -196,6 +198,7 @@
           align-items: center; justify-content: center; font-size: 30px; line-height: 1; color: #fff; transition: transform .1s, border-color .1s, background .1s; }
   .slot .k { position: absolute; top: 2px; left: 6px; font: 600 11px var(--font); opacity: .65; }
   .slot .n { position: absolute; right: 5px; bottom: 1px; font: 700 14px var(--font); text-shadow: 0 1px 3px #000; }
+  .slot.bag { margin-left: 10px; pointer-events: auto; cursor: pointer; } .slot.bag .ic { font-size: 26px; line-height: 1; } .slot.bag::before { content: ''; position: absolute; left: -8px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: rgba(255,255,255,.2); }
   .slot.bat { margin-right: 10px; pointer-events: auto; cursor: pointer; } .slot.bat::after { content: ''; position: absolute; right: -8px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: rgba(255,255,255,.2); }
   .slot.sel { border-color: var(--gold); background: rgba(255,211,77,.2); box-shadow: 0 0 14px rgba(255,211,77,.5); transform: translateY(-5px); }
   /* pet index: a button on the left opens a panel with every pet */
@@ -446,6 +449,16 @@
   #admin .ad-chip:hover { background: rgba(199,125,255,.45); }
   #admin .ad-row .ad-num { width: 70px; flex: none; }
   #admin .ad-sec { background: rgba(255,255,255,.03); border-radius: 10px; padding: 8px 10px; margin-top: 8px; border-top: 0; }
+  #dex .inv-h { font: 700 13px var(--font); opacity: .8; letter-spacing: .06em; text-transform: uppercase; margin: 8px 2px 6px; }
+  #dex .inv-grid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 6px; }
+  #dex .inv-c { position: relative; aspect-ratio: 1; border-radius: 10px; background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; cursor: pointer; box-sizing: border-box; }
+  #dex .inv-c:hover { background: rgba(255,255,255,.16); }
+  #dex .inv-c.sel { border-color: var(--gold); }
+  #dex .inv-c.pick { border-color: #6be585; box-shadow: 0 0 10px #6be585; background: rgba(107,229,133,.22); }
+  #dex .inv-c .k { position: absolute; top: 1px; left: 4px; font: 700 11px var(--font); opacity: .7; }
+  #dex .inv-c .n { position: absolute; right: 3px; bottom: 1px; font: 700 12px var(--font); text-shadow: 0 1px 2px #000; }
+  #dex .inv-c .ic { width: 78%; height: 78%; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  #dex .inv-c .ic img, #dex .inv-c .ic svg, #dex .inv-c .ic canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
   #dex .shop-sub { display: flex; gap: 6px; margin: 0 0 10px; }
   #dex .shop-sub-b { border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff; border-radius: 10px; font: 700 14px var(--font); padding: 6px 14px; cursor: pointer; }
   #dex .shop-area { font: 700 13px var(--font); opacity: .8; letter-spacing: .06em; text-transform: uppercase; margin: 10px 2px 2px; }
@@ -543,6 +556,8 @@
   <button class="tbtn" id="t-throw" type="button">Throw</button>
   <button class="tbtn" id="t-gift" type="button">Gift</button>
   <button class="tbtn" id="t-giftpet" type="button">Gift pet</button>
+  <button class="tbtn" id="t-up" type="button" aria-label="Fly up">&#9650;</button>
+  <button class="tbtn" id="t-down" type="button" aria-label="Fly down">&#9660;</button>
   <button class="tbtn" id="t-respawn" type="button" aria-label="Respawn"><svg class="ic" aria-hidden="true"><use href="#i-respawn"/></svg></button>
 </div>
 <div id="chat">
@@ -828,7 +843,8 @@ const CONFIG = {
   },
   rarities: { admin: { label: 'Admin', color: '#ff4d4d' }, common: { label: 'Common', color: '#cfd6e4' }, uncommon: { label: 'Uncommon', color: '#6be585' }, rare: { label: 'Rare', color: '#5aa9ff' }, epic: { label: 'Epic', color: '#c77dff' } },
   eggLuck: { normal: 1, brown: 1.25, cracked: 0.6, golden: 2, rainbow: 3, cactus: 1, bone: 2, sand: 1.25, claw: 2, scorpion: 2.5, blue: 1, duck: 1.25, flower: 1.25, lily: 1.5, reed: 2, candy: 1, chocolate: 1.25, strawberry: 1.5, lolipop: 2, gummy: 2.5, comet: 1, ring: 1.25, nebula: 1.5, meteor: 1.25, galaxy: 2.5 },   // multiplies the uncommon weights, so golden / rainbow eggs find rarer pets
-  hotbarSlots: 9, petPenMax: 30, petSpeed: 0.8, 
+  hotbarSlots: 9, inventorySlots: 36,   // inventorySlots = hotbar (the first 9) + backpack; open the Inventory with the bag button or B
+  petPenMax: 30, petSpeed: 0.8, 
   petMaxMult: 25,      // biggest size a PET can have (the biggest EGG is eggs.maxMult = 10x): a 1x egg hatches a 1x pet, a 10x egg hatches a 25x pet, in between is linear
   gift: { range: 6 },  // metres: how close another player must be to gift them an egg or pet (scaled with the player below)
   petSizeGain: 0.25,   // pet size = base height * (1 + (eggMult - 1) * petSizeGain): a pet of size m is 1 + (m - 1) * this times taller (a 25x pet = 7x taller)
@@ -1516,7 +1532,17 @@ function refreshSkin() {                                 // the egg you throw / 
 /* While the power bar is up you hold the egg you are about to throw (with your skin), between your hands */
 let throwHeld = null, throwHeldKey = '';
 const _tb = new THREE.Box3(), _tp = new THREE.Vector3(), _ts = new THREE.Vector3(), _th = [new THREE.Vector3(), new THREE.Vector3()];
-const _armNodes = [];
+const _armNodes = [], _ac = Array.from({ length: 8 }, () => new THREE.Vector3());
+function armTopPoint(a, out) {                           // centre of the top face of an arm part, in world space
+  let mesh = a.isMesh ? a : null; if (!mesh) a.traverse((o) => { if (!mesh && o.isMesh) mesh = o; });
+  if (!mesh) return false;
+  if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+  const bb = mesh.geometry.boundingBox; mesh.updateWorldMatrix(true, false);
+  for (let i = 0; i < 8; i++) _ac[i].set(i & 1 ? bb.max.x : bb.min.x, i & 2 ? bb.max.y : bb.min.y, i & 4 ? bb.max.z : bb.min.z).applyMatrix4(mesh.matrixWorld);
+  _ac.sort((p, q) => q.y - p.y);                         // the four highest corners = the top face
+  out.set(0, 0, 0); for (let i = 0; i < 4; i++) out.add(_ac[i]);
+  out.multiplyScalar(0.25); return true;
+}
 function throwHeldUpdate(on) {
   const key = on ? (skins.eq || '-') : '';
   if (key !== throwHeldKey) {
@@ -1525,21 +1551,14 @@ function throwHeldUpdate(on) {
     throwHeldKey = key;
   }
   if (!throwHeld) return;
-  if (!_armNodes.length) for (const re of [/^Right[ _]Arm$/i, /^Left[ _]Arm$/i]) { const n = findNode(playerModel, re); if (n) _armNodes.push(n); }
+  if (!_armNodes.length) for (const re of [/^Left[ _]Arm$/i, /^Right[ _]Arm$/i]) { const n = findNode(playerModel, re); if (n) _armNodes.push(n); }
   playerRoot.updateMatrixWorld(true);
-  let n = 0; _tp.set(0, 0, 0);
-  for (const a of _armNodes) {                          // the hand = the corner of the arm that is farthest from its shoulder
-    a.getWorldPosition(_ts); _tb.setFromObject(a);
-    if (_tb.isEmpty()) continue;
-    let best = -1;
-    for (let i = 0; i < 8; i++) {
-      _th[1].set(i & 1 ? _tb.max.x : _tb.min.x, i & 2 ? _tb.max.y : _tb.min.y, i & 4 ? _tb.max.z : _tb.min.z);
-      const d = _th[1].distanceToSquared(_ts); if (d > best) { best = d; _th[0].copy(_th[1]); }
-    }
-    _tp.add(_th[0]); n++;
-  }
-  if (n) { _tp.multiplyScalar(1 / n); playerRoot.worldToLocal(_tp); _tp.y -= CONFIG.eggs.baseHeight * 0.5; throwHeld.position.copy(_tp); }
-  else throwHeld.position.set(0, 0.8, 0.4);             // arms not found: in front of the chest
+  // The Throw Idle clip raises the LEFT arm (the throwing hand, top of the hand at the highest point of the arm): the egg sits on top of that hand.
+  if (_armNodes.length && armTopPoint(_armNodes[0], _tp)) {
+    playerRoot.worldToLocal(_tp);
+    _tp.y -= CONFIG.eggs.baseHeight * 0.12;              // the egg's base is pivoted at its bottom: seat it slightly into the hand so it rests on it
+    throwHeld.position.copy(_tp);
+  } else throwHeld.position.set(0, 1.6, 0.2);
 }
 function updateHeldEgg() {
   const e = handEggInfo(), key = e ? e.type + ':' + e.mult : '';
@@ -1837,6 +1856,11 @@ if (IS_TOUCH) {
   const press = (id, fn) => $(id).addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); fn(); }, { passive: false });
   press('t-throw', () => tryThrow());
   press('t-respawn', () => respawn());
+  for (const [id, k] of [['t-up', 'up'], ['t-down', 'down']]) {      // admin fly on a phone: hold the button to rise / sink
+    const b = $(id);
+    b.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); flyUD[k] = true; }, { passive: false });
+    for (const ev of ['touchend', 'touchcancel']) b.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); flyUD[k] = false; }, { passive: false });
+  }
   press('t-gift', () => giftToPlayer());
   press('t-giftpet', () => giftToPlayer('pet'));
   document.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -1864,6 +1888,7 @@ let codeBuf = '';
    so it is saved with the account like normal progress. */
 const admin = { open: false, unlocked: false, fly: false, flySpeed: 30, pet: 'user', el: $('admin'), flyBox: $('ad-fly') };
 let adminBuf = '';
+const flyUD = { up: false, down: false };               // phone fly buttons (hold)
 const isAdminUser = () => { const u = acct.user, e = u && u.email ? String(u.email).trim().toLowerCase() : ''; return !!e && u.emailVerified !== false && CONFIG.adminEmails.includes(e); };   // only the accounts in CONFIG.adminEmails (a verified email, e.g. Google sign-in)
 function updateAdminBtn() { const b = $('admin-btn'); if (b) b.hidden = !isAdminUser(); if (!isAdminUser() && admin.open) setAdmin(false); }
 const adminHist = [];                                   // bat + hotbar state before each recent key: typing the code presses hotbar / bat keys, we undo that
@@ -1885,13 +1910,15 @@ function setAdmin(open) {
 }
 function setAdminFly(on) {
   admin.fly = !!on; admin.flyBox.checked = admin.fly;
+  flyUD.up = flyUD.down = false;
+  for (const id of ['t-up', 't-down']) { const b = $(id); if (b) b.style.display = admin.fly && IS_TOUCH ? 'flex' : 'none'; }
   if (admin.fly) { stopGym(); vy = 0; grounded = false; }
   say(admin.fly ? 'Admin: fly ON (Space up, Shift down)' : 'Admin: fly OFF', 3);
 }
 function adminFlyStep(dt) {                             // free flight: no gravity, no walls, no area locks. Called from updatePlayer.
   const ix = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touch.x;
   const iz = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touch.y;
-  const iy = (keys.Space ? 1 : 0) - ((keys.ShiftLeft || keys.ShiftRight || keys.KeyC) ? 1 : 0);
+  const iy = (keys.Space || flyUD.up ? 1 : 0) - ((keys.ShiftLeft || keys.ShiftRight || keys.KeyC || flyUD.down) ? 1 : 0);
   _f.set(-Math.sin(yaw), 0, -Math.cos(yaw));
   _r.set(Math.cos(yaw), 0, -Math.sin(yaw));
   _mv.set(0, 0, 0).addScaledVector(_f, iz).addScaledVector(_r, ix);
@@ -2005,6 +2032,7 @@ window.addEventListener('keydown', (e) => {
   if (e.repeat) return;
   if (e.code === 'Enter' || e.code === 'NumpadEnter') { chatOpen(); return; }
   if (e.code === 'KeyI') { openPanel('index'); return; }
+  if (e.code === 'KeyB') { openPanel('inv'); return; }
   if (e.code === 'KeyU') { openPanel('shop'); return; }
   if (e.code === 'KeyE') { standKey(); return; }
   if (dexOpen) { if (e.code === 'Escape') setDex(false); return; }   // the index is a pause-style panel: no game keys while it is open
@@ -3405,7 +3433,8 @@ function updateCarry() {
 const EGG_COLORS = { normal: '#f2ead7', brown: '#b07a4a', cracked: '#cfc9bb', golden: '#ffd34d', rainbow: '#ff8ad8', cactus: '#6bbf59', bone: '#e8e2cf', sand: '#e0c27a', claw: '#b24a3a', scorpion: '#8a5cc0',
                      blue: '#5aa9ff', duck: '#ffe066', flower: '#ff9ecb', lily: '#c9a6ff', reed: '#7fb069', candy: '#ff7eb6', chocolate: '#7b4a2b', strawberry: '#ff5470', lolipop: '#ff9f43', gummy: '#5de08a', comet: '#7ad7ff', ring: '#ffcf5a', nebula: '#b27bff', meteor: '#c4a484', galaxy: '#ffa3f0' };
 function eggIcon(type) {
-  const c = EGG_COLORS[type] || '#f2ead7';
+  const T = CONFIG.eggs.types[type] || {}, M = T.mut && CONFIG.mutations[T.mut];
+  const c = M ? '#' + M.color.toString(16).padStart(6, '0') : EGG_COLORS[type] || '#f2ead7';   // mutation eggs wear their gold / diamond colour
   return '<svg class="egg-ic" viewBox="0 0 40 50" aria-label="' + type + ' egg"><path d="M20 3C11 3 4 18 4 30c0 10 7 17 16 17s16-7 16-17C36 18 29 3 20 3z" fill="' + c + '" stroke="rgba(0,0,0,.45)" stroke-width="2"/><ellipse cx="14" cy="18" rx="4" ry="7" fill="rgba(255,255,255,.45)" transform="rotate(-20 14 18)"/></svg>';
 }
 const heldEggSlot = () => { if (bat.equipped) return null; const sl = inv.slots[inv.sel]; return sl && sl.egg ? sl : null; };
@@ -3415,7 +3444,7 @@ function addEgg(type, mult, area) {
   let i = inv.slots.findIndex((sl) => sl && sl.egg === type);
   if (i >= 0) { const sl = inv.slots[i]; sl.count++; (sl.sizes ||= []).push(mult); (sl.areas ||= []).push(area || null); }
   else { i = inv.slots.findIndex((sl) => !sl); if (i < 0) return false; inv.slots[i] = { egg: type, count: 1, sizes: [mult], areas: [area || null] }; }
-  if (!inv.slots[inv.sel]) inv.sel = i;                 // nothing held: pick up the new egg
+  if (!inv.slots[inv.sel] && i < CONFIG.hotbarSlots) inv.sel = i;                 // nothing held: pick up the new egg (backpack items are not selectable until moved to the hotbar)
   refreshHotbar(); saveGame();
   const el = ui.slotEls[i]; if (el) { el.classList.remove('get'); void el.offsetWidth; el.classList.add('get'); }
   return true;
@@ -3816,7 +3845,7 @@ function updateChickens(dt) { for (const ch of chickens) updateChicken(ch, dt); 
 /* ------------------------------------------------------------------ */
 /* Pets, hotbar, pet index, money, hatching                            */
 /* ------------------------------------------------------------------ */
-const inv = { slots: Array(CONFIG.hotbarSlots).fill(null), sel: 0 };   // slot = { pet, count } or null
+const inv = { slots: Array(CONFIG.inventorySlots).fill(null), sel: 0 };   // slot = { pet, count } or null
 let money = 0;
 const up = { bar: 0, treadmill: 0, pen: 0 };         // upgrades bought: bar / treadmill level index (0 = base machine), extra pen slots
 const train = { strength: 0, speed: 0 };               // gym progress: strength = throw power, speed = added to your speed stat
@@ -3887,7 +3916,7 @@ function applySave(d) {                                // replace the current ga
   wins = Math.max(0, d.wins | 0);
   for (const id of Object.keys(CONFIG.pets)) if (d.dex && d.dex[id] > 0) dex[id] = d.dex[id] | 0;
   const slots = Array.isArray(d.slots) ? d.slots : Object.values(d.slots || {});
-  slots.slice(0, CONFIG.hotbarSlots).forEach((sl, i) => {
+  slots.slice(0, CONFIG.inventorySlots).forEach((sl, i) => {
     if (sl && sl.egg && CONFIG.eggs.types[sl.egg] && sl.count > 0) {                   // an egg stack
       const n = sl.count | 0, sizes = Array.isArray(sl.sizes) ? sl.sizes.map((v) => clampN(+v || 1, 1, CONFIG.eggs.maxMult)).slice(0, n) : [];
       const areas = Array.isArray(sl.areas) ? sl.areas.slice(0, n).map((a) => (CONFIG.areas[a] ? a : null)) : [];
@@ -4074,6 +4103,12 @@ function buildHotbar() {
     el.addEventListener('click', () => selectSlot(i));
     ui.hotbar.appendChild(el); ui.slotEls.push(el);
   }
+  const bag = document.createElement('div');            // Inventory button: everything beyond the 9 hotbar slots lives in the backpack
+  bag.className = 'slot bag'; bag.title = 'Inventory (B)';
+  bag.innerHTML = '<span class="k">B</span><span class="ic">\u{1F392}</span>';
+  bag.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openPanel('inv'); }, { passive: false });
+  bag.addEventListener('click', () => openPanel('inv'));
+  ui.hotbar.appendChild(bag);
 }
 function refreshHotbar() {
   if (ui.batEl) ui.batEl.classList.toggle('sel', bat.equipped);
@@ -4115,9 +4150,39 @@ function buyUpgrade(id) {
   banner('<small>Upgraded!</small><b>' + label + '</b>', '#6be585');
   log.info('Bought upgrade', id, 'for', cost);
 }
+let invPick = -1;                                       // the slot you picked up in the Inventory (-1 = none)
+function invHtml() {
+  const H = CONFIG.hotbarSlots, N = CONFIG.inventorySlots;
+  const cell = (i) => {
+    const sl = inv.slots[i];
+    const nm = sl ? (sl.egg ? eggTypeName(sl.egg) + ' egg' : CONFIG.pets[sl.pet].name) + (sl.sizes && sl.sizes.length ? '  (' + sl.sizes.map((v) => v.toFixed(1) + 'x').join(', ') + ')' : '') : 'Empty';
+    return '<div class="inv-c' + (invPick === i ? ' pick' : '') + (i === inv.sel ? ' sel' : '') + '" data-islot="' + i + '" title="' + nm + '">' + (i < H ? '<span class="k">' + (i + 1) + '</span>' : '') +
+      '<span class="ic">' + (sl ? (sl.egg ? eggIcon(sl.egg) : petIcon(sl.pet)) : '') + '</span>' + (sl && sl.count > 1 ? '<span class="n">' + sl.count + '</span>' : '') + '</div>';
+  };
+  let a = '', b = '';
+  for (let i = 0; i < H; i++) a += cell(i);
+  for (let i = H; i < N; i++) b += cell(i);
+  const used = inv.slots.filter(Boolean).length;
+  return '<div class="inv-h">Hotbar</div><div class="inv-grid">' + a + '</div><div class="inv-h">Backpack \u00b7 ' + used + ' / ' + N + ' slots used</div><div class="inv-grid">' + b + '</div>';
+}
+function invClick(i) {
+  if (invPick < 0) { if (inv.slots[i]) invPick = i; }
+  else if (invPick === i) invPick = -1;
+  else {
+    const x = inv.slots[invPick], y = inv.slots[i];
+    if (x && y && ((x.pet && x.pet === y.pet) || (x.egg && x.egg === y.egg))) {       // the same item: stack them
+      y.count += x.count; y.sizes = (y.sizes || []).concat(x.sizes || []);
+      if (x.egg) y.areas = (y.areas || []).concat(x.areas || []);
+      inv.slots[invPick] = null;
+    } else { inv.slots[i] = x; inv.slots[invPick] = y; }                               // otherwise swap (or move into an empty slot)
+    invPick = -1; refreshHotbar(); saveGame();
+  }
+  buildDex();
+}
 function buildDex() {
   const ids = Object.keys(CONFIG.pets).filter((id) => (!CONFIG.pets[id].admin && !CONFIG.pets[id].mutOf) || dex[id] > 0), found = ids.filter((id) => dex[id] > 0).length, shop = dexTab === 'shop';   // admin pets stay out of the index
-  const tabs = [['index', 'Pet Index'], ['shop', 'Upgrades']];
+  if (dexTab !== 'inv') invPick = -1;
+  const tabs = [['index', 'Pet Index'], ['inv', 'Inventory'], ['shop', 'Upgrades']];
   for (const k of Object.keys(STAND_TAB)) if (dexTab === STAND_TAB[k] || nearStand(k)) tabs.push([STAND_TAB[k], STAND_LABEL[k]]);
   ui.dexBtn.innerHTML = 'Index <span class="cnt">' + found + '/' + ids.length + '</span><small>[I]</small>';
   const head = '<div class="dex-h"><span class="dex-tabs">' + tabs.map(([t, l]) => '<button type="button" class="dex-tab' + (dexTab === t ? ' on' : '') + '" data-tab="' + t + '">' + l + '</button>').join('') + '</span>' +
@@ -4130,6 +4195,9 @@ function buildDex() {
   } else if (dexTab === 'trails') {
     body = shopHtml();
     foot = (shopSub === 'skins' ? 'Egg skins change the egg you throw. Click a skin you own to equip it, click it again to take it off. ' : 'Trails multiply your Speed. Click a trail you own to equip it, click it again to take it off. ') + (IS_TOUCH ? 'Tap outside to close' : 'Press E or Esc to close');
+  } else if (dexTab === 'inv') {
+    body = invHtml();
+    foot = 'Click an item, then click another slot to move or swap it (same items stack). Slots 1-9 are your hotbar. ' + (IS_TOUCH ? 'Tap outside to close' : 'Press B or Esc to close');
   } else if (dexTab === 'sell') {
     body = sellHtml();
     foot = 'Pets in your pen: click one to take it back into your hotbar first. ' + (IS_TOUCH ? 'Tap outside to close' : 'Press E or Esc to close');
@@ -4170,6 +4238,7 @@ shopBtn.addEventListener('click', () => openPanel('shop'));
 if (IS_TOUCH) shopBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openPanel('shop'); }, { passive: false });
 ui.dex.addEventListener('click', (e) => {
   const t = e.target.closest('.dex-tab'); if (t) { dexTab = t.dataset.tab; buildDex(); return; }
+  const isl = e.target.closest('[data-islot]'); if (isl) { invClick(+isl.dataset.islot); return; }
   const sb = e.target.closest('[data-sub]'); if (sb) { shopSub = sb.dataset.sub; buildDex(); return; }
   const sk = e.target.closest('[data-skin]'); if (sk) { skinAction(sk.dataset.skin); return; }
   const tr = e.target.closest('[data-trail]'); if (tr) { trailAction(tr.dataset.trail); return; }
@@ -4340,7 +4409,7 @@ function addPet(id, mult) {
   let i = inv.slots.findIndex((sl) => sl && sl.pet === id);
   if (i >= 0) { inv.slots[i].count++; (inv.slots[i].sizes ||= []).push(mult); }
   else { i = inv.slots.findIndex((sl) => !sl); inv.slots[i] = { pet: id, count: 1, sizes: [mult] }; }
-  if (!inv.slots[inv.sel]) inv.sel = i;               // nothing held: pick up the new pet
+  if (!inv.slots[inv.sel] && i < CONFIG.hotbarSlots) inv.sel = i;               // nothing held: pick up the new pet
   refreshHotbar(); saveGame();
   const el = ui.slotEls[i]; if (el) { el.classList.remove('get'); void el.offsetWidth; el.classList.add('get'); }
 }
@@ -4369,7 +4438,7 @@ function finishHatch(f) {
   dex[id] = (dex[id] || 0) + 1;
   addPet(id, f.mult); buildDex();
   banner('<small>' + (first ? 'New pet!' : 'Egg hatched!') + '</small><b>' + petIcon(id, 'bn') + P.name + ' <span style="font-size:.5em;opacity:.8">' + f.mult.toFixed(1) + 'x</span></b><em>' + R.label + '</em>', R.color);
-  say('Hatched a ' + P.name + '! It is in your hotbar.');
+  say('Hatched a ' + P.name + '! It is in your ' + (inv.slots.findIndex((sl) => sl && sl.pet === id) >= CONFIG.hotbarSlots ? 'inventory (press B).' : 'hotbar.'));
 }
 function updateFlyers(dt) {
   for (let i = flyers.length - 1; i >= 0; i--) {
@@ -4417,7 +4486,7 @@ function updateEggLabels() {
     if (_w.z > 1 || camera.position.distanceTo(m) > 60) { el.style.display = 'none'; continue; }
     el.style.display = 'block';
     el.style.transform = 'translate(' + ((_w.x * 0.5 + 0.5) * window.innerWidth).toFixed(1) + 'px,' + ((-_w.y * 0.5 + 0.5) * window.innerHeight).toFixed(1) + 'px) translate(-50%,-100%)';
-    const txt = h.left <= 0 ? 'Hotbar full!' : fmtTime(h.left);
+    const txt = h.left <= 0 ? 'Inventory full!' : fmtTime(h.left);
     if (txt !== h.txt) { h.txt = txt; h.t.textContent = txt; el.classList.toggle('soon', h.left <= 3); }
     h.bar.style.width = ((1 - h.left / h.total) * 100).toFixed(1) + '%';
   }
@@ -4508,7 +4577,7 @@ function pickPenPet(ray) {                               // the pet in your pen 
   return best;
 }
 function takePet(p) {                                    // click a pet in your pen: it goes back into your hotbar (and stops earning)
-  if (!invCanTake(p.id)) { say('Hotbar full - free a slot first!', 3); return; }
+  if (!invCanTake(p.id)) { say('Inventory full - free a slot first!', 3); return; }
   petsInPen.splice(petsInPen.indexOf(p), 1);
   scene.remove(p.root);
   addPet(p.id, p.mult);
