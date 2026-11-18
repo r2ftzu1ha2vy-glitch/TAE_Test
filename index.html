@@ -64,6 +64,7 @@
 <link rel="preload" as="fetch" crossorigin href="Nebula_Egg.glb">
 <link rel="preload" as="fetch" crossorigin href="Gummy_Worm.glb">
 <link rel="preload" as="fetch" crossorigin href="Space_Whale.glb">
+<link rel="preload" as="fetch" crossorigin href="Cosmic_Slime.glb">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -650,7 +651,7 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', alien: 'Alien.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb', spaceoctopus: 'Space_Octopus.glb', tomato: 'Tomato.glb', gummyworm: 'Gummy_Worm.glb', spacewhale: 'Space_Whale.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', alien: 'Alien.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb', spaceoctopus: 'Space_Octopus.glb', tomato: 'Tomato.glb', gummyworm: 'Gummy_Worm.glb', spacewhale: 'Space_Whale.glb', cosmicslime: 'Cosmic_Slime.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
     sell: 'Sell.glb', trailshop: 'Trail_Shop.glb',
     gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb', 'Treadmill_Upgrade4.glb', 'Treadmill_Upgrade5.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb', 'PullUp_BarUpgrade4.glb', 'PullUp_BarUpgrade5.glb'] },   // index = upgrade level
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb',
@@ -799,6 +800,7 @@ const CONFIG = {
     gummybear: { name: 'Gummy Bear', area: 'candy', rarity: 'epic',     weight: 100, income: 1500, height: 1.2, icon: '\u{1F9F8}', lucky: false },
     gummyworm: { name: 'Gummy Worm', area: 'candy', rarity: 'epic', weight: 60, income: 2200, height: 1.8, icon: '\u{1FAB1}', lucky: true, fit: 'max', walkAnim: 'animation 2' },   // walkAnim: the file has no 'Walk' clip, its second clip is used for walking
     spacewhale: { name: 'Space Whale', area: 'starfall', rarity: 'epic', weight: 30, income: 20000, height: 2.4, icon: '\u{1F40B}', lucky: true, fit: 'max' },
+    cosmicslime: { name: 'Cosmic Slime', area: 'starfall', rarity: 'epic', weight: 40, income: 15000, height: 0.9, icon: '\u{1F7E3}', lucky: true },
     spaceoctopus: { name: 'Space Octopus', area: 'starfall', rarity: 'epic', weight: 45, income: 12000, height: 1.1, icon: '\u{1F419}', lucky: true },
     user:      { name: 'User',      area: 'admin', rarity: 'admin', admin: true, tint: true, weight: 0, income: 100000, height: 1.5, icon: '\u{1F9D1}' },   // ADMIN ONLY: never hatches, only the admin panel gives it. Uses the player model in the player's own colours.
     tomato:    { name: 'Tomato',    area: 'admin', rarity: 'admin', admin: true, weight: 0, income: 100000, height: 1.0, icon: '\u{1F345}', brighten: true },   // ADMIN ONLY (admin panel): never hatches. brighten: textured parts (the eyes) are metal=1 in the file, which renders black here, so they are made matte + self-lit. Uses the Idle / Walk animations that are in Tomato.glb
