@@ -287,9 +287,26 @@
   #overlay { cursor: default; background: radial-gradient(ellipse at 50% 25%, rgba(255,211,77,.28), rgba(10,14,30,.86) 70%); backdrop-filter: blur(5px); font-family: var(--font); }
   #menu { width: min(440px, 92vw); max-height: 94vh; overflow-y: auto; text-align: center; padding: 26px 26px 20px; border-radius: 26px; background: rgba(18,22,40,.74);
           border: 2px solid rgba(255,255,255,.18); box-shadow: 0 20px 60px rgba(0,0,0,.5); }
-  #menu-logo { font-size: 58px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); animation: logobob 1.6s ease-in-out infinite alternate; }
+  .ic { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; }
+  #menu-logo { line-height: 0; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); animation: logobob 1.8s ease-in-out infinite alternate; }
+  #menu-logo svg { width: 64px; height: 80px; }
+  #auth .auth-logo { line-height: 0; } #auth .auth-logo svg { filter: drop-shadow(0 4px 8px rgba(0,0,0,.45)); }
+  #menu-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  #menu-bg svg { position: absolute; bottom: -90px; height: auto; aspect-ratio: 64 / 80; opacity: .16; animation: menurise linear infinite; }
+  @keyframes menurise { from { transform: translateY(0) rotate(-14deg); } 50% { transform: translateY(-62vh) rotate(10deg); } to { transform: translateY(-125vh) rotate(-14deg); } }
+  #menu { position: relative; z-index: 1; }
+  #menu::before { content: ''; position: absolute; left: 22px; right: 22px; top: -2px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+  #overlay #menu button { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  #overlay #menu button.link { display: inline-block; }
+  #menu button.sec .ic { opacity: .85; }
+  #play-btn .ic { width: 1.05em; height: 1.05em; }
+  #menu-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; opacity: 1; }
+  #menu-stats .chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 9px; border-radius: 999px; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.16); font: 700 14px var(--font); }
+  #menu-stats .chip .ic { color: var(--gold); }
+  #music-btn .ic, #chat-btn .ic, #t-respawn .ic { width: 1.1em; height: 1.1em; vertical-align: -0.18em; }
+  #chat-btn .ic, #t-respawn .ic { width: 22px; height: 22px; vertical-align: middle; }
   @keyframes logobob { from { transform: translateY(-4px) rotate(-6deg); } to { transform: translateY(4px) rotate(6deg); } }
-  #menu-title { margin: 6px 0 0; font: 700 42px/1.1 var(--font); color: var(--gold); text-shadow: 0 3px 0 #a8730a, 0 6px 14px rgba(0,0,0,.5); letter-spacing: .02em; }
+  #menu-title { margin: 8px 0 0; font: 700 42px/1.1 var(--font); color: var(--gold); background: linear-gradient(#fff4b8, #ffc83a 70%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 3px 0 #a8730a) drop-shadow(0 6px 10px rgba(0,0,0,.45)); letter-spacing: .02em; }
   #overlay-text { font: 500 15px/1.4 var(--font); opacity: .85; margin: 8px 0 16px; min-height: 1.4em; }
   #menu button { display: block; width: 100%; margin: 8px 0 0; padding: 12px 18px; border: 3px solid #fff; border-radius: 16px; font: 700 22px var(--font); cursor: pointer; color: #3a2a00;
                  background: linear-gradient(#ffe27a, #ffbf2e); box-shadow: 0 4px 0 #b8860b, 0 8px 16px rgba(0,0,0,.4); transition: transform .08s; }
@@ -386,7 +403,7 @@
     body.touch #dex-btn { top: calc(26% + env(safe-area-inset-top)); } body.touch #shop-btn { top: calc(26% + 40px + env(safe-area-inset-top)); } body.touch.net #chat-btn { top: calc(26% + 80px + env(safe-area-inset-top)); }
   }
   @media (max-height: 480px) {
-    #menu { padding: 12px 18px 10px; } #menu-logo { font-size: 38px; } #menu-title { font-size: 30px; } #overlay-text { margin: 4px 0 8px; }
+    #menu { padding: 12px 18px 10px; } #menu-logo svg { width: 40px; height: 50px; } #menu-title { font-size: 30px; } #overlay-text { margin: 4px 0 8px; }
     #menu button { padding: 8px 14px; font-size: 18px; } #menu button.sec { font-size: 15px; padding: 6px 12px; }
     #dex .dex-panel { max-height: 92vh; padding: 10px 14px; } #dex .dex-h { font-size: 20px; margin-bottom: 8px; }
     #auth .auth-card { padding: 12px 18px 10px; max-height: 94vh; overflow-y: auto; } #auth .auth-logo { display: none; }
@@ -447,6 +464,27 @@
 </script>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="eg-fill" x1="0" y1="0" x2="0.7" y2="1"><stop offset="0" stop-color="#fff4d6"/><stop offset=".55" stop-color="#ffd58a"/><stop offset="1" stop-color="#f29a3c"/></linearGradient>
+    <linearGradient id="eg-rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#ffcf5c"/></linearGradient>
+  </defs>
+  <symbol id="i-egg" viewBox="0 0 64 80">
+    <ellipse cx="32" cy="77" rx="17" ry="2.6" fill="#000" opacity=".28"/>
+    <path d="M32 3C46 3 58 27 58 47c0 16-11 28-26 28S6 63 6 47C6 27 18 3 32 3z" fill="url(#eg-fill)" stroke="url(#eg-rim)" stroke-width="2.5"/>
+    <g fill="#b9692a" opacity=".55"><ellipse cx="22" cy="48" rx="2.6" ry="1.8"/><ellipse cx="38" cy="56" rx="3" ry="2"/><ellipse cx="44" cy="40" rx="2" ry="1.5"/><ellipse cx="29" cy="64" rx="2" ry="1.4"/><ellipse cx="33" cy="34" rx="1.8" ry="1.3"/></g>
+    <path d="M17 38c1.5-9 6-18 12-24" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" opacity=".75"/>
+  </symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4a.8.8 0 0 0 1.2.7l11.6-7.2a.8.8 0 0 0 0-1.4L8.2 4.1A.8.8 0 0 0 7 4.8z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.4 9.4a2.7 2.7 0 1 1 3.8 2.4c-.8.4-1.2 1-1.2 1.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6.8v10.4M14.8 9.4c-.4-1-1.4-1.6-2.8-1.6-1.6 0-2.8.8-2.8 2 0 2.7 5.6 1.4 5.6 4.1 0 1.2-1.2 2.1-2.8 2.1-1.4 0-2.5-.6-2.9-1.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-paw" viewBox="0 0 24 24" fill="currentColor"><ellipse cx="6.3" cy="11" rx="1.9" ry="2.4"/><ellipse cx="10" cy="6.6" rx="1.9" ry="2.5"/><ellipse cx="14.2" cy="6.6" rx="1.9" ry="2.5"/><ellipse cx="17.9" cy="11" rx="1.9" ry="2.4"/><path d="M12.1 11.4c-3.1 0-5.6 3-4.6 5.6.5 1.4 2 1.7 4.6 1.7s4.1-.3 4.6-1.7c1-2.6-1.5-5.6-4.6-5.6z"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5.5a4 4 0 0 1-8 0V4z"/><path d="M8 6H5v2a3 3 0 0 0 3 3M16 6h3v2a3 3 0 0 1-3 3M12 13.5V17M8.5 20.5h7M10 17h4"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5.5l11-2V16"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="17" cy="16" r="3" fill="currentColor"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9.5L4 20.5V5z"/></symbol>
+  <symbol id="i-respawn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.7-6"/><path d="M20 4v5h-5"/></symbol>
+</svg>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="ico-bolt" viewBox="0 0 24 24"><path d="M13.5 2 4 13.5h6.2L9 22l10-12.2h-6.4z"/></symbol>
 </svg>
@@ -487,14 +525,14 @@
   <button class="tbtn" id="t-throw" type="button">Throw</button>
   <button class="tbtn" id="t-gift" type="button">Gift</button>
   <button class="tbtn" id="t-giftpet" type="button">Gift pet</button>
-  <button class="tbtn" id="t-respawn" type="button" aria-label="Respawn">&#8634;</button>
+  <button class="tbtn" id="t-respawn" type="button" aria-label="Respawn"><svg class="ic" aria-hidden="true"><use href="#i-respawn"/></svg></button>
 </div>
 <div id="chat">
   <div id="chat-log" aria-live="polite"></div>
   <form id="chat-form" autocomplete="off"><input id="chat-input" type="text" maxlength="120" placeholder="Say something..." enterkeyhint="send" autocomplete="off" autocapitalize="sentences"><button id="chat-send" type="submit">Send</button></form>
   <div id="chat-hint">Press <b>Enter</b> to chat</div>
 </div>
-<button type="button" id="chat-btn" aria-label="Chat">&#128172;</button>
+<button type="button" id="chat-btn" aria-label="Chat"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg></button>
 <div id="daynight"><img class="dn-ic" src="https://iili.io/o2hWAYX.png" alt=""><div><b class="dn-t">Day</b><small class="dn-s"></small></div></div>
 <div id="money"><span class="coin"><img src="https://iili.io/o2hWXyu.png" alt="$"></span><b>0</b><small></small></div>
 <div id="admin" hidden>
@@ -534,14 +572,14 @@
   <button type="button" id="off-ok">Collect</button>
 </div></div>
 <button type="button" id="dex-btn">Index</button>
-<button type="button" id="music-btn" aria-label="Toggle music">&#9835; Music <small>[M]</small></button>
+<button type="button" id="music-btn" aria-label="Toggle music"><svg class="ic" aria-hidden="true"><use href="#i-music"/></svg> Music <small>[M]</small></button>
 <button type="button" id="shop-btn">Upgrades <small>[U]</small></button>
 <button type="button" id="stand-btn"></button>
 <div id="dex"></div>
 <div id="hotbar"></div>
 <div id="banner"></div>
 <div id="auth"><div class="auth-card">
-  <div class="auth-logo">&#129370;</div>
+  <div class="auth-logo"><svg viewBox="0 0 64 80" width="44" height="55" aria-hidden="true"><use href="#i-egg"/></svg></div>
   <h2>Throw An Egg</h2>
   <p id="auth-msg">Checking sign-in...</p>
   <div id="auth-forms" hidden>
@@ -553,12 +591,12 @@
   </div>
   <button type="button" id="auth-guest" class="guest" hidden>Play as guest (progress is not saved)</button>
 </div></div>
-<div id="overlay"><div id="menu">
-  <div id="menu-logo">&#129370;</div>
+<div id="overlay"><div id="menu-bg" aria-hidden="true"><svg viewBox="0 0 64 80" style="left:8%;width:46px;animation-duration:22s;animation-delay:-3s"><use href="#i-egg"/></svg><svg viewBox="0 0 64 80" style="left:22%;width:28px;animation-duration:30s;animation-delay:-12s"><use href="#i-egg"/></svg><svg viewBox="0 0 64 80" style="left:40%;width:38px;animation-duration:26s;animation-delay:-7s"><use href="#i-egg"/></svg><svg viewBox="0 0 64 80" style="left:58%;width:24px;animation-duration:34s;animation-delay:-20s"><use href="#i-egg"/></svg><svg viewBox="0 0 64 80" style="left:73%;width:52px;animation-duration:24s;animation-delay:-1s"><use href="#i-egg"/></svg><svg viewBox="0 0 64 80" style="left:90%;width:32px;animation-duration:28s;animation-delay:-15s"><use href="#i-egg"/></svg></div><div id="menu">
+  <div id="menu-logo"><svg viewBox="0 0 64 80" width="64" height="80" aria-hidden="true"><use href="#i-egg"/></svg></div>
   <h1 id="menu-title">Throw An Egg</h1>
   <p id="overlay-text">Loading...</p>
-  <button type="button" id="play-btn" disabled>Loading...</button>
-  <button type="button" id="prof-btn" class="sec">&#127912; Customize Player</button>
+  <button type="button" id="play-btn" disabled><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg><span id="play-label">Loading...</span></button>
+  <button type="button" id="prof-btn" class="sec"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg><span>Customize Player</span></button>
   <div id="profile" hidden>
     <label for="prof-name">Username</label>
     <input type="text" id="prof-name" maxlength="16" placeholder="Pick a name (max 16)" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -569,7 +607,7 @@
     <div id="prof-custom"><input type="color" id="prof-color" value="#ffffff"><span>Custom color</span><span id="prof-reset" role="button" tabindex="0">Reset colors</span></div>
     <div id="prof-preview"><span id="prof-chip"></span></div>
   </div>
-  <button type="button" id="help-btn" class="sec">How To Play</button>
+  <button type="button" id="help-btn" class="sec"><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg><span>How To Play</span></button>
   <div id="menu-help" hidden>
     <b>Goal:</b> collect pets and earn money.
     <ol>
@@ -1130,7 +1168,7 @@ async function init() {
   respawn();
   ready = true;
   dom.overlayText.textContent = 'Throw eggs, steal eggs, hatch pets!';
-  ui.play.disabled = false; ui.play.textContent = 'Play';
+  ui.play.disabled = false; $('play-label').textContent = 'Play';
   refreshMenuStats();
   requestAnimationFrame(tick);
 }
@@ -1329,6 +1367,7 @@ function cloneClean(src) {                              // SkeletonUtils.clone o
 }
 const _hs = new THREE.Vector3();
 function petHolderClear(h) {
+  h.userData.anims = [];
   while (h.children.length) {
     const c = h.children[0]; h.remove(c);
     c.traverse((o) => { if (o.isMesh && o.userData.ownMat) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m.dispose()); });   // only the tinted copies, never the shared ones
@@ -1350,19 +1389,23 @@ function petHolderSet(h, id, mult) {                       // show pet `id` in t
         parent.add(m.root);
         parent.updateWorldMatrix(true, false);
         m.root.scale.setScalar(1 / (parent.getWorldScale(_hs).x || 1));
-        if (!isAdmin || !m.model) break;
+        if (!isAdmin || !m.model) { petPlay(m, 'idle'); (h.userData.anims ||= []).push(m); break; }   // a held pet plays its idle clip
         const hold = m.actions['bat hold'];
-        if (!hold) break;
+        if (!hold) { petPlay(m, 'idle'); h.userData.anims.push(m); break; }
         hold.play(); m.mixer.update(0);                  // arm up, static pose
-        if (depth >= CONFIG.petHold.chainDepth) break;
+        if (depth >= CONFIG.petHold.chainDepth) { petPlay(m, 'idle'); h.userData.anims.push(m); break; }
         const nh = makePetHolder(m.model);
-        if (!nh) break;
+        if (!nh) { petPlay(m, 'idle'); h.userData.anims.push(m); break; }
         nh.visible = true; petFollow(nh);
         parent = nh;
       }
     }
   }
   h.visible = !!key;
+}
+function petHolderTick(h, dt) {                            // advance the idle animation of the pet(s) in a hand (the pet in the leaf of an admin chain animates, the others hold the arm pose)
+  if (!h || !h.visible || !h.userData.anims) return;
+  for (const m of h.userData.anims) m.mixer.update(dt);
 }
 function petFollow(h) {                                    // call after the mixer has posed the arm
   const arm = h.userData.arm, P = CONFIG.petHold;
@@ -1375,10 +1418,26 @@ function petInHand() {                                     // the hotbar slot wh
   const sl = inv.slots[inv.sel];
   return sl && sl.pet ? sl : null;
 }
+let heldDt = 0.016;
+/* Held egg: an egg selected in the hotbar is carried like a stolen one: it sits above the head and the Steal clips play (others see it too, it is sent as `carry`) */
+let handEgg = null, handEggKey = '';
+function eggInHand() {
+  if (bat.equipped || carry || gym.session || form !== 'human' || (inZone() && rag.t <= 0)) return null;
+  const sl = inv.slots[inv.sel];
+  return sl && sl.egg && eggTpl[sl.egg] ? sl : null;
+}
+const handEggInfo = () => { const sl = eggInHand(); return sl ? { type: sl.egg, mult: sl.sizes && sl.sizes.length ? sl.sizes[sl.sizes.length - 1] : 1 } : null; };
+function updateHeldEgg() {
+  const e = handEggInfo(), key = e ? e.type + ':' + e.mult : '';
+  if (key === handEggKey) return;
+  if (handEgg) { playerRoot.remove(handEgg); handEgg = null; }
+  if (e) { handEgg = makeHeld({ type: e.type, mult: e.mult }); playerRoot.add(handEgg); }
+  handEggKey = key;
+}
 function updateHeldPet() {
   const sl = petInHand();
   petHolderSet(petHolder, sl ? sl.pet : null, sl && sl.sizes && sl.sizes.length ? sl.sizes[sl.sizes.length - 1] : 1);
-  if (petHolder && petHolder.visible) petFollow(petHolder);
+  if (petHolder && petHolder.visible) { petHolderTick(petHolder, heldDt); petFollow(petHolder); }
 }
 function setupBat() {
   playerRoot.rotation.order = 'YXZ';                       // yaw first, then lie down about the body's own axis when ragdolled
@@ -1520,7 +1579,7 @@ function respawn() {
 let started = false;
 function showMenu() {
   $('menu-title').textContent = started ? 'Paused' : 'Throw An Egg';
-  ui.play.textContent = started ? 'Resume' : 'Play';
+  $('play-label').textContent = started ? 'Resume' : 'Play';
   refreshMenuStats();
   dom.overlay.style.display = 'flex';
 }
@@ -1977,7 +2036,7 @@ function updatePlayer(dt) {
   // animation: holding an egg always uses the Steal clips
   const winding = state.mode === 'charging' || state.mode === 'cooldown';
   let anim;
-  if (carry) anim = moving ? 'steal run' : 'steal idle';
+  if (carry || eggInHand()) anim = moving ? 'steal run' : 'steal idle';
   else if ((bat.equipped || petInHand()) && actions['bat hold']) anim = moving && actions['bat walk'] ? 'bat walk' : 'bat hold';   // a held pet uses the bat's hold / walk clips
   else if (winding && !moving && actions['throw idle']) anim = 'throw idle';
   else anim = moving ? 'walk' : 'idle';
@@ -1995,7 +2054,7 @@ function updatePlayer(dt) {
     playerRoot.updateMatrixWorld(true);
     let low = Infinity;
     for (const m of legMeshes) { _bb.setFromObject(m); low = Math.min(low, _bb.min.y); }
-    const target = carry ? feetExtra - (low - pos.y) / CONFIG.playerScale : 0;   // feetExtra is in model units, `low` is in world units
+    const target = (carry || handEgg) ? feetExtra - (low - pos.y) / CONFIG.playerScale : 0;   // feetExtra is in model units, `low` is in world units
     feetExtra += (target - feetExtra) * Math.min(1, 15 * dt);
     playerModel.position.y = modelBaseY + feetExtra;
   }
@@ -2058,7 +2117,7 @@ document.addEventListener('touchstart', (e) => { if (chat.open && !(e.target.clo
 /* The server (server.js) hands out the pen and owns the eggs; everything else runs on your machine.      */
 /* No server reachable (python http.server, file hosting, ?solo=1) = the game plays solo exactly as before. */
 /* ------------------------------------------------------------------ */
-const NET = { on: false, ws: null, fb: null, id: null, room: null, pen: null, cap: 0, count: 0, tried: false, sendAcc: 0, petAcc: 0, petSig: '' };
+const NET = { on: false, ws: null, fb: null, id: null, room: null, pen: null, cap: 0, count: 0, tried: false, sendAcc: 0, petAcc: 0, petSig: '', eggSig: '' };
 const remotes = new Map();                              // player id -> { root, model, mixer, acts, anim, tag, eggMesh, held, heldKey, pets: [] ... }
 /* Static hosting (GitHub Pages, Netlify, S3, python http.server...) has no WebSocket endpoint, so it plays solo without waiting for a timeout.
    To get multiplayer on a static host, run server.js somewhere and either set TAE_SERVER below or open the page with ?server=wss://your-host/ws */
@@ -2133,7 +2192,7 @@ async function netStart() {
 /*       "chat": { "$m": { ".validate": "newData.child('text').isString() && newData.child('text').val().length <= 120" } } } }   */
 /* ------------------------------------------------------------------ */
 const FB_MAX_ROOMS = 40;
-const FB = { D: null, db: null, id: null, room: 0, pen: null, base: '', off: 0, players: new Map(), states: new Map(), pets: new Map(), known: new Set(), chick: new Map(),
+const FB = { D: null, db: null, id: null, room: 0, pen: null, base: '', off: 0, players: new Map(), states: new Map(), pets: new Map(), pegs: new Map(), known: new Set(), chick: new Map(),
              eggs: [], eggSig: [], inbox: new Map(), sent: new Map(), taking: new Set(), spawning: new Set(), unsubs: [], timers: [], held: null, heldDisc: null, lastState: '', joinedAt: 0, lastClean: 0, lostT: 0, pagehide: false, lite: false, warnedState: false };
 const fbAllowed = () => params.get('solo') !== '1' && /^https?:$/.test(location.protocol);
 const fbNow = () => Date.now() + FB.off;                 // server clock: egg regrow times must agree between players
@@ -2166,18 +2225,18 @@ async function fbJoin(timeoutMs) {
       }
     }
     if (!FB.pen) { log.warn('Every pen on every server is taken'); return false; }
-    for (const p of ['pens/' + FB.pen, 'players/' + FB.id, 'states/' + FB.id, 'pets/' + FB.id]) await D.onDisconnect(fbRef(p)).remove();
+    for (const p of ['pens/' + FB.pen, 'players/' + FB.id, 'states/' + FB.id, 'pets/' + FB.id, 'pegs/' + FB.id]) await D.onDisconnect(fbRef(p)).remove();
     check();
     await D.set(fbRef('players/' + FB.id), { name: netName(), pen: FB.pen, color: profile.parts }); check();
     FB.joinedAt = fbNow();
-    const [ps, ss, pts, es] = await Promise.all(['players', 'states', 'pets', 'eggs'].map((k) => D.get(fbRef(k)))); check();
-    const P = ps.val() || {}, S = ss.val() || {}, T = pts.val() || {}, E = es.val() || {};
+    const [ps, ss, pts, es, pgs] = await Promise.all(['players', 'states', 'pets', 'eggs', 'pegs'].map((k) => D.get(fbRef(k)))); check();
+    const P = ps.val() || {}, S = ss.val() || {}, T = pts.val() || {}, E = es.val() || {}, G = pgs.val() || {};
     FB.players = new Map(Object.entries(P)); FB.known = new Set(Object.keys(P));
-    FB.states = new Map(Object.entries(S)); FB.pets = new Map(Object.entries(T));
+    FB.states = new Map(Object.entries(S)); FB.pets = new Map(Object.entries(T)); FB.pegs = new Map(Object.entries(G));
     eggItems.forEach((_, i) => { FB.eggs[i] = E[i] || null; FB.eggSig[i] = fbEggSig(E[i]); });
     NET.fb = FB;
     netWelcome(null, { t: 'welcome', id: FB.id, room: FB.room, pen: FB.pen, cap: pens.length,
-      players: Object.keys(P).filter((k) => k !== FB.id).map((k) => ({ id: k, name: P[k].name, color: P[k].color, pen: P[k].pen, s: S[k], pets: fbArr(T[k]) })),
+      players: Object.keys(P).filter((k) => k !== FB.id).map((k) => ({ id: k, name: P[k].name, color: P[k].color, pen: P[k].pen, s: S[k], pets: fbArr(T[k]), pegs: fbArr(G[k]) })),
       eggs: eggItems.map((_, i) => (E[i] && E[i].k === 'egg' ? { type: E[i].type, mult: E[i].mult } : null)) });
     fbListen();
     FB.timers.push(setInterval(fbTick, 1000)); fbTick();
@@ -2197,7 +2256,7 @@ function fbListen() {
     const id = s.key, v = s.val() || {}; FB.players.set(id, v);
     if (id === FB.id || FB.known.has(id)) return;
     FB.known.add(id);
-    netMessage({ t: 'join', id, name: v.name, color: v.color, pen: v.pen, count: FB.players.size, s: FB.states.get(id), pets: fbArr(FB.pets.get(id)) });
+    netMessage({ t: 'join', id, name: v.name, color: v.color, pen: v.pen, count: FB.players.size, s: FB.states.get(id), pets: fbArr(FB.pets.get(id)), pegs: fbArr(FB.pegs.get(id)) });
   }));
   un.push(D.onChildChanged(fbRef('players'), (s) => {      // somebody changed their username / color
     const id = s.key, v = s.val() || {}; FB.players.set(id, v);
@@ -2208,7 +2267,7 @@ function fbListen() {
   un.push(D.onChildAdded(fbRef('gifts/' + FB.id), (s) => { const g = s.val(); if (g) { FB.inbox.set(s.key, g); fbDeliver(); } }));
   un.push(D.onChildRemoved(fbRef('players'), (s) => {
     fbRefund(s.key);                                       // gifts still sitting unopened in the inbox of someone who just left come back to you
-    const id = s.key; FB.players.delete(id); FB.known.delete(id); FB.states.delete(id); FB.pets.delete(id);
+    const id = s.key; FB.players.delete(id); FB.known.delete(id); FB.states.delete(id); FB.pets.delete(id); FB.pegs.delete(id);
     if (id !== FB.id) netMessage({ t: 'leave', id, count: FB.players.size });
   }));
   const onState = (s) => { if (s.key === FB.id) return; FB.states.set(s.key, s.val()); netMessage({ t: 'state', id: s.key, s: s.val() }); };
@@ -2216,6 +2275,9 @@ function fbListen() {
   const onPets = (s) => { if (s.key === FB.id) return; FB.pets.set(s.key, s.val()); netMessage({ t: 'pets', id: s.key, list: fbArr(s.val()) }); };
   un.push(D.onChildAdded(fbRef('pets'), onPets), D.onChildChanged(fbRef('pets'), onPets));
   un.push(D.onChildRemoved(fbRef('pets'), (s) => { if (s.key !== FB.id) { FB.pets.delete(s.key); netMessage({ t: 'pets', id: s.key, list: [] }); } }));
+  const onPegs = (s) => { if (s.key === FB.id) return; FB.pegs.set(s.key, s.val()); netMessage({ t: 'pegs', id: s.key, list: fbArr(s.val()) }); };   // eggs standing in somebody's pen
+  un.push(D.onChildAdded(fbRef('pegs'), onPegs), D.onChildChanged(fbRef('pegs'), onPegs));
+  un.push(D.onChildRemoved(fbRef('pegs'), (s) => { if (s.key !== FB.id) { FB.pegs.delete(s.key); netMessage({ t: 'pegs', id: s.key, list: [] }); } }));
   un.push(D.onValue(fbRef('daynight'), (s) => {            // shared day / night shift (admin skip): same phase for everybody in the room
     const v = s.val(); DN.shift = v && Number.isFinite(+v.shift) ? +v.shift : 0; DN.key = '';
   }));
@@ -2340,6 +2402,7 @@ function fbSend(o) {
       D.set(fbRef('states/' + id), st).catch((e) => fbStateRefused(e, id, st));
       break;
     }
+    case 'pegs': { if (o.list && o.list.length) D.set(fbRef('pegs/' + id), o.list.map((q) => ({ type: q.type, mult: fbRound(q.mult), u: fbRound(q.u), v: fbRound(q.v) }))).catch(() => {}); else D.remove(fbRef('pegs/' + id)).catch(() => {}); break; }   // eggs in your pen: no timer is shared
     case 'pets': { if (o.list && o.list.length) D.set(fbRef('pets/' + id), o.list.map((p) => ({ id: p.id, mult: fbRound(p.mult), u: fbRound(p.u), v: fbRound(p.v) }))).catch(() => {}); else D.remove(fbRef('pets/' + id)).catch(() => {}); break; }
     case 'profile': D.set(fbRef('players/' + id), { name: netName(), pen: FB.pen, color: profile.parts }).catch(() => {}); break;
     case 'chat': D.push(fbRef('chat'), { id, name: netName(), text: String(o.text || '').slice(0, 120), ts: D.serverTimestamp() }).catch(() => {}); break;
@@ -2377,14 +2440,14 @@ function fbCleanup() {                                    // leave the room: rel
     try {
       if (FB.held) D.set(fbRef('eggs/' + FB.held.i), { k: 'egg', type: FB.held.type, mult: FB.held.mult });
       if (FB.heldDisc) FB.heldDisc.cancel();
-      const paths = ['players/' + FB.id, 'states/' + FB.id, 'pets/' + FB.id];
+      const paths = ['players/' + FB.id, 'states/' + FB.id, 'pets/' + FB.id, 'pegs/' + FB.id];
       if (FB.pen) paths.push('pens/' + FB.pen);
       for (const p of paths) { D.onDisconnect(fbRef(p)).cancel(); D.remove(fbRef(p)); }   // cancel the pending onDisconnect so it cannot hit a pen someone else took later
     } catch (e) { /* offline: the server already removed them */ }
   }
   Object.assign(FB, { pen: null, base: '', held: null, heldDisc: null, lastState: '', spawning: new Set(), lite: false, warnedState: false });
   FB.inbox.clear(); FB.sent.clear(); FB.taking.clear();
-  FB.players.clear(); FB.states.clear(); FB.pets.clear(); FB.known.clear(); FB.chick.clear(); FB.eggs = []; FB.eggSig = [];
+  FB.players.clear(); FB.states.clear(); FB.pets.clear(); FB.pegs.clear(); FB.known.clear(); FB.chick.clear(); FB.eggs = []; FB.eggSig = [];
 }
 function netWelcome(ws, m) {
   Object.assign(NET, { on: true, ws, id: m.id, room: m.room, pen: m.pen, cap: m.cap, count: (m.players || []).length + 1 });
@@ -2416,6 +2479,7 @@ function netMessage(m) {
     case 'leave': { const r = remotes.get(m.id); if (r) say(r.name + ' left', 3); netRemoveRemote(m.id); NET.count = m.count; netHud(); break; }
     case 'state': { const r = remotes.get(m.id); if (r) netRemoteState(r, m.s, false); break; }
     case 'pets': { const r = remotes.get(m.id); if (r) netRemotePets(r, m.list); break; }
+    case 'pegs': { const r = remotes.get(m.id); if (r) netRemoteEggs(r, m.list); break; }
     case 'egg': netSetEgg(m.i, m.egg); break;
     case 'chat': chatAdd(m.name || 'Player', String(m.text || '').slice(0, 200), !!m.system, m.id === NET.id); break;
     case 'denied':                                      // somebody else took that egg a moment before you
@@ -2457,11 +2521,12 @@ function netAddRemote(o) {
   for (const clip of playerGltfRef.animations) acts[clip.name.toLowerCase()] = mixer.clipAction(clip);
   if (acts.jump) { acts.jump.setLoop(THREE.LoopOnce, 1); acts.jump.clampWhenFinished = true; }
   const r = { id: o.id, name: o.name || 'Player', color: cleanParts(o.color), pen: o.pen, root, avatar, model, mixer, acts, anim: '', tag, eggMesh, held: null, heldKey: '', form: 'human',
-              tx: 0, ty: 0, tz: 0, tf: 0, facing: 0, init: false, pets: [] };
+              tx: 0, ty: 0, tz: 0, tf: 0, facing: 0, init: false, pets: [], eggs: [] };
   r.batH = makeBatHolder(model); r.petH = makePetHolder(model); r.hitN = o.s && o.s.ht ? o.s.ht.n : 0; r.sw = o.s ? (o.s.sw | 0) : 0; r.rg = 0; r.rgS = 0;
   remotes.set(o.id, r);
   if (o.s) netRemoteState(r, o.s, true);
   if (o.pets && o.pets.length) netRemotePets(r, o.pets);
+  if (o.pegs && o.pegs.length) netRemoteEggs(r, o.pegs);
 }
 function netRemoteProfile(r, name, color) {
   const nm = cleanName(name) || r.name;
@@ -2497,7 +2562,7 @@ function netRemoveRemote(id) {
   r.root.traverse((m) => { if (m.isSprite && m.material) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } });
   r.model.traverse((m) => { if (m.isMesh && m.material) for (const x of Array.isArray(m.material) ? m.material : [m.material]) x.dispose(); });
   if (r.gyms) for (const g of Object.values(r.gyms)) scene.remove(g.root);
-  netClearPets(r);
+  netClearPets(r); netClearEggs(r);
   remotes.delete(id);
 }
 function netRemoteState(r, s, snap) {
@@ -2542,6 +2607,26 @@ function netRemotePets(r, list) {
     r.pets.push(p);
   }
 }
+function netClearEggs(r) { for (const m of r.eggs) scene.remove(m); r.eggs = []; }
+function netRemoteEggs(r, list) {                       // the eggs standing in another player's pen (just the egg, never its timer)
+  netClearEggs(r);
+  const b = penBoxes[r.pen], sp = spawnPoints.find((q) => q.pen === r.pen);
+  if (!b || !sp) return;
+  for (const q of list) {
+    if (!eggTpl[q.type]) continue;
+    const x = b.min.x + 1 + q.u * Math.max(1, b.max.x - b.min.x - 2), z = b.min.z + 1 + q.v * Math.max(1, b.max.z - b.min.z - 2);
+    const h = castRayIn(walkSolids, new THREE.Vector3(x, sp.center.y + 3, z), DOWN, 20);
+    const m = eggTpl[q.type].make();
+    m.scale.setScalar(CONFIG.eggs.baseHeight * clampN(+q.mult || 1, 1, CONFIG.eggs.maxMult));
+    m.position.set(x, h ? h.point.y : sp.center.y, z); m.rotation.y = (q.u * 977 + q.v * 313) % (Math.PI * 2);
+    scene.add(m); r.eggs.push(m);
+  }
+}
+function netMyEggs() {
+  const b = playerPen && playerPen.box;
+  if (!b) return [];
+  return hatching.map((h) => ({ type: h.egg.type, mult: h.egg.mult, u: clampN((h.mesh.position.x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((h.mesh.position.z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) }));
+}
 function netMyPets() {
   const b = playerPen && playerPen.box;
   if (!b) return [];
@@ -2555,13 +2640,15 @@ function netTick(dt) {
     const fl = form === 'flying' && flight;
     const hand = petInHand();
     netSend({ t: 'state', bat: bat.equipped ? 1 : 0, hp: hand ? hand.pet : 0, hm: hand && hand.sizes && hand.sizes.length ? hand.sizes[hand.sizes.length - 1] : 1, sw: bat.n, rg: rag.tilt, ht: bat.lastHit, x: fl ? flight.c.x : pos.x, y: fl ? flight.c.y - CONFIG.eggs.baseHeight * 0.5 : pos.y, z: fl ? flight.c.z : pos.z, f: facing, form, anim: currentAnim || 'idle',
-              carry: carry ? { type: carry.egg.type, mult: carry.egg.mult } : null,
+              carry: carry ? { type: carry.egg.type, mult: carry.egg.mult } : handEggInfo(),   // an egg in your hand is shown to the others like a stolen one
               ub: up.bar, ut: up.treadmill, gts: gym.session && gym.session.g.kind === 'bar' ? CONFIG.gym.barClipLength / gym.session.every : 0 });
   }
   if (NET.petAcc >= 0.5) {                              // tell the others when the pets in your pen change (placed / taken back / hatched)
     NET.petAcc = 0;
     const sig = petsInPen.map((p) => p.id + ':' + p.mult).join(',');
     if (sig !== NET.petSig) { NET.petSig = sig; netSend({ t: 'pets', list: netMyPets() }); }
+    const esig = hatching.map((h) => h.egg.type + ':' + h.egg.mult + ':' + h.mesh.position.x.toFixed(1) + ':' + h.mesh.position.z.toFixed(1)).join(',');
+    if (esig !== NET.eggSig) { NET.eggSig = esig; netSend({ t: 'pegs', list: netMyEggs() }); }
   }
   for (const r of remotes.values()) {
     const k = Math.min(1, 12 * dt), P = r.root.position;
@@ -2573,7 +2660,7 @@ function netTick(dt) {
     r.rgS += ((r.rg || 0) - r.rgS) * Math.min(1, 14 * dt);          // ragdoll lie-down, as reported by that player
     r.avatar.rotation.x = -r.rgS * Math.PI / 2; r.avatar.position.y = r.rgS * 0.22;
     if (r.batH && r.batH.visible) batFollow(r.batH);
-    if (r.petH && r.petH.visible) petFollow(r.petH);
+    if (r.petH && r.petH.visible) { petHolderTick(r.petH, dt); petFollow(r.petH); }
     const b = penBoxes[r.pen];
     for (const p of r.pets) stepPet(p, b, dt);
   }
@@ -4043,7 +4130,10 @@ function grantOffline(since) {                          // since = ms timestamp 
 function refreshMenuStats() {
   refreshAcct();
   const ids = Object.keys(CONFIG.pets);
-  $('menu-stats').textContent = '$' + Math.floor(money).toLocaleString() + '  \u00b7  ' + ids.filter((id) => dex[id] > 0).length + '/' + ids.length + ' pets discovered' + (wins ? '  \u00b7  \u{1F95A} ' + wins + ' win' + (wins > 1 ? 's' : '') : '');
+  const chip = (icon, text, tip) => '<span class="chip" title="' + tip + '"><svg class="ic" aria-hidden="true"><use href="#i-' + icon + '"/></svg>' + text + '</span>';
+  $('menu-stats').innerHTML = chip('coin', '$' + Math.floor(money).toLocaleString(), 'Money')
+    + chip('paw', ids.filter((id) => dex[id] > 0).length + '/' + ids.length, 'Pets discovered')
+    + (wins ? chip('trophy', wins + ' win' + (wins > 1 ? 's' : ''), 'Wins') : '');
 }
 function banner(html, color) {
   const el = ui.banner;
@@ -4649,9 +4739,11 @@ let fpsAcc = 0, fpsFrames = 0, fps = 0;
 function tick() {
   requestAnimationFrame(tick);
   const dt = Math.min(clock.getDelta(), 0.05);
+  heldDt = dt;
 
   if (toast.t > 0) toast.t -= dt;
   updatePlayer(dt);
+  updateHeldEgg();
   updateBat(dt);
   updateDropped(dt);
   updateTraining(dt);
@@ -4700,6 +4792,8 @@ function tick() {
 }
 
 if (CONFIG.debug) window.TAE = {   // test hook, only with ?debug=1
+  penBoxes, get spawnPoints() { return spawnPoints; },
+  netAddRemote, netRemoteEggs, updateHeldEgg, get handEgg() { return handEgg; }, get petHolder() { return petHolder; }, get currentAnim() { return currentAnim; }, handEggInfo, selectSlot,
   snapshot, applySave, startHatching, spawnSavedEggs, get pendingEggs() { return pendingEggs; }, musicToggle, music,
   get pos() { return pos; }, get yaw() { return yaw; }, set yaw(v) { yaw = v; }, get state() { return state; }, get form() { return form; }, get flight() { return flight; },
   get carry() { return carry; }, steal, eggItems, netMessage, barrierBoxes, areas: () => areas, playerPen: () => playerPen, nearPen, inOwnPen, mapBox: () => mapBox, CONFIG, mapMarkers, areaBoxes, stands, trails, trailMult, totalSpeed, standKey, nearStand, sellPets, trailAction, openPanel, crossedWin, get instantHatch() { return instantHatch; }, hatching, placePet, selectSlot, get wins() { return wins; }, get money() { return money; }, set money(v) { money = v; }, inv, train, penCapacity, addPet: (id, mult) => { const i = inv.slots.findIndex((x) => !x); inv.slots[i] = { pet: id, count: 1, sizes: [mult || 1] }; refreshHotbar(); }, setSpeed: (v) => { speedStat = v; }, setCarrySafe: () => { if (carry) carry.status = 'safe'; }, areaAt, bat, rag, dropped, batSwing, equipBat, ragStart, caughtBy, tryThrow, throwFwd, zoneBox: () => zoneBox, NET, remotes, gymItems, startGym, stopGym, canTrain, inZone,
