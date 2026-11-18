@@ -48,6 +48,9 @@
 <link rel="preload" as="fetch" crossorigin href="Sell.glb">
 <link rel="preload" as="fetch" crossorigin href="Snake.glb">
 <link rel="preload" as="fetch" crossorigin href="Space_Octopus.glb">
+<link rel="preload" as="fetch" crossorigin href="Jellyfish.glb">
+<link rel="preload" as="fetch" crossorigin href="Gumdrop_Iguana.glb">
+<link rel="preload" as="fetch" crossorigin href="Astro_Chameleon.glb">
 <link rel="preload" as="fetch" crossorigin href="Squirrel.glb">
 <link rel="preload" as="fetch" crossorigin href="Starfish.glb">
 <link rel="preload" as="fetch" crossorigin href="Strawberry_Egg.glb">
@@ -457,8 +460,9 @@
   #dex .inv-c.pick { border-color: #6be585; box-shadow: 0 0 10px #6be585; background: rgba(107,229,133,.22); }
   #dex .inv-c .k { position: absolute; top: 1px; left: 4px; font: 700 11px var(--font); opacity: .7; }
   #dex .inv-c .n { position: absolute; right: 3px; bottom: 1px; font: 700 12px var(--font); text-shadow: 0 1px 2px #000; }
-  #dex .inv-c .ic { width: 78%; height: 78%; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-  #dex .inv-c .ic img, #dex .inv-c .ic svg, #dex .inv-c .ic canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+  #dex .inv-c .ic { position: absolute; inset: 9%; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  #dex .inv-c .ic img, #dex .inv-c .ic svg, #dex .inv-c .ic canvas { width: 100%; height: 100%; object-fit: contain; display: block; }
+  #dex .inv-c .ic .pet-emoji { font-size: 28px; line-height: 1; }
   #dex .shop-sub { display: flex; gap: 6px; margin: 0 0 10px; }
   #dex .shop-sub-b { border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #fff; border-radius: 10px; font: 700 14px var(--font); padding: 6px 14px; cursor: pointer; }
   #dex .shop-area { font: 700 13px var(--font); opacity: .8; letter-spacing: .06em; text-transform: uppercase; margin: 10px 2px 2px; }
@@ -684,7 +688,7 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', alien: 'Alien.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb', spaceoctopus: 'Space_Octopus.glb', tomato: 'Tomato.glb', gummyworm: 'Gummy_Worm.glb', spacewhale: 'Space_Whale.glb', cosmicslime: 'Cosmic_Slime.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', alien: 'Alien.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb', spaceoctopus: 'Space_Octopus.glb', tomato: 'Tomato.glb', gummyworm: 'Gummy_Worm.glb', spacewhale: 'Space_Whale.glb', cosmicslime: 'Cosmic_Slime.glb', jellyfish: 'Jellyfish.glb', gumdropiguana: 'Gumdrop_Iguana.glb', astrochameleon: 'Astro_Chameleon.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
     sell: 'Sell.glb', trailshop: 'Trail_Shop.glb',
     gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb', 'Treadmill_Upgrade4.glb', 'Treadmill_Upgrade5.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb', 'PullUp_BarUpgrade4.glb', 'PullUp_BarUpgrade5.glb'] },   // index = upgrade level
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb',
@@ -836,6 +840,9 @@ const CONFIG = {
     gummyworm: { name: 'Gummy Worm', area: 'candy', rarity: 'epic', weight: 60, income: 2200, height: 1.8, icon: '\u{1FAB1}', lucky: true, fit: 'max', walkAnim: 'animation 2' },   // walkAnim: the file has no 'Walk' clip, its second clip is used for walking
     spacewhale: { name: 'Space Whale', area: 'starfall', rarity: 'epic', weight: 30, income: 20000, height: 2.4, icon: '\u{1F40B}', lucky: true, fit: 'max' },
     cosmicslime: { name: 'Cosmic Slime', area: 'starfall', rarity: 'epic', weight: 40, income: 15000, height: 0.9, icon: '\u{1F7E3}', lucky: true },
+    jellyfish: { name: 'Jellyfish', area: 'candy', rarity: 'epic', weight: 50, income: 2800, height: 1.2, icon: '\u{1FABC}', lucky: true },   // Candy Kingdom
+    gumdropiguana: { name: 'Gumdrop Iguana', area: 'candy', rarity: 'epic', weight: 40, income: 3200, height: 1.0, icon: '\u{1F98E}', lucky: true, fit: 'max' },   // Candy Kingdom
+    astrochameleon: { name: 'Astro Chameleon', area: 'starfall', rarity: 'epic', weight: 35, income: 18000, height: 1.0, icon: '\u{1F98E}', lucky: true, fit: 'max' },   // Starfall
     spaceoctopus: { name: 'Space Octopus', area: 'starfall', rarity: 'epic', weight: 45, income: 12000, height: 1.1, icon: '\u{1F419}', lucky: true },
     user:      { name: 'User',      area: 'admin', rarity: 'admin', admin: true, tint: true, weight: 0, income: 100000, height: 1.5, icon: '\u{1F9D1}' },   // ADMIN ONLY: never hatches, only the admin panel gives it. Uses the player model in the player's own colours.
     tomato:    { name: 'Tomato',    area: 'admin', rarity: 'admin', admin: true, weight: 0, income: 100000, height: 1.0, icon: '\u{1F345}', brighten: true },   // ADMIN ONLY (admin panel): never hatches. brighten: textured parts (the eyes) are metal=1 in the file, which renders black here, so they are made matte + self-lit. Uses the Idle / Walk animations that are in Tomato.glb
@@ -1514,8 +1521,8 @@ function eggInHand() {
   return sl && sl.egg && eggTpl[sl.egg] ? sl : null;
 }
 const handEggInfo = () => { const sl = eggInHand(); return sl ? { type: sl.egg, mult: sl.sizes && sl.sizes.length ? sl.sizes[sl.sizes.length - 1] : 1 } : null; };
-function makeSkinEgg() {                                 // a fresh egg mesh (pivot = its base, normal size) wearing the equipped skin
-  const S = skinById(skins.eq);
+function makeSkinEgg(skinId) {                           // a fresh egg mesh (pivot = its base, normal size) wearing the given skin (default: the one you have equipped)
+  const S = skinById(skinId === undefined ? skins.eq : skinId);
   let m;
   if (S && S.model && eggTpl[S.model]) m = eggTpl[S.model].make();
   else { m = playerEgg.make(); if (S && S.look) mutateLook(m, S.look); }
@@ -2537,6 +2544,7 @@ function fbSend(o) {
       const st = { x: fbRound(o.x), y: fbRound(o.y), z: fbRound(o.z), f: fbRound(o.f), form: o.form, anim: o.anim };
       if (o.carry) st.carry = { type: o.carry.type, mult: fbRound(o.carry.mult) };
       if (o.ub !== undefined) { st.ub = o.ub; st.ut = o.ut; }
+      if (o.sk) st.sk = String(o.sk).slice(0, 39);       // equipped egg skin: the others see your egg wearing it
       if (o.gts) st.gts = fbRound(o.gts);
       if (o.bat) st.bat = 1;
       if (o.hp) { st.hp = o.hp; st.hm = fbRound(o.hm || 1); }
@@ -2717,6 +2725,12 @@ function netRemoteState(r, s, snap) {
   r.tx = s.x; r.ty = s.y; r.tz = s.z; r.tf = s.f; r.form = s.form;
   if (!r.init || snap) { r.root.position.set(s.x, s.y, s.z); r.facing = s.f; r.init = true; }
   const human = s.form === 'human';
+  const skinWant = s.sk && skinById(s.sk) ? s.sk : '';   // the other player's equipped egg skin
+  if (skinWant !== (r.skin || '')) {
+    r.root.remove(r.eggMesh);
+    r.eggMesh = makeSkinEgg(skinWant || null); r.eggMesh.scale.setScalar(CONFIG.eggs.baseHeight); r.root.add(r.eggMesh);
+    r.skin = skinWant;
+  }
   r.avatar.visible = human; r.eggMesh.visible = !human;
   r.tag.position.y = (human ? CONFIG.player.height : CONFIG.eggs.baseHeight + 0.2) + 0.55;
   const key = s.carry && eggTpl[s.carry.type] ? s.carry.type + ':' + s.carry.mult : '';
@@ -2789,7 +2803,7 @@ function netTick(dt) {
     const hand = petInHand();
     netSend({ t: 'state', bat: bat.equipped ? 1 : 0, hp: hand ? hand.pet : 0, hm: hand && hand.sizes && hand.sizes.length ? hand.sizes[hand.sizes.length - 1] : 1, sw: bat.n, rg: rag.tilt, ht: bat.lastHit, x: fl ? flight.c.x : pos.x, y: fl ? flight.c.y - CONFIG.eggs.baseHeight * 0.5 : pos.y, z: fl ? flight.c.z : pos.z, f: facing, form, anim: currentAnim || 'idle',
               carry: carry ? { type: carry.egg.type, mult: carry.egg.mult } : handEggInfo(),   // an egg in your hand is shown to the others like a stolen one
-              ub: up.bar, ut: up.treadmill, gts: gym.session && gym.session.g.kind === 'bar' ? CONFIG.gym.barClipLength / gym.session.every : 0 });
+              sk: skins.eq || 0, ub: up.bar, ut: up.treadmill, gts: gym.session && gym.session.g.kind === 'bar' ? CONFIG.gym.barClipLength / gym.session.every : 0 });
   }
   if (NET.petAcc >= 0.5) {                              // tell the others when the pets in your pen change (placed / taken back / hatched)
     NET.petAcc = 0;
@@ -3432,9 +3446,37 @@ function updateCarry() {
    to steal again. Select it (keys 1-9) and click a spot in your pen to place it. slot = { egg: type, count, sizes: [mult...], areas: [area...] } (parallel arrays, last = next one used). */
 const EGG_COLORS = { normal: '#f2ead7', brown: '#b07a4a', cracked: '#cfc9bb', golden: '#ffd34d', rainbow: '#ff8ad8', cactus: '#6bbf59', bone: '#e8e2cf', sand: '#e0c27a', claw: '#b24a3a', scorpion: '#8a5cc0',
                      blue: '#5aa9ff', duck: '#ffe066', flower: '#ff9ecb', lily: '#c9a6ff', reed: '#7fb069', candy: '#ff7eb6', chocolate: '#7b4a2b', strawberry: '#ff5470', lolipop: '#ff9f43', gummy: '#5de08a', comet: '#7ad7ff', ring: '#ffcf5a', nebula: '#b27bff', meteor: '#c4a484', galaxy: '#ffa3f0' };
+const eggImg = {};
+let eggIconR = null, eggIconScene = null, eggIconCam = null;
+function eggIconUrl(type) {                              // the egg MODEL rendered once to a small transparent image (cached per egg type, mutations included)
+  if (eggImg[type] !== undefined) return eggImg[type];
+  const tpl = eggTpl[type]; if (!tpl) return '';          // models not loaded yet: do not cache, try again next refresh
+  eggImg[type] = '';
+  try {
+    if (!eggIconR) {
+      eggIconR = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+      eggIconR.setPixelRatio(1); eggIconR.setSize(128, 128, false); eggIconR.setClearColor(0x000000, 0);
+      eggIconScene = new THREE.Scene();
+      eggIconScene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.6));
+      const dl = new THREE.DirectionalLight(0xffffff, 1.9); dl.position.set(2, 4, 3); eggIconScene.add(dl);
+      eggIconCam = new THREE.PerspectiveCamera(30, 1, 0.01, 1000);
+    }
+    const m = tpl.make(); m.scale.setScalar(1); m.position.set(0, 0, 0); m.rotation.set(0, 0, 0);
+    eggIconScene.add(m); m.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+    const d = Math.max(size.x, size.y, size.z) * 0.5 / Math.tan(THREE.MathUtils.degToRad(15)) * 1.25;
+    eggIconCam.position.copy(c).addScaledVector(new THREE.Vector3(0.45, 0.3, 1).normalize(), d); eggIconCam.lookAt(c);
+    eggIconR.render(eggIconScene, eggIconCam);
+    eggImg[type] = eggIconR.domElement.toDataURL('image/png');
+    eggIconScene.remove(m);
+  } catch (e) { log.warn('Egg icon render failed for', type, e); }
+  return eggImg[type];
+}
 function eggIcon(type) {
+  const u = eggIconUrl(type);
+  if (u) return '<img class="pet-ic egg-img" src="' + u + '" alt="' + eggTypeName(type) + ' egg">';   // the real egg model
   const T = CONFIG.eggs.types[type] || {}, M = T.mut && CONFIG.mutations[T.mut];
-  const c = M ? '#' + M.color.toString(16).padStart(6, '0') : EGG_COLORS[type] || '#f2ead7';   // mutation eggs wear their gold / diamond colour
+  const c = M ? '#' + M.color.toString(16).padStart(6, '0') : EGG_COLORS[type] || '#f2ead7';   // fallback if the model is not ready: the old flat egg
   return '<svg class="egg-ic" viewBox="0 0 40 50" aria-label="' + type + ' egg"><path d="M20 3C11 3 4 18 4 30c0 10 7 17 16 17s16-7 16-17C36 18 29 3 20 3z" fill="' + c + '" stroke="rgba(0,0,0,.45)" stroke-width="2"/><ellipse cx="14" cy="18" rx="4" ry="7" fill="rgba(255,255,255,.45)" transform="rotate(-20 14 18)"/></svg>';
 }
 const heldEggSlot = () => { if (bat.equipped) return null; const sl = inv.slots[inv.sel]; return sl && sl.egg ? sl : null; };
@@ -3727,7 +3769,7 @@ const chickenHost = () => {
 };
 function chickenTarget(ch) {                             // { id, x, y, z, mine } of the thief this guard chases right now, or null
   const A = ch.area;
-  const meOk = !!carry && carry.status === 'stolen' && form === 'human' && (areaAt(pos.x, pos.z) === A || (!!A.chaseAnywhere && carry.area === A.id));   // chaseAnywhere: it follows its thief out of the area
+  const meOk = !!carry && carry.status === 'stolen' && form === 'human' && carry.area === A.id && (!!A.chaseAnywhere || areaAt(pos.x, pos.z) === A);   // ONLY the guard of the area the egg was stolen from chases (chaseAnywhere: it follows its thief out of the area)
   if (!NET.on || !NET.fb) return meOk ? { id: null, x: pos.x, y: pos.y, z: pos.z, mine: true } : null;
   let best = null, bestAt = -1;
   for (let i = 0; i < eggItems.length; i++) {
@@ -3739,7 +3781,7 @@ function chickenTarget(ch) {                             // { id, x, y, z, mine 
     if (e.by === FB.id) { if (meOk) t = { id: FB.id, x: pos.x, y: pos.y, z: pos.z, mine: true }; }
     else {
       const st = FB.states.get(e.by);
-      if (st && st.form === 'human' && (areaAt(st.x, st.z) === A || (!!A.chaseAnywhere && eggItems[i].area === A.id))) t = { id: e.by, x: st.x, y: st.y, z: st.z, mine: false };
+      if (st && st.form === 'human' && eggItems[i].area === A.id && (!!A.chaseAnywhere || areaAt(st.x, st.z) === A)) t = { id: e.by, x: st.x, y: st.y, z: st.z, mine: false };
     }
     if (t) { best = t; bestAt = at; }
   }
@@ -4111,6 +4153,7 @@ function buildHotbar() {
   ui.hotbar.appendChild(bag);
 }
 function refreshHotbar() {
+  try { if (dexOpen && dexTab === 'inv') buildDex(); } catch (e) { /* panel not ready yet (before the first build) */ }   // keep the open Inventory in sync with the hotbar
   if (ui.batEl) ui.batEl.classList.toggle('sel', bat.equipped);
   inv.slots.forEach((sl, i) => {
     const el = ui.slotEls[i]; if (!el) return;
