@@ -1263,6 +1263,7 @@ async function init() {
 
   respawn();
   ready = true;
+  if (params.get('testgift') === '1') setTimeout(() => { try { giveMutGift(); } catch (e) { log.warn('Test gift failed', e); } }, 2500);   // TEST: open the game with ?testgift=1 to get the old-gold/diamond Gummy Worm gift (every load)
   dom.overlayText.textContent = 'Throw eggs, steal eggs, hatch pets!';
   ui.play.disabled = false; $('play-label').textContent = 'Play';
   refreshMenuStats();
