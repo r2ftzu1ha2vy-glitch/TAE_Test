@@ -1001,6 +1001,10 @@ function updateDayNight(dt) {
   const t = dnT(), night = t >= DN.day, left = (night ? DN.cycle : DN.day) - t;
   if (DN.wasNight === true && !night) sunriseReset();             // night -> day: the eggs reset
   DN.wasNight = night;
+  if (night && ready && !carry && (form === 'flying' || form === 'egg')) {   // an egg thrown just before nightfall: it is called back to the pen (nothing can be stolen at night)
+    respawn();
+    say('Night fell - your egg went back to your pen. Throwing and stealing reopen at sunrise.', 5);
+  }
   DN.k += ((night ? 1 : 0) - DN.k) * Math.min(1, dt * 0.8);       // eases over a few seconds at sunrise / sunset
   const k = DN.k;
   scene.background.copy(DN_COL.skyD).lerp(DN_COL.skyN, k);
@@ -3283,7 +3287,7 @@ function inOwnPen() {
 }
 
 function nearestSteal() {
-  if (carry || (form !== 'human' && form !== 'egg')) return null;
+  if (carry || isNight() || (form !== 'human' && form !== 'egg')) return null;   // night: no stealing
   let best = null, bd = Infinity;
   for (const it of eggItems.concat(dropped)) {
     const e = it.egg;
@@ -3304,6 +3308,7 @@ function makeHeld(e) {
 function steal(it) {
   const e = it.egg;
   if (!e || carry) return;
+  if (isNight()) { say('Night - stealing is closed until sunrise', 3); return; }   // eggs thrown just before nightfall cannot be stolen once it is night
   if (form === 'egg') endEggForm();                       // clicking Steal turns you back into the player
   scene.remove(e.mesh); e.mesh.visible = true;
   const home = it.drop ? it.home : it;                   // a dropped egg belongs to the spawner it came from
