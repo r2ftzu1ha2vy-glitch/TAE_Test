@@ -860,7 +860,7 @@ const CONFIG = {
   steal: { dropSeconds: 0,   /* 0 = a dropped egg stays where it fell until someone picks it up */ penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
   // SELL + TRAIL SHOP stands: they stand on the "Sell" and "Trail_Shop" marker cubes of the map. reach = how close (m) you must be to use one, height = model height in metres,
   // yaw = turn the stand (radians) so its front faces the player.
-  stands: { reach: 9, height: 5, heights: { fuse: 6 }, yaw: { sell: 0, trailshop: 0, fuse: 0 } },
+  stands: { reach: 9, height: 5, heights: { fuse: 3.2 }, yaw: { sell: 0, trailshop: 0, fuse: Math.PI } },   // fuse: height in metres, turned 180 degrees so it faces the player
   // FUSE MACHINE (stands on the map's Fuse_Machine node): put `need` pets of the same kind in, get ONE pet of that kind out. Its size = the sum of the sizes you put in x bonus (capped at petMaxMult),
   // so fusing is always worth it: three 1x pets become a 3.75x pet. It always takes the smallest ones you own.
   fuse: { need: 3, bonus: 1.25 },
@@ -889,15 +889,30 @@ const CONFIG = {
 
 const LEGACY_MUT = /^(gold|diamond|shadow|glow)_/;       // mutations were removed: a saved gold_ring / diamond_spacewhale simply becomes the normal ring / spacewhale
 function legacyId(id) { return typeof id === 'string' && LEGACY_MUT.test(id) && !CONFIG.eggs.types[id] && !CONFIG.pets[id] ? id.replace(LEGACY_MUT, '') : id; }
+let mutGiftDone = false;                                 // saved: the thank-you Gummy Worm for the old gold / diamond owners was already handed out
 function migrateLegacyMutations(d) {
   if (!d || typeof d !== 'object') return d;
-  if (d.dex && typeof d.dex === 'object') { const nd = {}; for (const [k, v] of Object.entries(d.dex)) { const nk = legacyId(k); nd[nk] = (nd[nk] || 0) + (+v || 0); } d.dex = nd; }
+  let owner = false;                                    // did this save hold a gold / diamond egg or pet?
+  const fix = (id) => { const n = legacyId(id); if (n !== id && /^(gold|diamond)_/.test(id)) owner = true; return n; };
+  if (d.dex && typeof d.dex === 'object') { const nd = {}; for (const [k, v] of Object.entries(d.dex)) { const nk = fix(k); nd[nk] = (nd[nk] || 0) + (+v || 0); } d.dex = nd; }
   const slots = Array.isArray(d.slots) ? d.slots : Object.values(d.slots || {});
-  for (const sl of slots) if (sl) { if (sl.egg) sl.egg = legacyId(sl.egg); if (sl.pet) sl.pet = legacyId(sl.pet); }
+  for (const sl of slots) if (sl) { if (sl.egg) sl.egg = fix(sl.egg); if (sl.pet) sl.pet = fix(sl.pet); }
   d.slots = slots;
-  for (const q of (Array.isArray(d.pets) ? d.pets : [])) if (q && q.id) q.id = legacyId(q.id);
-  for (const q of (Array.isArray(d.eggs) ? d.eggs : [])) if (q && q.type) q.type = legacyId(q.type);
+  for (const q of (Array.isArray(d.pets) ? d.pets : [])) if (q && q.id) q.id = fix(q.id);
+  for (const q of (Array.isArray(d.eggs) ? d.eggs : [])) if (q && q.type) q.type = fix(q.type);
+  d.giveMutGift = owner && !d.mutGift;                  // one Gummy Worm, once
   return d;
+}
+function giveMutGift() {                                // thank-you for everyone who had a gold or diamond egg / pet before mutations were removed
+  const id = 'gummyworm'; if (!CONFIG.pets[id]) return;
+  mutGiftDone = true;
+  dex[id] = Math.max(1, dex[id] | 0);
+  const room = inv.slots.some((sl) => sl && sl.pet === id) || inv.slots.some((sl) => !sl);
+  if (room) addPet(id, 1);
+  else { mutGiftDone = false; say('Free a hotbar or backpack slot and reload to get your Gummy Worm gift!', 6); return; }   // no room: asked again at the next load
+  saveGame(); buildDex();
+  setTimeout(() => banner('<small>Thank you for playing!</small><b>Gummy Worm</b><em>A gift for your old gold / diamond pets</em>', '#ff8fd0'), 2500);
+  log.info('Gave the legacy mutation gift:', id);
 }
 CONFIG.eggSkins = [];                                    // one skin per spawning egg type: the egg you throw looks like that area egg (Bubble Bay Blue Egg, Starfall Ring Egg ...)
 for (const [tk, T] of Object.entries(CONFIG.eggs.types)) {
@@ -3899,7 +3914,7 @@ function snapshot() {                                  // everything that is sav
   const uv = (x, z) => (b ? { u: clampN((x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) } : { u: 0.5, v: 0.5 });
   const eggs = b ? hatching.map((h) => ({ type: h.egg.type, mult: h.egg.mult, area: h.egg.area || null, left: h.left, ...uv(h.mesh.position.x, h.mesh.position.z) }))
     : pendingEggs.map((q) => ({ type: q.type, mult: q.mult, area: q.area, left: Math.max(0, (q.until - Date.now()) / 1000), u: q.u, v: q.v }));
-  return { v: 2, lastSeen: Date.now(), money, dex, slots: inv.slots, train, up, pets, eggs, trails: { own: Object.keys(trails.own), eq: trails.eq }, skins: { own: Object.keys(skins.own), eq: skins.eq }, wins, rebirths, profile: { name: profile.name, parts: profile.parts } };
+  return { v: 2, lastSeen: Date.now(), money, dex, slots: inv.slots, train, up, pets, eggs, trails: { own: Object.keys(trails.own), eq: trails.eq }, skins: { own: Object.keys(skins.own), eq: skins.eq }, wins, rebirths, mutGift: mutGiftDone, profile: { name: profile.name, parts: profile.parts } };
 }
 function resetState() {                                // back to a brand new game (in memory)
   stopGym();
@@ -3907,7 +3922,7 @@ function resetState() {                                // back to a brand new ga
   inv.slots.fill(null); inv.sel = 0;
   train.strength = 0; train.speed = 0; speedStat = CONFIG.player.speed;
   up.bar = 0; up.treadmill = 0; up.pen = 0;
-  trails.own = {}; trails.eq = null; skins.own = {}; skins.eq = null; wins = 0; rebirths = 0;
+  trails.own = {}; trails.eq = null; skins.own = {}; skins.eq = null; wins = 0; rebirths = 0; mutGiftDone = false;
   for (const g of gymItems) setGymTier(g, 0);
   for (const pp of petsInPen) scene.remove(pp.root);
   petsInPen.length = 0; pendingPets = [];
@@ -3932,6 +3947,7 @@ function applySave(d) {                                // replace the current ga
   refreshSkin();
   wins = Math.max(0, d.wins | 0);
   rebirths = Math.max(0, d.rebirths | 0);
+  mutGiftDone = !!d.mutGift;
   for (const id of Object.keys(CONFIG.pets)) if (d.dex && d.dex[id] > 0) dex[id] = d.dex[id] | 0;
   const slots = Array.isArray(d.slots) ? d.slots : Object.values(d.slots || {});
   slots.slice(0, CONFIG.inventorySlots).forEach((sl, i) => {
@@ -3957,6 +3973,7 @@ function applySave(d) {                                // replace the current ga
   for (const g of gymItems) setGymTier(g, up[g.kind]);
   spawnSavedPets();
   refreshHotbar(); buildDex(); refreshMoney(false); refreshMenuStats();
+  if (d.giveMutGift) giveMutGift();
 }
 function spawnSavedEggs() {                            // put the saved hatching eggs back into the pen with their remaining time
   if (!playerPen || !pendingEggs.length) return;
