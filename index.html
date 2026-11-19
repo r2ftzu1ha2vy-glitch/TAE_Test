@@ -56,6 +56,7 @@
 <link rel="preload" as="fetch" crossorigin href="Strawberry_Egg.glb">
 <link rel="preload" as="fetch" crossorigin href="Toucan.glb">
 <link rel="preload" as="fetch" crossorigin href="Trail_Shop.glb">
+<link rel="preload" as="fetch" crossorigin href="Fuse_Machine.glb">
 <link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade1.glb">
 <link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade2.glb">
 <link rel="preload" as="fetch" crossorigin href="Treadmill_Upgrade3.glb">
@@ -689,7 +690,7 @@ const CONFIG = {
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
   models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', alien: 'Alien.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb', spaceoctopus: 'Space_Octopus.glb', tomato: 'Tomato.glb', gummyworm: 'Gummy_Worm.glb', spacewhale: 'Space_Whale.glb', cosmicslime: 'Cosmic_Slime.glb', jellyfish: 'Jellyfish.glb', gumdropiguana: 'Gumdrop_Iguana.glb', astrochameleon: 'Astro_Chameleon.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
-    sell: 'Sell.glb', trailshop: 'Trail_Shop.glb',
+    sell: 'Sell.glb', trailshop: 'Trail_Shop.glb', fuse: 'Fuse_Machine.glb',
     gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb', 'Treadmill_Upgrade4.glb', 'Treadmill_Upgrade5.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb', 'PullUp_BarUpgrade4.glb', 'PullUp_BarUpgrade5.glb'] },   // index = upgrade level
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb',
              blue: 'Blue_Egg.glb', duck: 'Duck_Egg.glb', flower: 'Flower_Egg.glb', lily: 'Lily_Egg.glb', reed: 'Reed_Egg.glb',                                   // Bubble Bay
@@ -730,17 +731,17 @@ const CONFIG = {
   match: {
     spawn: /^Player[ _]Spawn/i,
     zone: /^Throw[ _]Zone/i,
-    valley: /^Cluck[ _]Valley$/i, sands: /^Scorching[ _]Sands$/i, valleyEgg: /^Cluck[ _]Valley[ _]Egg(_\d+)?$/i, sandsEgg: /^Scorching[ _]Sands[ _]Egg(_\d+)?$/i,
+    valley: /^Cluck[ _]Valley$/i, sands: /^Scorching[ _]Sands$/i, valleyEgg: /^Cluck[ _]Valley[ _]Egg(_\d+)*$/i, sandsEgg: /^Scorching[ _]Sands[ _]Egg(_\d+)*$/i,
     // every area: the floor node and its egg spawner markers. Order = nearest to furthest (must match the order of CONFIG.areas).
-    areaNodes: { valley: [/^Cluck[ _]Valley$/i, /^Cluck[ _]Valley[ _]Egg(_\d+)?$/i], sands: [/^Scorching[ _]Sands$/i, /^Scorching[ _]Sands[ _]Egg(_\d+)?$/i],
-                 bay: [/^Bubble[ _]Bay$/i, /^Bubble[ _]Bay[ _]Egg(_\d+)?$/i], candy: [/^Candy[ _]Kingdom$/i, /^Candy[ _]Kingdom[ _]Egg(_\d+)?$/i],
-                 starfall: [/^Starfall$/i, /^Starfall[ _]Egg(_\d+)?$/i] },
+    areaNodes: { valley: [/^Cluck[ _]Valley$/i, /^Cluck[ _]Valley[ _]Egg(_\d+)*$/i], sands: [/^Scorching[ _]Sands$/i, /^Scorching[ _]Sands[ _]Egg(_\d+)*$/i],
+                 bay: [/^Bubble[ _]Bay$/i, /^Bubble[ _]Bay[ _]Egg(_\d+)*$/i], candy: [/^Candy[ _]Kingdom$/i, /^Candy[ _]Kingdom[ _]Egg(_\d+)*$/i],
+                 starfall: [/^Starfall$/i, /^Starfall[ _]Egg(_\d+)*$/i] },
     guardStart: { valley: /^Chicken/i, bay: /^Duck$/i, candy: /^Gummy[ _]Bear$/i, starfall: /^Alien$/i },   // marker nodes in the map: where each area's guard starts
     fence: /^Fence_?Pen(\d+)/i, spawnPen: /Pen(\d+)/i,
     gymBar: /^PullUp_?Bar_?Pen(\d+)/i, gymTread: /^Treadmill_?Pen(\d+)/i,   // marker cubes in the map: the machine for pen N stands where its marker is
     barrier: [/^Fence_?Pen/i, /^Wall/i],          // always solid at every height and from every side: never stepped on, never walked through
-    nonSolid: [/^Win$/i, /^Sell$/i, /^Trail[ _]Shop$/i, /^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg(_\d+)?$/i, /^Chicken/i, /^Duck$/i, /^Gummy[ _]Bear$/i, /^Alien$/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
-    hidden: [/^Win$/i, /^Sell$/i, /^Trail[ _]Shop$/i, /^Player[ _]Spawn/i, /Egg(_\d+)?$/i, /^Chicken/i, /^Duck$/i, /^Gummy[ _]Bear$/i, /^Alien$/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
+    nonSolid: [/^Win$/i, /^Sell$/i, /^Trail[ _]Shop$/i, /^Fuse[ _]Machine$/i, /^Player[ _]Spawn/i, /^Throw[ _]Zone/i, /Egg(_\d+)*$/i, /^Chicken/i, /^Duck$/i, /^Gummy[ _]Bear$/i, /^Alien$/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
+    hidden: [/^Win$/i, /^Sell$/i, /^Trail[ _]Shop$/i, /^Fuse[ _]Machine$/i, /^Player[ _]Spawn/i, /Egg(_\d+)*$/i, /^Chicken/i, /^Duck$/i, /^Gummy[ _]Bear$/i, /^Alien$/i, /^PullUp_?Bar_?Pen\d/i, /^Treadmill_?Pen\d/i],
   },
   // speed = the player's speed stat (walk speed). Starts at 10. There is no sprint and no jump. Override with ?speed=N
   // speedUnit: metres per second per point of speed (player AND chickens), so "10" reads big but moves at a comfortable 5 m/s.
@@ -859,7 +860,13 @@ const CONFIG = {
   steal: { dropSeconds: 0,   /* 0 = a dropped egg stays where it fell until someone picks it up */ penMax: 12, reach: 3, range: 1.4, carryMin: 0.6, carryMax: 1.1, carryBase: 1.62, placeMaxH: 2.5 },
   // SELL + TRAIL SHOP stands: they stand on the "Sell" and "Trail_Shop" marker cubes of the map. reach = how close (m) you must be to use one, height = model height in metres,
   // yaw = turn the stand (radians) so its front faces the player.
-  stands: { reach: 9, height: 5, yaw: { sell: 0, trailshop: 0 } },
+  stands: { reach: 9, height: 5, heights: { fuse: 6 }, yaw: { sell: 0, trailshop: 0, fuse: 0 } },
+  // FUSE MACHINE (stands on the map's Fuse_Machine node): put `need` pets of the same kind in, get ONE pet of that kind out. Its size = the sum of the sizes you put in x bonus (capped at petMaxMult),
+  // so fusing is always worth it: three 1x pets become a 3.75x pet. It always takes the smallest ones you own.
+  fuse: { need: 3, bonus: 1.25 },
+  // REBIRTH: spend money to reset your money, strength, speed and your gym machines for a permanent income boost. Pets, eggs, pen slots, trails, skins and the pet index are all kept.
+  // cost = baseCost * growth ^ (rebirths so far). Every rebirth adds bonusPerRebirth to the income multiplier of ALL your pets (x1.5, x2, x2.5 ...).
+  rebirth: { baseCost: 50000000, growth: 3, bonusPerRebirth: 0.5 },
   // A pet sells for income * size * seconds (about a minute and a half of what it would earn standing in your pen).
   sell: { seconds: 90 },
   // Trails: mult multiplies your Speed stat while the trail is equipped (it counts for the area speed requirements and for real walking speed). cost = price in the Trail Shop.
@@ -880,47 +887,27 @@ const CONFIG = {
   ],
 };
 
-/* Mutations: after every night (sunrise) the egg spawners reset, and each new egg has a chance to be a mutation (cheaper to read than to explain: diamond is rolled first).
-   A mutation is a copy of the egg type / pet with a prefix ('gold_ring', 'gold_spacewhale') so saves, hotbar, pens, gifts and multiplayer all handle it without extra fields.
-   chance = per egg at sunrise (diamond 5%, gold 25%, the rest normal). mult = income multiplier of the pet it hatches (and the egg's points). They never spawn or hatch outside the sunrise reset. */
-CONFIG.mutations = {
-  diamond: { label: 'Diamond', chance: 0.05, mult: 5, color: 0x9eeeff, emissive: 0x1b9bc0 },
-  gold:    { label: 'Gold',    chance: 0.25, mult: 2, color: 0xffc83d, emissive: 0x8a5a00 },
-};
-for (const [mk, M] of Object.entries(CONFIG.mutations)) {
-  for (const [tk, T] of Object.entries(CONFIG.eggs.types)) {
-    if (T.mut || !(T.w > 0)) continue;                   // only egg types that really spawn
-    CONFIG.eggs.types[mk + '_' + tk] = { w: 0, pts: Math.round(T.pts * M.mult), areas: T.areas, mut: mk, base: tk };
-    CONFIG.eggLuck[mk + '_' + tk] = CONFIG.eggLuck[tk] != null ? CONFIG.eggLuck[tk] : 1;
-  }
-  for (const [pk, P] of Object.entries(CONFIG.pets)) {
-    if (P.admin || P.mutOf) continue;
-    CONFIG.pets[mk + '_' + pk] = Object.assign({}, P, { name: M.label + ' ' + P.name, income: P.income * M.mult, weight: 0, mut: mk, mutOf: pk });
-  }
+const LEGACY_MUT = /^(gold|diamond|shadow|glow)_/;       // mutations were removed: a saved gold_ring / diamond_spacewhale simply becomes the normal ring / spacewhale
+function legacyId(id) { return typeof id === 'string' && LEGACY_MUT.test(id) && !CONFIG.eggs.types[id] && !CONFIG.pets[id] ? id.replace(LEGACY_MUT, '') : id; }
+function migrateLegacyMutations(d) {
+  if (!d || typeof d !== 'object') return d;
+  if (d.dex && typeof d.dex === 'object') { const nd = {}; for (const [k, v] of Object.entries(d.dex)) { const nk = legacyId(k); nd[nk] = (nd[nk] || 0) + (+v || 0); } d.dex = nd; }
+  const slots = Array.isArray(d.slots) ? d.slots : Object.values(d.slots || {});
+  for (const sl of slots) if (sl) { if (sl.egg) sl.egg = legacyId(sl.egg); if (sl.pet) sl.pet = legacyId(sl.pet); }
+  d.slots = slots;
+  for (const q of (Array.isArray(d.pets) ? d.pets : [])) if (q && q.id) q.id = legacyId(q.id);
+  for (const q of (Array.isArray(d.eggs) ? d.eggs : [])) if (q && q.type) q.type = legacyId(q.type);
+  return d;
 }
 CONFIG.eggSkins = [];                                    // one skin per spawning egg type: the egg you throw looks like that area egg (Bubble Bay Blue Egg, Starfall Ring Egg ...)
 for (const [tk, T] of Object.entries(CONFIG.eggs.types)) {
-  if (T.mut || !(T.w > 0) || tk === 'normal') continue;
+  if (!(T.w > 0) || tk === 'normal') continue;
   const raw = T.pts * CONFIG.eggSkinCostPerPt, mag = Math.pow(10, Math.max(0, Math.floor(Math.log10(raw)) - 1));
   CONFIG.eggSkins.push({ id: tk, name: tk.charAt(0).toUpperCase() + tk.slice(1) + ' Egg', cost: Math.max(mag, Math.round(raw / mag) * mag), model: tk, area: (T.areas && T.areas[0]) || 'any' });
 }
-const mutMat = new Map();                                // one tinted copy of each material per mutation, shared by every egg / pet of that look
-function mutateLook(root, key) {
-  const M = CONFIG.mutations[key];
-  if (!M) return root;
-  const tint = (m) => {
-    if (!m || !m.color) return m;
-    const k = key + m.uuid; let c = mutMat.get(k);
-    if (!c) { c = m.clone(); c.vertexColors = false; c.color.set(M.color); c.metalness = 0.35; c.roughness = 0.25; c.emissive = new THREE.Color(M.emissive); c.emissiveIntensity = 0.6; mutMat.set(k, c); }
-    return c;
-  };
-  root.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map(tint) : tint(o.material); });
-  return root;
-}
 const capWord = (w) => String(w).charAt(0).toUpperCase() + String(w).slice(1);
-function eggTypeName(type) {                             // 'diamond_ring' -> 'Diamond Ring'
-  const T = CONFIG.eggs.types[type] || {};
-  return (T.mut ? CONFIG.mutations[T.mut].label + ' ' : '') + capWord(T.base || type);
+function eggTypeName(type) {                             // 'ring' -> 'Ring'
+  return capWord(type);
 }
 
 { // scale the body-size settings by playerScale (speeds are deliberately left alone) and keep the throw reach in step with the map size
@@ -997,7 +984,7 @@ const isNight = () => dnT() >= DN.day;
 const DN_COL = { skyD: new THREE.Color(0x9ad1ff), skyN: new THREE.Color(0x0a0e2e), hemD: new THREE.Color(0xffffff), hemN: new THREE.Color(0x8a9cff), grdD: new THREE.Color(0x667788), grdN: new THREE.Color(0x151a3a), sunD: new THREE.Color(0xffffff), sunN: new THREE.Color(0x8fa6ff) };
 function updateDayNight(dt) {
   const t = dnT(), night = t >= DN.day, left = (night ? DN.cycle : DN.day) - t;
-  if (DN.wasNight === true && !night) sunriseReset();             // night -> day: the eggs reset (and may mutate)
+  if (DN.wasNight === true && !night) sunriseReset();             // night -> day: the eggs reset
   DN.wasNight = night;
   DN.k += ((night ? 1 : 0) - DN.k) * Math.min(1, dt * 0.8);       // eases over a few seconds at sunrise / sunset
   const k = DN.k;
@@ -1144,6 +1131,10 @@ let ready = false;
 let speedStat = CONFIG.player.speed;          // the player's speed stat; shown bottom-left
 const trails = { own: {}, eq: null };          // Trail Shop: trails bought (id -> true) and the one equipped
 let wins = 0;                                  // how many times you made it to the Win zone
+let rebirths = 0;                              // how many times you have been reborn (permanent income multiplier)
+const rebirthMult = () => 1 + rebirths * CONFIG.rebirth.bonusPerRebirth;
+const rebirthCost = () => Math.round(CONFIG.rebirth.baseCost * Math.pow(CONFIG.rebirth.growth, rebirths));
+let rebirthArmed = false;                      // the Rebirth button asks for a second click
 const skins = { own: {}, eq: null };               // Shop > Egg Skins: skins bought (id -> true) and the one equipped
 const skinById = (id) => CONFIG.eggSkins.find((k) => k.id === id) || null;
 const trailById = (id) => CONFIG.trails.find((t) => t.id === id) || null;
@@ -1220,7 +1211,7 @@ async function init() {
   const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, duckGltf, gummyGltf, alienGltf, batGltf, standGltfs, ...restGltfs0] = await Promise.all([
     load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.chicken), load(CONFIG.models.scorpion), load(CONFIG.models.duck), load(CONFIG.models.gummy), load(CONFIG.models.alien),
     load(CONFIG.models.bat).catch((err) => { log.warn('Baseball bat model failed to load:', err && err.message); return null; }),
-    Promise.all([load(CONFIG.models.sell), load(CONFIG.models.trailshop)]).catch((err) => { log.warn('Sell / Shop models failed to load:', err && err.message); return null; }),
+    Promise.all([load(CONFIG.models.sell), load(CONFIG.models.trailshop), load(CONFIG.models.fuse)]).catch((err) => { log.warn('Sell / Shop models failed to load:', err && err.message); return null; }),
     ...petIds.map((id) => load(CONFIG.models.pets[id])),
     ...GM.treadmill.map((f) => load(f)), ...GM.bar.map((f) => load(f)),
     ...names.map((n) => load(CONFIG.models.eggs[n])),
@@ -1236,10 +1227,6 @@ async function init() {
   setupBat();
   eggTpl.normal = bakeEgg(typeGltfs[names.indexOf('normal')].scene);
   names.forEach((n, i) => { if (n !== 'normal') eggTpl[n] = bakeEgg(typeGltfs[i].scene, eggTpl.normal.refH); });
-  for (const mk of Object.keys(CONFIG.mutations)) for (const n of names) {          // gold_ring, diamond_ring ...: the same egg, tinted
-    if (!eggTpl[n] || !CONFIG.eggs.types[mk + '_' + n]) continue;
-    const base = eggTpl[n]; eggTpl[mk + '_' + n] = Object.assign({}, base, { make: () => mutateLook(base.make(), mk) });
-  }
   playerEgg = bakeEgg(eggGltf.scene, eggTpl.normal.refH);
   playerEggMesh = new THREE.Group();
   playerEggMesh.visible = false;
@@ -1293,7 +1280,7 @@ function setupMap(root) {
   mapBox.setFromObject(root);
   root.traverse((o) => {
     const box = () => new THREE.Box3().setFromObject(o);
-    const mk = /^(Win|Sell|Trail[ _]Shop)$/i.exec(o.name);
+    const mk = /^(Win|Sell|Trail[ _]Shop|Fuse[ _]Machine)$/i.exec(o.name);
     if (mk) mapMarkers[mk[1].toLowerCase().replace(/[ _]/g, '')] = box();
     const pen = CONFIG.match.fence.exec(o.name);
     if (pen) (penBoxes[pen[1]] ||= new THREE.Box3()).union(box());
@@ -1525,7 +1512,7 @@ function makeSkinEgg(skinId) {                           // a fresh egg mesh (pi
   const S = skinById(skinId === undefined ? skins.eq : skinId);
   let m;
   if (S && S.model && eggTpl[S.model]) m = eggTpl[S.model].make();
-  else { m = playerEgg.make(); if (S && S.look) mutateLook(m, S.look); }
+  else m = playerEgg.make();
   return m;
 }
 function refreshSkin() {                                 // the egg you throw / roll as: rebuilt whenever the skin changes
@@ -3152,9 +3139,8 @@ function pickType(area) {                              // only egg types allowed
   for (const k of keys) { r -= t[k].w; if (r <= 0) return k; }
   return keys[keys.length - 1];
 }
-function rollEgg(area, sunrise) {                      // a random egg type + size for an area. sunrise = the reset after a night: it may be a mutation (diamond first, then gold)
+function rollEgg(area, sunrise) {                      // a random egg type + size for an area. sunrise = the reset after a night: 
   const E = CONFIG.eggs; let type = pickType(area);
-  if (sunrise) { let r = Math.random(); for (const mk of ['diamond', 'gold']) { r -= CONFIG.mutations[mk].chance; if (r < 0) { if (E.types[mk + '_' + type]) type = mk + '_' + type; break; } } }
   let tr = Math.random() * E.sizeTiers.reduce((a, t) => a + t.w, 0), tier = E.sizeTiers[0];
   for (const t of E.sizeTiers) { tr -= t.w; tier = t; if (tr <= 0) break; }
   return { type, mult: Math.min(E.maxMult, tier.min + Math.random() * (tier.max - tier.min)) };
@@ -3198,17 +3184,6 @@ function sunriseReset() {
     if (!it.egg || it.pending) continue;
     scene.remove(it.egg.mesh); it.egg = null; spawnEgg(it, rollEgg(it.area, true));
   }
-  setTimeout(announceMutations, NET.on ? 3500 : 300);     // multiplayer: give the new eggs a moment to arrive
-}
-function announceMutations() {
-  const found = [];
-  for (const it of eggItems) { const T = it.egg && CONFIG.eggs.types[it.egg.type]; if (T && T.mut) found.push({ mut: T.mut, text: eggTypeName(it.egg.type) + ' Egg At ' + ((CONFIG.areas[it.area] && CONFIG.areas[it.area].label) || it.area) }); }
-  found.sort((a, b) => (b.mut === 'diamond') - (a.mut === 'diamond'));
-  found.forEach((f, i) => {
-    try { chatAdd('', f.text, true, false); } catch (e) { /* chat not ready */ }
-    setTimeout(() => say((f.mut === 'diamond' ? '\u{1F48E} ' : '\u{2728} ') + f.text + '!', 2.6), i * 1800);   // every mutation gets its own toast, one after another (no cap)
-  });
-  if (found.length) log.info('Mutation eggs:', found.map((f) => f.text).join(', '));
 }
 function updateEggItems(dt) {
   if (NET.on) return;                                  // multiplayer: the server decides when eggs (re)spawn
@@ -3448,7 +3423,7 @@ const EGG_COLORS = { normal: '#f2ead7', brown: '#b07a4a', cracked: '#cfc9bb', go
                      blue: '#5aa9ff', duck: '#ffe066', flower: '#ff9ecb', lily: '#c9a6ff', reed: '#7fb069', candy: '#ff7eb6', chocolate: '#7b4a2b', strawberry: '#ff5470', lolipop: '#ff9f43', gummy: '#5de08a', comet: '#7ad7ff', ring: '#ffcf5a', nebula: '#b27bff', meteor: '#c4a484', galaxy: '#ffa3f0' };
 const eggImg = {};
 let eggIconR = null, eggIconScene = null, eggIconCam = null;
-function eggIconUrl(type) {                              // the egg MODEL rendered once to a small transparent image (cached per egg type, mutations included)
+function eggIconUrl(type) {                              // the egg MODEL rendered once to a small transparent image (cached per egg type)
   if (eggImg[type] !== undefined) return eggImg[type];
   const tpl = eggTpl[type]; if (!tpl) return '';          // models not loaded yet: do not cache, try again next refresh
   eggImg[type] = '';
@@ -3475,8 +3450,7 @@ function eggIconUrl(type) {                              // the egg MODEL render
 function eggIcon(type) {
   const u = eggIconUrl(type);
   if (u) return '<img class="pet-ic egg-img" src="' + u + '" alt="' + eggTypeName(type) + ' egg">';   // the real egg model
-  const T = CONFIG.eggs.types[type] || {}, M = T.mut && CONFIG.mutations[T.mut];
-  const c = M ? '#' + M.color.toString(16).padStart(6, '0') : EGG_COLORS[type] || '#f2ead7';   // fallback if the model is not ready: the old flat egg
+  const c = EGG_COLORS[type] || '#f2ead7';   // fallback if the model is not ready: the old flat egg
   return '<svg class="egg-ic" viewBox="0 0 40 50" aria-label="' + type + ' egg"><path d="M20 3C11 3 4 18 4 30c0 10 7 17 16 17s16-7 16-17C36 18 29 3 20 3z" fill="' + c + '" stroke="rgba(0,0,0,.45)" stroke-width="2"/><ellipse cx="14" cy="18" rx="4" ry="7" fill="rgba(255,255,255,.45)" transform="rotate(-20 14 18)"/></svg>';
 }
 const heldEggSlot = () => { if (bat.equipped) return null; const sl = inv.slots[inv.sel]; return sl && sl.egg ? sl : null; };
@@ -3925,7 +3899,7 @@ function snapshot() {                                  // everything that is sav
   const uv = (x, z) => (b ? { u: clampN((x - b.min.x - 1) / Math.max(1, b.max.x - b.min.x - 2), 0, 1), v: clampN((z - b.min.z - 1) / Math.max(1, b.max.z - b.min.z - 2), 0, 1) } : { u: 0.5, v: 0.5 });
   const eggs = b ? hatching.map((h) => ({ type: h.egg.type, mult: h.egg.mult, area: h.egg.area || null, left: h.left, ...uv(h.mesh.position.x, h.mesh.position.z) }))
     : pendingEggs.map((q) => ({ type: q.type, mult: q.mult, area: q.area, left: Math.max(0, (q.until - Date.now()) / 1000), u: q.u, v: q.v }));
-  return { v: 2, lastSeen: Date.now(), money, dex, slots: inv.slots, train, up, pets, eggs, trails: { own: Object.keys(trails.own), eq: trails.eq }, skins: { own: Object.keys(skins.own), eq: skins.eq }, wins, profile: { name: profile.name, parts: profile.parts } };
+  return { v: 2, lastSeen: Date.now(), money, dex, slots: inv.slots, train, up, pets, eggs, trails: { own: Object.keys(trails.own), eq: trails.eq }, skins: { own: Object.keys(skins.own), eq: skins.eq }, wins, rebirths, profile: { name: profile.name, parts: profile.parts } };
 }
 function resetState() {                                // back to a brand new game (in memory)
   stopGym();
@@ -3933,7 +3907,7 @@ function resetState() {                                // back to a brand new ga
   inv.slots.fill(null); inv.sel = 0;
   train.strength = 0; train.speed = 0; speedStat = CONFIG.player.speed;
   up.bar = 0; up.treadmill = 0; up.pen = 0;
-  trails.own = {}; trails.eq = null; skins.own = {}; skins.eq = null; wins = 0;
+  trails.own = {}; trails.eq = null; skins.own = {}; skins.eq = null; wins = 0; rebirths = 0;
   for (const g of gymItems) setGymTier(g, 0);
   for (const pp of petsInPen) scene.remove(pp.root);
   petsInPen.length = 0; pendingPets = [];
@@ -3941,6 +3915,7 @@ function resetState() {                                // back to a brand new ga
   hatching.length = 0; pendingEggs = [];
 }
 function applySave(d) {                                // replace the current game with saved data
+  d = migrateLegacyMutations(d);
   resetState();
   if (d.profile) setProfile(d.profile, false);          // your username + color follow your account
   money = Math.max(0, +d.money || 0);
@@ -3956,6 +3931,7 @@ function applySave(d) {                                // replace the current ga
   }
   refreshSkin();
   wins = Math.max(0, d.wins | 0);
+  rebirths = Math.max(0, d.rebirths | 0);
   for (const id of Object.keys(CONFIG.pets)) if (d.dex && d.dex[id] > 0) dex[id] = d.dex[id] | 0;
   const slots = Array.isArray(d.slots) ? d.slots : Object.values(d.slots || {});
   slots.slice(0, CONFIG.inventorySlots).forEach((sl, i) => {
@@ -4223,9 +4199,10 @@ function invClick(i) {
   buildDex();
 }
 function buildDex() {
-  const ids = Object.keys(CONFIG.pets).filter((id) => (!CONFIG.pets[id].admin && !CONFIG.pets[id].mutOf) || dex[id] > 0), found = ids.filter((id) => dex[id] > 0).length, shop = dexTab === 'shop';   // admin pets stay out of the index
+  const ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].admin || dex[id] > 0), found = ids.filter((id) => dex[id] > 0).length, shop = dexTab === 'shop';   // admin pets stay out of the index
   if (dexTab !== 'inv') invPick = -1;
-  const tabs = [['index', 'Pet Index'], ['inv', 'Inventory'], ['shop', 'Upgrades']];
+  if (dexTab !== 'rebirth') rebirthArmed = false;
+  const tabs = [['index', 'Pet Index'], ['inv', 'Inventory'], ['shop', 'Upgrades'], ['rebirth', 'Rebirth']];
   for (const k of Object.keys(STAND_TAB)) if (dexTab === STAND_TAB[k] || nearStand(k)) tabs.push([STAND_TAB[k], STAND_LABEL[k]]);
   ui.dexBtn.innerHTML = 'Index <span class="cnt">' + found + '/' + ids.length + '</span><small>[I]</small>';
   const head = '<div class="dex-h"><span class="dex-tabs">' + tabs.map(([t, l]) => '<button type="button" class="dex-tab' + (dexTab === t ? ' on' : '') + '" data-tab="' + t + '">' + l + '</button>').join('') + '</span>' +
@@ -4241,6 +4218,12 @@ function buildDex() {
   } else if (dexTab === 'inv') {
     body = invHtml();
     foot = 'Click an item, then click another slot to move or swap it (same items stack). Slots 1-9 are your hotbar. ' + (IS_TOUCH ? 'Tap outside to close' : 'Press B or Esc to close');
+  } else if (dexTab === 'rebirth') {
+    body = rebirthHtml();
+    foot = 'Rebirth resets your money, strength, speed and gym machines. You keep your pets, eggs, pen slots, trails, skins and index. ' + (IS_TOUCH ? 'Tap outside to close' : 'Press Esc to close');
+  } else if (dexTab === 'fuse') {
+    body = fuseHtml();
+    foot = 'Fuse ' + CONFIG.fuse.need + ' pets of the same kind into 1 bigger pet. It uses your ' + CONFIG.fuse.need + ' smallest ones. ' + (IS_TOUCH ? 'Tap outside to close' : 'Press E or Esc to close');
   } else if (dexTab === 'sell') {
     body = sellHtml();
     foot = 'Pets in your pen: click one to take it back into your hotbar first. ' + (IS_TOUCH ? 'Tap outside to close' : 'Press E or Esc to close');
@@ -4286,6 +4269,8 @@ ui.dex.addEventListener('click', (e) => {
   const sk = e.target.closest('[data-skin]'); if (sk) { skinAction(sk.dataset.skin); return; }
   const tr = e.target.closest('[data-trail]'); if (tr) { trailAction(tr.dataset.trail); return; }
   const sl = e.target.closest('[data-sell]'); if (sl) { sellPets(sl.dataset.sell); return; }
+  const fz = e.target.closest('[data-fuse]'); if (fz) { fusePets(fz.dataset.fuse); return; }
+  const rb = e.target.closest('[data-rebirth]'); if (rb) { doRebirth(); return; }
   const b = e.target.closest('.up-buy'); if (b && b.dataset.id) buyUpgrade(b.dataset.id);
 });
 const dexClose = (e) => { if (e.target === ui.dex || e.target.closest('.dex-x')) { e.preventDefault(); setDex(false); } };
@@ -4311,7 +4296,6 @@ function renderPetIcons() {
       try {
         const T = petTpl[id], model = SkeletonUtils.clone(T.gltf.scene);
         model.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
-        if (CONFIG.pets[id].mut) mutateLook(model, CONFIG.pets[id].mut);
         model.position.set(T.ox, T.oy, T.oz);
         const inner = new THREE.Group(); inner.scale.setScalar(T.scale); inner.rotation.y = T.yaw; inner.add(model);
         const root = new THREE.Group(); root.add(inner); sc.add(root);
@@ -4330,7 +4314,7 @@ function renderPetIcons() {
   finally { if (r) { r.dispose(); if (r.forceContextLoss) r.forceContextLoss(); } }
 }
 const fmtMoney = (v) => (Math.round(v * 10) / 10).toLocaleString();
-function incomePerSec() { let t = 0; for (const p of petsInPen) t += CONFIG.pets[p.id].income * (p.mult || 1); return t; }
+function incomePerSec() { let t = 0; for (const p of petsInPen) t += CONFIG.pets[p.id].income * (p.mult || 1); return t * rebirthMult(); }
 let incAcc = 0, saveAcc = 0;
 function updateIncome(dt) {                             // every pet standing in your pen pays money per second
   const r = incomePerSec();
@@ -4351,7 +4335,7 @@ function refreshMoney(bump) {
 /* Offline earnings: lastSeen is saved with the game; when it is loaded again the pets in the pen are paid for the time in between. */
 function offlineRate() {                                // pets standing in the pen plus saved pets still waiting for their models
   let t = incomePerSec();
-  for (const q of pendingPets) t += CONFIG.pets[q.id].income * (q.mult || 1);
+  for (const q of pendingPets) t += CONFIG.pets[q.id].income * (q.mult || 1) * rebirthMult();
   return t;
 }
 function fmtDuration(sec) {
@@ -4397,10 +4381,11 @@ function grantOffline(since) {                          // since = ms timestamp 
 }
 function refreshMenuStats() {
   refreshAcct();
-  const ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].mutOf);
+  const ids = Object.keys(CONFIG.pets);
   const chip = (icon, text, tip) => '<span class="chip" title="' + tip + '"><svg class="ic" aria-hidden="true"><use href="#i-' + icon + '"/></svg>' + text + '</span>';
   $('menu-stats').innerHTML = chip('coin', '$' + Math.floor(money).toLocaleString(), 'Money')
     + chip('paw', ids.filter((id) => dex[id] > 0).length + '/' + ids.length, 'Pets discovered')
+    + (rebirths ? chip('trophy', 'Rebirth ' + rebirths, 'Rebirths: income x' + rebirthMult()) : '')
     + (wins ? chip('trophy', wins + ' win' + (wins > 1 ? 's' : ''), 'Wins') : '');
 }
 function banner(html, color) {
@@ -4430,17 +4415,16 @@ function hatchSeconds(mult, area) {                   // smallest egg (1x) = min
 function fmtTime(sec) { const t = Math.max(0, Math.ceil(sec)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
 function pickPetBase(eggType, area) {                      // the pet comes from the pool of the area the egg was stolen from
   const luck = CONFIG.eggLuck[eggType] != null ? CONFIG.eggLuck[eggType] : 1;
-  let ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].admin && !CONFIG.pets[id].mutOf && (!area || CONFIG.pets[id].area === area));   // admin pets never hatch
-  if (!ids.length) ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].admin && !CONFIG.pets[id].mutOf);
+  let ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].admin && (!area || CONFIG.pets[id].area === area));   // admin pets never hatch
+  if (!ids.length) ids = Object.keys(CONFIG.pets).filter((id) => !CONFIG.pets[id].admin);
   const lucky = (id) => (CONFIG.pets[id].lucky !== undefined ? CONFIG.pets[id].lucky : CONFIG.pets[id].rarity !== 'common');
   const w = ids.map((id) => CONFIG.pets[id].weight * (lucky(id) ? luck : 1));
   let r = Math.random() * w.reduce((a, b) => a + b, 0);
   for (let i = 0; i < ids.length; i++) { r -= w[i]; if (r <= 0) return ids[i]; }
   return ids[0];
 }
-function pickPet(eggType, area) {                      // a mutation egg hatches the mutated version of whatever pet the egg rolls
-  const id = pickPetBase(eggType, area), mk = (CONFIG.eggs.types[eggType] || {}).mut;
-  return mk && CONFIG.pets[mk + '_' + id] ? mk + '_' + id : id;
+function pickPet(eggType, area) {                      // the pet an egg hatches into
+  return pickPetBase(eggType, area);
 }
 function invCanTake(id) {                           // counts pets that are still flying to the hotbar so two hatches never fight over the last slot
   const sim = inv.slots.map((sl) => (sl ? (sl.pet || 'egg:' + sl.egg) : null));
@@ -4538,7 +4522,7 @@ function updateEggLabels() {
 /* Pet models */
 function setupPets(gltfs) {
   for (const id of Object.keys(CONFIG.pets)) {
-    const g = gltfs[CONFIG.pets[id].mutOf || id];
+    const g = gltfs[id];
     if (CONFIG.pets[id].brighten) {                     // Tomato eyes: fully metallic with no environment map = pitch black. Make them matte and a bit self-lit (the dark pupil stays dark).
       g.scene.traverse((o) => {
         if (!o.isMesh) return;
@@ -4569,7 +4553,6 @@ function makePetModel(id, mult) {                       // a pet scaled by how b
   const T = petTpl[id];
   const model = cloneClean(T.gltf.scene);
   model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
-  if (CONFIG.pets[id].mut) mutateLook(model, CONFIG.pets[id].mut);
   if (T.tint) {                                         // the User pet: own copy of the materials (they are shared with the real player), tinted with the player's colours
     model.traverse((o) => { if (o.isMesh) { o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); o.userData.ownMat = true; } });
     applyBodyColor(model, profile.parts);
@@ -4602,8 +4585,8 @@ function placePet(pt) {                                 // put the pet you are h
   spawnPet(sl.pet, pt, mult);
   sl.count--; if (sl.count <= 0) inv.slots[inv.sel] = null;
   refreshHotbar(); refreshMoney(false); saveGame();
-  popupAt('+$' + fmtMoney(P.income * mult) + '/s', new THREE.Vector3(pt.x, pt.y + 1.2 * petSizeFactor(mult), pt.z), '#ffd34d');
-  say('Placed ' + P.name + ' (' + mult.toFixed(1) + 'x)  earns $' + fmtMoney(P.income * mult) + '/s   [' + petsInPen.length + '/' + penCapacity() + ' pen slots]');
+  popupAt('+$' + fmtMoney(P.income * mult * rebirthMult()) + '/s', new THREE.Vector3(pt.x, pt.y + 1.2 * petSizeFactor(mult), pt.z), '#ffd34d');
+  say('Placed ' + P.name + ' (' + mult.toFixed(1) + 'x)  earns $' + fmtMoney(P.income * mult * rebirthMult()) + '/s   [' + petsInPen.length + '/' + penCapacity() + ' pen slots]');
 }
 const penCapacity = () => CONFIG.pen.base + up.pen;
 const penUpgradeCost = () => (up.pen >= CONFIG.pen.max ? null : Math.round(CONFIG.pen.firstCost * Math.pow(CONFIG.pen.growth, up.pen)));
@@ -4847,7 +4830,8 @@ function updateTraining(dt) {                           // rep counter for the r
 /* ------------------------------------------------------------------ */
 /* Sell stand, Trail Shop, trails, Win                                 */
 /* ------------------------------------------------------------------ */
-const STAND_TAB = { sell: 'sell', trailshop: 'trails' }, STAND_LABEL = { sell: 'Sell', trailshop: 'Shop' };
+const STAND_TAB = { sell: 'sell', trailshop: 'trails', fuse: 'fuse' }, STAND_LABEL = { sell: 'Sell', trailshop: 'Shop', fuse: 'Fuse' }, STAND_MARK = { sell: 'sell', trailshop: 'trailshop', fuse: 'fusemachine' };
+const standOfTab = (tab) => Object.keys(STAND_TAB).find((k) => STAND_TAB[k] === tab) || null;
 const stands = {};                                      // 'sell' / 'trailshop' -> { root, pos }  (standing on the map's marker cubes)
 function labelSprite(text, color) {
   const c = document.createElement('canvas'); c.width = 512; c.height = 128;
@@ -4860,12 +4844,14 @@ function labelSprite(text, color) {
   sp.scale.set(4, 1, 1); sp.renderOrder = 10;
   return sp;
 }
-function setupStands([sellGltf, trailGltf]) {
-  for (const [key, gltf, color] of [['sell', sellGltf, '#ffe27a'], ['trailshop', trailGltf, '#8fd0ff']]) {
-    const mk = mapMarkers[key];
+function setupStands([sellGltf, trailGltf, fuseGltf]) {
+  for (const [key, gltf, color] of [['sell', sellGltf, '#ffe27a'], ['trailshop', trailGltf, '#8fd0ff'], ['fuse', fuseGltf, '#d49bff']]) {
+    const mk = mapMarkers[STAND_MARK[key]];
+    if (!gltf) continue;
     if (!mk) { log.warn('Marker node missing in the map:', key); continue; }
     const model = gltf.scene, bb = new THREE.Box3().setFromObject(model), size = bb.getSize(new THREE.Vector3());
-    const k = CONFIG.stands.height / Math.max(size.y, 1e-3);
+    const standH = (CONFIG.stands.heights && CONFIG.stands.heights[key]) || CONFIG.stands.height;
+    const k = standH / Math.max(size.y, 1e-3);
     model.scale.setScalar(k);
     model.position.set(-(bb.min.x + bb.max.x) / 2 * k, -bb.min.y * k, -(bb.min.z + bb.max.z) / 2 * k);   // centred, base on the floor
     model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
@@ -4874,9 +4860,9 @@ function setupStands([sellGltf, trailGltf]) {
     const g = groundAt(c.x, mk.max.y + 2, c.z);
     root.position.set(c.x, g === null ? mk.min.y : g, c.z);
     root.rotation.y = (CONFIG.stands.yaw && CONFIG.stands.yaw[key]) || 0;
-    const sp = labelSprite(STAND_LABEL[key].toUpperCase(), color); sp.position.set(0, CONFIG.stands.height + 0.9, 0); root.add(sp);
+    const sp = labelSprite(STAND_LABEL[key].toUpperCase(), color); sp.position.set(0, standH + 0.9, 0); root.add(sp);
     scene.add(root);
-    stands[key] = { root, pos: root.position.clone() };
+    stands[key] = { root, pos: root.position.clone(), pulse: 0 };
   }
   log.info('Stands placed:', Object.keys(stands).join(', ') || 'none');
 }
@@ -4890,7 +4876,7 @@ function nearStand(only) {                              // which stand ('sell' /
   return null;
 }
 function standKey() {                                   // E: open / close the stand you are next to
-  if (dexOpen && (dexTab === 'trails' || dexTab === 'sell')) { setDex(false); return; }
+  if (dexOpen && standOfTab(dexTab)) { setDex(false); return; }
   const k = nearStand(); if (k) openPanel(STAND_TAB[k]);
 }
 const standBtn = $('stand-btn');
@@ -4902,9 +4888,11 @@ function updateStands(dt) {
   if (k !== standShown) {
     standShown = k;
     standBtn.style.display = k ? 'block' : 'none';
-    if (k) standBtn.innerHTML = (k === 'sell' ? 'Sell Pets' : 'Shop') + ' <small>' + (IS_TOUCH ? '' : '[E]') + '</small>';
+    if (k) standBtn.innerHTML = (k === 'sell' ? 'Sell Pets' : k === 'fuse' ? 'Fuse Pets' : 'Shop') + ' <small>' + (IS_TOUCH ? '' : '[E]') + '</small>';
   }
-  if (dexOpen && (dexTab === 'sell' || dexTab === 'trails') && !nearStand(dexTab === 'sell' ? 'sell' : 'trailshop')) setDex(false);   // walked (or got knocked) away
+  if (dexOpen && standOfTab(dexTab) && !nearStand(standOfTab(dexTab))) setDex(false);   // walked (or got knocked) away
+  const F = stands.fuse;                                 // the Fuse Machine shakes for a moment after every fusion
+  if (F && F.pulse > 0) { F.pulse = Math.max(0, F.pulse - dt); const a = F.pulse / 0.7; F.root.scale.set(1 + 0.07 * a * Math.sin(F.pulse * 38), 1 + 0.09 * a * Math.sin(F.pulse * 31), 1 + 0.07 * a * Math.sin(F.pulse * 44)); if (F.pulse === 0) F.root.scale.set(1, 1, 1); }
 }
 
 /* Trail Shop */
@@ -5024,6 +5012,69 @@ function sellPets(which) {
   refreshHotbar(); refreshMoney(true); saveGame(); buildDex();
   banner('<small>Sold ' + n + ' pet' + (n > 1 ? 's' : '') + '</small><b>+$' + fmtBig(gain) + '</b>', '#ffe27a');
   log.info('Sold', n, 'pets for', gain);
+}
+
+/* Fuse Machine: `need` pets of the same kind -> one bigger pet of that kind */
+function fuseEntries(id) {                              // every pet of this kind you hold, smallest first: { slot, k (index in sizes), size }
+  const out = [];
+  inv.slots.forEach((sl, i) => { if (sl && sl.pet === id) for (let k = 0; k < sl.count; k++) out.push({ slot: i, k, size: (sl.sizes && sl.sizes[k]) || 1 }); });
+  return out.sort((a, b) => a.size - b.size);
+}
+const fuseResultMult = (sizes) => Math.round(clampN(sizes.reduce((a, b) => a + b, 0) * CONFIG.fuse.bonus, CONFIG.petMinMult, CONFIG.petMaxMult) * 100) / 100;
+function fuseHtml() {
+  const kinds = [...new Set(inv.slots.filter((sl) => sl && sl.pet).map((sl) => sl.pet))], N = CONFIG.fuse.need;
+  if (!kinds.length) return '<div class="up-list"><div class="up-row"><span class="up-t"><b>No pets to fuse</b><em>Hatch some eggs first - pets in your hotbar and backpack show up here.</em></span></div></div>';
+  return '<div class="up-list">' + kinds.map((id) => {
+    const list = fuseEntries(id), ok = list.length >= N, P = CONFIG.pets[id];
+    const use = list.slice(0, N).map((e) => e.size), res = ok ? fuseResultMult(use) : 0;
+    const info = ok ? use.map((m) => m.toFixed(1) + 'x').join(' + ') + ' \u2192 ' + res.toFixed(1) + 'x' + (res >= CONFIG.petMaxMult ? ' (max size)' : '') : 'You need ' + (N - list.length) + ' more';
+    return '<div class="up-row"><span class="sell-ic">' + petIcon(id) + '</span><span class="up-t"><b>' + P.name + '</b><small>You have ' + list.length + ' / ' + N + '</small><em>' + info + '</em></span>' +
+      '<button type="button" class="up-buy own' + (ok ? '' : ' no') + '" data-fuse="' + id + '">Fuse<br><b>' + N + ' \u2192 1</b></button></div>';
+  }).join('') + '</div>';
+}
+function fusePets(id) {
+  if (!CONFIG.pets[id]) return;
+  const N = CONFIG.fuse.need, list = fuseEntries(id);
+  if (list.length < N) { say('You need ' + N + ' ' + CONFIG.pets[id].name + 's to fuse (you have ' + list.length + ')', 3); return; }
+  const pick = list.slice(0, N), mult = fuseResultMult(pick.map((e) => e.size));
+  const bySlot = new Map(); for (const e of pick) (bySlot.get(e.slot) || bySlot.set(e.slot, []).get(e.slot)).push(e.k);
+  for (const [i, ks] of bySlot) {                       // take the chosen pets out (highest index first so the others keep their place)
+    const sl = inv.slots[i];
+    for (const k of ks.sort((a, b) => b - a)) { sl.sizes.splice(k, 1); sl.count--; }
+    if (sl.count <= 0) inv.slots[i] = null;
+  }
+  addPet(id, mult);                                     // there is always room: three pets of this kind just left the hotbar / backpack
+  if (stands.fuse) stands.fuse.pulse = 0.7;
+  refreshHotbar(); saveGame(); buildDex();
+  banner('<small>Fused ' + N + ' pets!</small><b>' + CONFIG.pets[id].name + ' <span style="font-size:.5em;opacity:.8">' + mult.toFixed(1) + 'x</span></b>', '#d49bff');
+  log.info('Fused', N, id, '->', mult + 'x');
+}
+
+/* Rebirth: money, strength, speed and gym machines reset; every rebirth permanently boosts the income of all your pets */
+function rebirthHtml() {
+  const cost = rebirthCost(), can = money >= cost, nm = 1 + (rebirths + 1) * CONFIG.rebirth.bonusPerRebirth;
+  const btn = rebirthArmed
+    ? '<button type="button" class="up-buy eq" data-rebirth="1" data-cost="' + cost + '">Sure?<br><b>Click again</b></button>'
+    : '<button type="button" class="up-buy' + (can ? '' : ' no') + '" data-rebirth="1" data-cost="' + cost + '">Rebirth<br><b>$' + fmtBig(cost) + '</b></button>';
+  return '<div class="up-list"><div class="up-row"><span class="up-ic">\u267B\uFE0F</span><span class="up-t"><b>Rebirth ' + rebirths + '</b><small>Income multiplier: x' + rebirthMult().toFixed(2) + '</small>' +
+    '<em>Next: x' + nm.toFixed(2) + ' income on all your pets</em><i>Resets: money, strength, speed, Pull-Up Bar and Treadmill levels</i></span>' + btn + '</div>' +
+    '<div class="up-row"><span class="up-t"><b>You keep</b><em>Pets, eggs hatching, pen slots, trails, egg skins, the pet index and your wins.</em></span></div></div>';
+}
+function doRebirth() {
+  const cost = rebirthCost();
+  if (money < cost) { say('Not enough money - you need $' + fmtBig(cost) + ' to rebirth', 3); return; }
+  if (!rebirthArmed) { rebirthArmed = true; buildDex(); return; }
+  rebirthArmed = false;
+  stopGym();
+  rebirths++;
+  money = 0; train.strength = 0; train.speed = 0; speedStat = CONFIG.player.speed;
+  up.bar = 0; up.treadmill = 0;
+  for (const g of gymItems) setGymTier(g, 0);
+  respawn();
+  setDex(false);
+  refreshHotbar(); refreshMoney(true); refreshMenuStats(); saveGame();
+  banner('<small>Reborn!</small><b>Rebirth ' + rebirths + ' <span style="font-size:.5em;opacity:.8">income x' + rebirthMult().toFixed(2) + '</span></b>', '#6be585');
+  log.info('Rebirth', rebirths, 'multiplier', rebirthMult());
 }
 
 /* Win: the map's "Win" marker is a line across the front of the corridor. A thief who carries a stolen egg across it (back out towards the pens) has made it:
