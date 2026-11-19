@@ -3861,19 +3861,19 @@ function updateChicken(ch, dt) {
   } else if (ch.state === 'return') {                    // walking back home along the breadcrumb trail
     if (inAreaBox(ch)) { ch.state = 'wander'; ch.free = false; ch.trail = []; ch.target = null; ch.wait = 1.5; }
     else {
-      const t = ch.trail && ch.trail[ch.trail.length - 1];
-      if (!t) { teleportHome(ch); ch.state = 'wander'; ch.target = null; ch.wait = 1; }
-      else {
+      let left = effSpeed(A.chase) * CONFIG.speedUnit * (C.returnMult || 0.6) * dt, guard = 0, moved = false;   // it heads home at a share of its chase speed (returnMult)
+      while (left > 1e-3 && guard++ < 60) {
+        const t = ch.trail && ch.trail[ch.trail.length - 1];
+        if (!t) { teleportHome(ch); ch.state = 'wander'; ch.target = null; ch.wait = 1; break; }
         _cd.set(t.x - p.x, 0, t.z - p.z);
         const dist = _cd.length();
-        if (dist < 0.8) ch.trail.pop();
-        else {
-          _cd.divideScalar(dist);
-          const sp = C.returnSpeed || C.speed;
-          if (chickenMove(ch, _cd.x * sp * dt, _cd.z * sp * dt, 0)) { ch.yaw = angleLerp(ch.yaw, Math.atan2(_cd.x, _cd.z) + C.yawOffset, 8 * dt); anim = 'walk'; ch.stuck = 0; }
-          else { ch.stuck = (ch.stuck || 0) + dt; if (ch.stuck > 1.5) { ch.trail.pop(); ch.stuck = 0; } }   // blocked: skip to the next breadcrumb
-        }
+        if (dist < 0.8) { ch.trail.pop(); continue; }
+        _cd.divideScalar(dist);
+        const st = Math.min(left, dist, 2);              // short hops so it cannot skip over fences
+        if (chickenMove(ch, _cd.x * st, _cd.z * st, 0)) { ch.yaw = angleLerp(ch.yaw, Math.atan2(_cd.x, _cd.z) + C.yawOffset, 10 * dt); left -= st; moved = true; ch.stuck = 0; }
+        else { ch.stuck = (ch.stuck || 0) + dt; if (ch.stuck > 1.5) { ch.trail.pop(); ch.stuck = 0; } break; }   // blocked: skip to the next breadcrumb
       }
+      if (moved) anim = ch.actions.run ? 'run' : 'walk';
     }
   } else {
     if (ch.target) {
