@@ -3724,11 +3724,15 @@ function setupChickens(gltfs) {
     log.info(kind, 'ready in', area.label, 'model height', size.y.toFixed(3), '-> scale', (E.height / size.y).toFixed(3), '(guard size x' + grow.toFixed(2) + ')');
   }
 }
-function sendHome(ch) {            // after a chase that left the area: back to a spot inside its own area
+const inAreaBox = (ch) => { const p = ch.pos, b = ch.area.box; return p.x >= b.min.x && p.x <= b.max.x && p.z >= b.min.z && p.z <= b.max.z; };
+function sendHome(ch) {            // after a chase that left the area: the guard WALKS back (the same way it came) to its own area
   ch.free = false;
-  const p = ch.pos, b = ch.area.box;
-  if (p.x >= b.min.x && p.x <= b.max.x && p.z >= b.min.z && p.z <= b.max.z) return;
-  const t = randomSpot(ch, ch.cfg.margin);
+  if (inAreaBox(ch)) { ch.trail = []; return; }
+  ch.state = 'return'; ch.free = true; ch.target = null; ch.stuck = 0;
+}
+function teleportHome(ch) {        // last resort (nothing left to walk along, or the guard is stuck): jump to a spot inside its own area
+  ch.free = false; ch.trail = [];
+  const p = ch.pos, t = randomSpot(ch, ch.cfg.margin);
   if (!t) return;
   const gy = chickenOk(ch, t.x, t.z, 0);
   p.set(t.x, gy === null ? p.y : gy, t.z);
@@ -3821,12 +3825,13 @@ function updateChicken(ch, dt) {
     ch.host = true;
     const r = FB.chick.get(ch.area.id);
     if (NET.on && NET.fb && r) { ch.pos.set(r.x, r.y, r.z); ch.yaw = r.yaw; }
-    ch.state = 'wander'; ch.target = null; ch.wait = 1;
+    ch.state = 'wander'; ch.target = null; ch.wait = 1; ch.trail = [];
+    if (!inAreaBox(ch)) ch.state = 'return', ch.free = true;       // the old host left while the guard was out chasing: it keeps walking back
   }
   const C = ch.cfg, p = ch.pos, A = ch.area;
   const tg = chickenTarget(ch), chasing = !!tg;
-  ch.free = chasing && !!A.chaseAnywhere;
-  if (chasing && ch.state !== 'chase') { ch.state = 'chase'; ch.alert = C.alert; ch.target = null; }
+  ch.free = (chasing && !!A.chaseAnywhere) || ch.state === 'return';
+  if (chasing && ch.state !== 'chase') { if (ch.state !== 'return') ch.trail = [{ x: p.x, z: p.z }]; ch.state = 'chase'; ch.alert = C.alert; ch.target = null; }   // (a guard that was walking back keeps its trail)
   if (!chasing && ch.state === 'chase') { ch.state = 'wander'; ch.target = null; ch.wait = 1; sendHome(ch); }   // thief escaped: back to wandering in its area
 
   let anim = 'idle';
@@ -3850,6 +3855,25 @@ function updateChicken(ch, dt) {
         left -= st;
       }
       anim = ch.actions.run ? 'run' : 'walk';
+      const lt = ch.trail && ch.trail[ch.trail.length - 1];                      // breadcrumbs: the way home is the way it came
+      if (ch.trail && ch.trail.length < 1500 && (!lt || Math.hypot(p.x - lt.x, p.z - lt.z) > 2)) ch.trail.push({ x: p.x, z: p.z });
+    }
+  } else if (ch.state === 'return') {                    // walking back home along the breadcrumb trail
+    if (inAreaBox(ch)) { ch.state = 'wander'; ch.free = false; ch.trail = []; ch.target = null; ch.wait = 1.5; }
+    else {
+      const t = ch.trail && ch.trail[ch.trail.length - 1];
+      if (!t) { teleportHome(ch); ch.state = 'wander'; ch.target = null; ch.wait = 1; }
+      else {
+        _cd.set(t.x - p.x, 0, t.z - p.z);
+        const dist = _cd.length();
+        if (dist < 0.8) ch.trail.pop();
+        else {
+          _cd.divideScalar(dist);
+          const sp = C.returnSpeed || C.speed;
+          if (chickenMove(ch, _cd.x * sp * dt, _cd.z * sp * dt, 0)) { ch.yaw = angleLerp(ch.yaw, Math.atan2(_cd.x, _cd.z) + C.yawOffset, 8 * dt); anim = 'walk'; ch.stuck = 0; }
+          else { ch.stuck = (ch.stuck || 0) + dt; if (ch.stuck > 1.5) { ch.trail.pop(); ch.stuck = 0; } }   // blocked: skip to the next breadcrumb
+        }
+      }
     }
   } else {
     if (ch.target) {
