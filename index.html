@@ -3801,8 +3801,9 @@ function chickenFollow(ch, dt) {                         // not the host: show t
   const A = ch.area, p = ch.pos, r = FB.chick.get(A.id);
   let anim = 'idle', chasingMe = false;
   if (r) {
-    const k = Math.min(1, 10 * dt);
-    if (Math.hypot(r.x - p.x, r.z - p.z) > 12) p.set(r.x, r.y, r.z);
+    const k = Math.min(1, 14 * dt);
+    const snap = 12 + effSpeed(Math.max(A.chase, A.speed)) * CONFIG.speedUnit * 0.6;   // a fast guard really covers this much between two updates: only a bigger gap is a real jump
+    if (Math.hypot(r.x - p.x, r.z - p.z) > snap) p.set(r.x, r.y, r.z);
     else { p.x += (r.x - p.x) * k; p.y += (r.y - p.y) * k; p.z += (r.z - p.z) * k; }
     ch.yaw = angleLerp(ch.yaw, r.yaw, Math.min(1, 12 * dt));
     anim = ch.actions[r.anim] ? r.anim : 'idle';
@@ -3853,10 +3854,10 @@ function updateChicken(ch, dt) {
         const st = Math.min(left, 2);
         if (!chickenMove(ch, dx * st, dz * st, C.chaseMargin)) break;
         left -= st;
+        const lt = ch.trail && ch.trail[ch.trail.length - 1];                    // breadcrumbs: the way home is the way it came
+        if (ch.trail && ch.trail.length < 3000 && (!lt || Math.hypot(p.x - lt.x, p.z - lt.z) > 1.5)) ch.trail.push({ x: p.x, z: p.z });
       }
       anim = ch.actions.run ? 'run' : 'walk';
-      const lt = ch.trail && ch.trail[ch.trail.length - 1];                      // breadcrumbs: the way home is the way it came
-      if (ch.trail && ch.trail.length < 1500 && (!lt || Math.hypot(p.x - lt.x, p.z - lt.z) > 2)) ch.trail.push({ x: p.x, z: p.z });
     }
   } else if (ch.state === 'return') {                    // walking back home along the breadcrumb trail
     if (inAreaBox(ch)) { ch.state = 'wander'; ch.free = false; ch.trail = []; ch.target = null; ch.wait = 1.5; }
