@@ -362,7 +362,7 @@
   body.touch #overlay { font-size: 16px; }
   /* ================= chat ================= */
   #chat, #chat-btn { display: none; }
-  body.net #chat { display: block; }
+  body.net #chat, body:not(.touch) #chat { display: block; }
   #chat { position: fixed; right: 14px; bottom: 14px; width: min(320px, 40vw); z-index: 4; pointer-events: none; font-family: var(--font); color: #fff; }
   #chat-log { display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; max-height: 34vh; overflow: hidden; }
   #chat.open #chat-log { overflow-y: auto; pointer-events: auto; background: rgba(10,14,30,.55); border-radius: 12px; padding: 6px 8px; margin-bottom: 6px; -webkit-user-select: text; user-select: text; }
@@ -689,7 +689,7 @@ const CONFIG = {
   debug: params.get('debug') === '1',
   verbose: params.get('verbose') === '1',
   forceSpawn: params.has('spawn') ? parseInt(params.get('spawn'), 10) : null,
-  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', alien: 'Alien.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb', spaceoctopus: 'Space_Octopus.glb', tomato: 'Tomato.glb', gummyworm: 'Gummy_Worm.glb', spacewhale: 'Space_Whale.glb', cosmicslime: 'Cosmic_Slime.glb', jellyfish: 'Jellyfish.glb', gumdropiguana: 'Gumdrop_Iguana.glb', astrochameleon: 'Astro_Chameleon.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
+  models: { map: params.get('map') || 'Throw_An_Egg_Map.glb', player: 'Throw_An_Egg_Player.glb', girlPlayer: 'Throw_An_Egg_Girl_Player.glb', bat: 'Baseball Bat by CreativeTrio - i2JCd3w8gh.glb', egg: 'Egg_Thrown.glb', chicken: 'Chicken.glb', scorpion: 'Scorpion.glb', duck: 'Duck.glb', gummy: 'Gummy Bear.glb', alien: 'Alien.glb', pets: { bunny: 'Bunny.glb', ladybug: 'Ladybug.glb', hamster: 'Hamster.glb', squirrel: 'Squirrel.glb', butterfly: 'Butterfly.glb', toucan: 'Toucan.glb', crab: 'Crab.glb', starfish: 'Starfish.glb', snake: 'Snake.glb', camel: 'Camel.glb', cottonsheep: 'Cotton_Candy_Sheep.glb', spaceoctopus: 'Space_Octopus.glb', tomato: 'Tomato.glb', gummyworm: 'Gummy_Worm.glb', spacewhale: 'Space_Whale.glb', cosmicslime: 'Cosmic_Slime.glb', jellyfish: 'Jellyfish.glb', gumdropiguana: 'Gumdrop_Iguana.glb', astrochameleon: 'Astro_Chameleon.glb' },   // duck + gummy: the Bubble Bay / Candy Kingdom guards (also pets, see setupPets)
     sell: 'Sell.glb', trailshop: 'Trail_Shop.glb', fuse: 'Fuse_Machine.glb',
     gym: { treadmill: ['Treadmill_Upgrade1.glb', 'Treadmill_Upgrade2.glb', 'Treadmill_Upgrade3.glb', 'Treadmill_Upgrade4.glb', 'Treadmill_Upgrade5.glb'], bar: ['PullUp_BarUpgrade1.glb', 'PullUp_BarUpgrade2.glb', 'PullUp_BarUpgrade3.glb', 'PullUp_BarUpgrade4.glb', 'PullUp_BarUpgrade5.glb'] },   // index = upgrade level
     eggs: { normal: 'Normal_Egg.glb', brown: 'Brown_Egg.glb', cracked: 'Cracked_Egg.glb', golden: 'Golden_Egg.glb', rainbow: 'Rainbow_Egg.glb', cactus: 'Cactus_Egg.glb', bone: 'Bone_Egg.glb', sand: 'Sand_Egg.glb', claw: 'Claw_Egg.glb', scorpion: 'Scorpion_Egg.glb',
@@ -1227,8 +1227,8 @@ async function init() {
   const names = Object.keys(CONFIG.models.eggs);
   const GM = CONFIG.models.gym;
   const petIds = Object.keys(CONFIG.models.pets);
-  const [mapGltf, playerGltf, eggGltf, chickGltf, scorpGltf, duckGltf, gummyGltf, alienGltf, batGltf, standGltfs, ...restGltfs0] = await Promise.all([
-    load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.chicken), load(CONFIG.models.scorpion), load(CONFIG.models.duck), load(CONFIG.models.gummy), load(CONFIG.models.alien),
+  const [mapGltf, playerGltf, eggGltf, girlGltf, chickGltf, scorpGltf, duckGltf, gummyGltf, alienGltf, batGltf, standGltfs, ...restGltfs0] = await Promise.all([
+    load(CONFIG.models.map), load(CONFIG.models.player), load(CONFIG.models.egg), load(CONFIG.models.girlPlayer).catch((err) => { log.warn('Girl player model failed to load:', err && err.message); return null; }), load(CONFIG.models.chicken), load(CONFIG.models.scorpion), load(CONFIG.models.duck), load(CONFIG.models.gummy), load(CONFIG.models.alien),
     load(CONFIG.models.bat).catch((err) => { log.warn('Baseball bat model failed to load:', err && err.message); return null; }),
     Promise.all([load(CONFIG.models.sell), load(CONFIG.models.trailshop), load(CONFIG.models.fuse)]).catch((err) => { log.warn('Sell / Shop models failed to load:', err && err.message); return null; }),
     ...petIds.map((id) => load(CONFIG.models.pets[id])),
@@ -1241,7 +1241,7 @@ async function init() {
   const treadGltfs = restGltfs.slice(0, GM.treadmill.length), barGltfs = restGltfs.slice(GM.treadmill.length, GM.treadmill.length + GM.bar.length);
   const typeGltfs = restGltfs.slice(GM.treadmill.length + GM.bar.length);
   setupMap(mapGltf.scene);
-  setupPlayer(playerGltf);
+  setupPlayer(playerGltf, girlGltf);
   batGltfRef = batGltf;
   setupBat();
   eggTpl.normal = bakeEgg(typeGltfs[names.indexOf('normal')].scene);
@@ -1343,14 +1343,62 @@ function setupMap(root) {
   spawnPoints.forEach((s, i) => log.debug('spawn', i, s.name, s.center.toArray().map((v) => +v.toFixed(2))));
 }
 
+/* Player model variants. The girl model has the same node names, rig and animations as the default one, so switching is just
+   swapping each body part's geometry (and the face material): the mixer, held items, bat, pets and ragdoll all keep working. */
+const GIRL_KEY = 'tae_girl_model';
+const variants = { boy: null, girl: null };
+const partKey = (n) => String(n).replace(/[ _]/g, '').toLowerCase();
+function captureVariant(gltf) {
+  const out = {};
+  gltf.scene.traverse((o) => { if (o.isMesh) out[partKey(o.name)] = { geometry: o.geometry, material: Array.isArray(o.material) ? o.material[0] : o.material }; });
+  return out;
+}
+function applyVariant(model, girl) {
+  const v = girl && variants.girl ? variants.girl : variants.boy;
+  if (!v) return false;
+  model.traverse((o) => {
+    if (!o.isMesh) return;
+    const t = v[partKey(o.name)];
+    if (!t) return;
+    o.geometry = t.geometry;
+    if (partOf(o.name) === null) { o.material = t.material.clone(); }       // face: texture + alpha mode come from the variant
+  });
+  return true;
+}
+let girlOn = false;
+function setGirlModel(on) {
+  if (on && !variants.girl) return false;
+  girlOn = !!on;
+  if (playerModel) { applyVariant(playerModel, girlOn); applyBodyColor(playerModel, profile.parts); }
+  try { localStorage.setItem(GIRL_KEY, girlOn ? '1' : '0'); } catch (e) { /* not remembered */ }
+  netSend({ t: 'profile', name: netName(), color: profile.parts, girl: girlOn ? 1 : 0 });
+  return true;
+}
+function runChatCommand(text) {                           // returns true when the text was a command (and so is not sent as chat)
+  const m = /^\/e\s+(\S+)\s*$/i.exec(text);
+  if (!m) return false;
+  const arg = m[1].toLowerCase();
+  if (arg === 'iwantwantggirl') {
+    if (setGirlModel(true)) chatAdd('', 'Player model changed to the girl player.', true);
+    else chatAdd('', 'Girl player model is not loaded.', true);
+  } else if (arg === 'reset' || arg === 'iwantboy') {
+    setGirlModel(false); chatAdd('', 'Player model reset to default.', true);
+  } else chatAdd('', 'Unknown command: /e ' + m[1], true);
+  return true;
+}
+
 let playerGltfRef = null;
-function setupPlayer(gltf) {
+function setupPlayer(gltf, girlGltf) {
   playerGltfRef = gltf;
+  variants.boy = captureVariant(gltf);
+  if (girlGltf) variants.girl = captureVariant(girlGltf);
+  try { girlOn = localStorage.getItem(GIRL_KEY) === '1' && !!variants.girl; } catch (e) { girlOn = false; }
   const model = gltf.scene;
   model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
   const box = new THREE.Box3().setFromObject(model);
   model.position.y -= box.min.y;           // put feet on origin
   playerModel = model; modelBaseY = model.position.y;
+  if (girlOn) applyVariant(model, true);
   applyBodyColor(model, profile.parts);
   model.traverse((o) => { if (o.isMesh && /Leg/i.test(o.name)) legMeshes.push(o); });
   playerRoot = new THREE.Group();
@@ -2242,7 +2290,7 @@ function chatAdd(name, text, system, mine) {
 }
 function chatOpen() {
   if (chat.open || !ready || dom.overlay.style.display !== 'none' || dexOpen) return;
-  if (!NET.on) { say(STATIC_HOST ? 'Chat needs a multiplayer server (this static site plays solo).' : 'Chat needs the multiplayer server (node server.js).', 4); return; }
+  if (!NET.on && IS_TOUCH) { say(STATIC_HOST ? 'Chat needs a multiplayer server (this static site plays solo).' : 'Chat needs the multiplayer server (node server.js).', 4); return; }
   chat.open = true;
   chat.el.classList.add('open');
   for (const k in keys) keys[k] = false;
@@ -2261,7 +2309,7 @@ function chatClose() {
 function chatSend() {
   const text = chat.input.value.replace(/\s+/g, ' ').trim().slice(0, 120);
   chat.input.value = '';
-  if (text) netSend({ t: 'chat', text });
+  if (text && !runChatCommand(text)) { if (NET.on) netSend({ t: 'chat', text }); else chatAdd('', 'Chat needs the multiplayer server. Commands like /e still work.', true); }
   chatClose();
 }
 chat.form.addEventListener('submit', (e) => { e.preventDefault(); chatSend(); });
@@ -2317,7 +2365,7 @@ function netJoin(timeoutMs) {
     const finish = (ok) => { if (done) return; done = true; clearTimeout(tm); if (!ok && ws) { try { ws.close(); } catch (e) { /* already closed */ } } resolve(ok); };
     tm = setTimeout(() => { log.warn('Server did not answer: playing solo'); finish(false); }, timeoutMs);
     try { ws = new WebSocket(NET_URL); } catch (e) { return finish(false); }
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', name: netName(), color: profile.parts, pens, spawns: eggItems.map((i) => i.area),
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', name: netName(), color: profile.parts, girl: girlOn ? 1 : 0, pens, spawns: eggItems.map((i) => i.area),
       eggs: { types: CONFIG.eggs.types, sizeTiers: CONFIG.eggs.sizeTiers, maxMult: CONFIG.eggs.maxMult, respawn: CONFIG.eggs.respawn } }));
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
@@ -2638,7 +2686,7 @@ function netSetEgg(i, egg) {                            // the server says what 
 function netMessage(m) {
   switch (m.t) {
     case 'join': NET.count = m.count; netAddRemote(m); netHud(); say(m.name + ' joined (Pen ' + m.pen + ')', 3); break;
-    case 'profile': { const r = remotes.get(m.id); if (r) netRemoteProfile(r, m.name, m.color); break; }
+    case 'profile': { const r = remotes.get(m.id); if (r) { netRemoteProfile(r, m.name, m.color); if ((m.girl ? 1 : 0) !== (r.girl ? 1 : 0)) { r.girl = m.girl ? 1 : 0; applyVariant(r.model, !!r.girl); applyBodyColor(r.model, r.color); } } break; }
     case 'leave': { const r = remotes.get(m.id); if (r) say(r.name + ' left', 3); netRemoveRemote(m.id); NET.count = m.count; netHud(); break; }
     case 'state': { const r = remotes.get(m.id); if (r) netRemoteState(r, m.s, false); break; }
     case 'pets': { const r = remotes.get(m.id); if (r) netRemotePets(r, m.list); break; }
@@ -2673,6 +2721,7 @@ function netAddRemote(o) {
   if (!playerGltfRef || !playerEgg || remotes.has(o.id)) return;
   const model = cloneClean(playerGltfRef.scene);
   model.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.frustumCulled = false; m.material = Array.isArray(m.material) ? m.material.map((x) => x.clone()) : m.material.clone(); } });   // own materials: each player has their own color
+  if (o.girl) applyVariant(model, true);
   applyBodyColor(model, cleanParts(o.color));
   model.position.y = modelBaseY;                          // the local model may be eased down while it holds an egg: start the copy from the plain pose
   const avatar = new THREE.Group(); avatar.scale.setScalar(CONFIG.playerScale); avatar.add(model);
@@ -2683,7 +2732,7 @@ function netAddRemote(o) {
   const mixer = new THREE.AnimationMixer(model), acts = {};
   for (const clip of playerGltfRef.animations) acts[clip.name.toLowerCase()] = mixer.clipAction(clip);
   if (acts.jump) { acts.jump.setLoop(THREE.LoopOnce, 1); acts.jump.clampWhenFinished = true; }
-  const r = { id: o.id, name: o.name || 'Player', color: cleanParts(o.color), pen: o.pen, root, avatar, model, mixer, acts, anim: '', tag, eggMesh, held: null, heldKey: '', form: 'human',
+  const r = { id: o.id, name: o.name || 'Player', color: cleanParts(o.color), pen: o.pen, root, avatar, model, mixer, acts, anim: '', tag, eggMesh, held: null, heldKey: '', form: 'human', girl: o.girl ? 1 : 0,
               tx: 0, ty: 0, tz: 0, tf: 0, facing: 0, init: false, pets: [], eggs: [] };
   r.batH = makeBatHolder(model); r.petH = makePetHolder(model); r.hitN = o.s && o.s.ht ? o.s.ht.n : 0; r.sw = o.s ? (o.s.sw | 0) : 0; r.rg = 0; r.rgS = 0;
   remotes.set(o.id, r);
