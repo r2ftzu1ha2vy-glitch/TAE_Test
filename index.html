@@ -1194,7 +1194,7 @@ try { const sv = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); if (sv
 function partOf(meshName) {
   if (/face/i.test(meshName)) return null;                // the face is a texture and keeps its look
   if (/head/i.test(meshName)) return 'head';
-  if (/torso|body/i.test(meshName)) return 'torso';
+  if (/torso|body|circ/i.test(meshName)) return 'torso';          // Circ1 / Circ2 (girl model) wear the torso color
   if (/arm/i.test(meshName)) return 'arms';
   if (/leg/i.test(meshName)) return 'legs';
   return null;
@@ -1350,7 +1350,15 @@ const variants = { boy: null, girl: null };
 const partKey = (n) => String(n).replace(/[ _]/g, '').toLowerCase();
 function captureVariant(gltf) {
   const out = {};
-  gltf.scene.traverse((o) => { if (o.isMesh) out[partKey(o.name)] = { geometry: o.geometry, material: Array.isArray(o.material) ? o.material[0] : o.material }; });
+  gltf.scene.updateMatrixWorld(true);
+  let torso = null; gltf.scene.traverse((o) => { if (!torso && /^Torso$/i.test(o.name)) torso = o; });
+  const torsoInv = torso ? torso.matrixWorld.clone().invert() : null;
+  gltf.scene.traverse((o) => {
+    if (!o.isMesh) return;
+    const e = { geometry: o.geometry, material: Array.isArray(o.material) ? o.material[0] : o.material };
+    if (/^Circ\d+$/i.test(o.name) && torsoInv) e.rel = torsoInv.clone().multiply(o.matrixWorld);   // rest pose in Torso space; the boy rig has no Circ nodes, so they are added at runtime
+    out[partKey(o.name)] = e;
+  });
   return out;
 }
 function applyVariant(model, girl) {
@@ -1363,7 +1371,71 @@ function applyVariant(model, girl) {
     o.geometry = t.geometry;
     if (partOf(o.name) === null) { o.material = t.material.clone(); }       // face: texture + alpha mode come from the variant
   });
+  syncCircs(model, !!(girl && variants.girl));
   return true;
+}
+
+/* Jiggle for Circ1 / Circ2. The circs are children of the Torso, placed with the rest transform they have in the girl glb, so they follow every
+   animation. On top of that each one is a damped spring in world space: it lags behind its anchor when the body accelerates, turns or bobs
+   and settles back. Tunables are uncalibrated (judge by eye): ?jiggle=0 turns it off, ?jfreq= (Hz) ?jdamp= (damping ratio) ?jmax= (model units). */
+const jnum = (k, d) => { const v = parseFloat(params.get(k)); return Number.isFinite(v) ? v : d; };
+const JIGGLE = { on: params.get('jiggle') !== '0', freq: jnum('jfreq', 5.5), damping: jnum('jdamp', 0.16), maxDisp: jnum('jmax', 0.08), step: 1 / 120, maxSteps: 8, teleport: 40, maxAccel: 80 };
+const jiggles = new Map();                                // model -> { torso, items }
+const _jT = new THREE.Vector3(), _jV = new THREE.Vector3(), _jN = new THREE.Vector3(), _jInv = new THREE.Matrix4();
+function jiggleForget(model) { jiggles.delete(model); }
+function inScene(o) { for (let p = o; p; p = p.parent) if (p === scene) return true; return false; }
+function syncCircs(model, on) {
+  const torso = findNode(model, /^Torso$/i);
+  if (!torso) return;
+  jiggles.delete(model);
+  for (const c of torso.children.filter((x) => x.userData && x.userData.circ)) { torso.remove(c); if (c.material) c.material.dispose(); }
+  if (!on || !variants.girl) return;
+  const items = [];
+  for (const key of ['circ1', 'circ2']) {
+    const t = variants.girl[key];
+    if (!t || !t.rel) { log.warn('Girl model: ' + key + ' not found, no jiggle for it'); continue; }
+    const m = new THREE.Mesh(t.geometry, t.material.clone());          // own material: each player has their own color
+    m.name = key === 'circ1' ? 'Circ1' : 'Circ2';
+    m.userData.circ = true; m.castShadow = true; m.receiveShadow = false; m.frustumCulled = false;
+    m.matrixAutoUpdate = false; m.matrix.copy(t.rel);
+    torso.add(m);
+    items.push({ obj: m, rel: t.rel, anchor: new THREE.Vector3().setFromMatrixPosition(t.rel),
+                 d: new THREE.Vector3(), u: new THREE.Vector3(), tv: new THREE.Vector3(), prev: new THREE.Vector3(), init: false });
+  }
+  if (items.length) jiggles.set(model, { torso, items });
+}
+function jiggleStep(it, target, dt, s) {                  // spring in the frame of the moving anchor: d'' = -w^2 d - 2 z w d' - (anchor acceleration)
+  if (!it.init) { it.d.set(0, 0, 0); it.u.set(0, 0, 0); it.tv.set(0, 0, 0); it.prev.copy(target); it.init = true; return; }
+  _jV.copy(target).sub(it.prev).divideScalar(dt);          // anchor velocity
+  if (!(_jV.length() < JIGGLE.teleport * s)) { it.d.set(0, 0, 0); it.u.set(0, 0, 0); it.tv.set(0, 0, 0); it.prev.copy(target); return; }   // respawn / teleport: snap
+  _jN.copy(_jV).sub(it.tv).divideScalar(dt);               // anchor acceleration
+  const am = JIGGLE.maxAccel * s, al = _jN.length(); if (al > am) _jN.multiplyScalar(am / al);
+  it.tv.copy(_jV); it.prev.copy(target);
+  const n = Math.min(JIGGLE.maxSteps, Math.max(1, Math.ceil(dt / JIGGLE.step))), h = dt / n;
+  const w = 2 * Math.PI * JIGGLE.freq, w2 = w * w, c = 2 * JIGGLE.damping * w, max = JIGGLE.maxDisp * s;
+  for (let i = 0; i < n; i++) {
+    it.u.x += (-w2 * it.d.x - c * it.u.x - _jN.x) * h; it.u.y += (-w2 * it.d.y - c * it.u.y - _jN.y) * h; it.u.z += (-w2 * it.d.z - c * it.u.z - _jN.z) * h;
+    it.d.addScaledVector(it.u, h);
+    const len = it.d.length();
+    if (len > max) { it.d.multiplyScalar(max / len); const out = it.u.dot(it.d) / max; if (out > 0) it.u.addScaledVector(it.d, -out / max); }   // hard stop: drop the outward speed
+  }
+}
+function updateJiggles(dt) {
+  if (!JIGGLE.on || !(dt > 1e-4)) return;
+  for (const [model, J] of jiggles) {
+    if (!inScene(model)) { for (const it of J.items) it.init = false; continue; }
+    model.updateWorldMatrix(true, false); J.torso.updateWorldMatrix(true, false);   // the mixer has just moved the bones: use this frame's pose, not last frame's
+    const s = _jN.setFromMatrixScale(model.matrixWorld).y;
+    _jInv.copy(J.torso.matrixWorld).invert();
+    for (const it of J.items) {
+      _jT.copy(it.anchor).applyMatrix4(J.torso.matrixWorld);
+      jiggleStep(it, _jT, dt, s);
+      const e = it.obj.matrix.elements; it.obj.matrix.copy(it.rel);
+      _jV.copy(_jT).add(it.d).applyMatrix4(_jInv);
+      if (Number.isFinite(_jV.x + _jV.y + _jV.z)) { e[12] = _jV.x; e[13] = _jV.y; e[14] = _jV.z; } else it.init = false;
+      it.obj.matrixWorldNeedsUpdate = true;
+    }
+  }
 }
 let girlOn = false;
 function setGirlModel(on) {
@@ -1512,7 +1584,9 @@ function makePetHolder(model) {
 function cloneClean(src) {                              // SkeletonUtils.clone of a model WITHOUT the bat / held-pet holders hanging on the live player (they would be cloned with everything in them)
   const held = src.children.filter((c) => c.userData && c.userData.arm);
   held.forEach((c) => src.remove(c));
-  try { return SkeletonUtils.clone(src); } finally { held.forEach((c) => src.add(c)); }
+  const circs = []; src.traverse((o) => { if (o.userData && o.userData.circ && o.parent) circs.push(o); });          // the live girl model's circs: each player gets their own from applyVariant
+  const circParents = circs.map((c) => c.parent); circs.forEach((c) => c.parent.remove(c));
+  try { return SkeletonUtils.clone(src); } finally { held.forEach((c) => src.add(c)); circs.forEach((c, i) => circParents[i].add(c)); }
 }
 const _hs = new THREE.Vector3();
 function petHolderClear(h) {
@@ -2770,7 +2844,7 @@ function netRemoteGyms(r, ub, ut) {                      // the other player's P
 function netRemoveRemote(id) {
   const r = remotes.get(id);
   if (!r) return;
-  scene.remove(r.root);
+  scene.remove(r.root); jiggleForget(r.model);
   r.root.traverse((m) => { if (m.isSprite && m.material) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); } });
   r.model.traverse((m) => { if (m.isMesh && m.material) for (const x of Array.isArray(m.material) ? m.material : [m.material]) x.dispose(); });
   if (r.gyms) for (const g of Object.values(r.gyms)) scene.remove(g.root);
@@ -5223,6 +5297,7 @@ function tick() {
   updateTutorialArrow();
   updatePowerBar();
   updateHud();
+  updateJiggles(dt);
   renderer.render(scene, camera);
 
   if (CONFIG.debug) {
